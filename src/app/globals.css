@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-cyan: #20878E;
+  --color-brand-blue: #92C4C6;
+  --color-brand-pink: #F6E3D6;
+  --color-brand-yellow: #F3C375;
+  --color-brand-brown: #D66F29;
+
+  --color-bg-primary: #F8F5EF;
+  --color-text-dark: #263238;
+
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+}
+
+@layer base {
+  :root {
+    --background: #F8F5EF;
+    --foreground: #263238;
+  }
+
+  body {
+    color: var(--foreground);
+    background: var(--background);
+    font-family: var(--font-sans);
+  }
+}
+
+@layer utilities {
+  .card-shadow {
+    box-shadow: 0 10px 40px -10px rgba(38, 50, 56, 0.08);
+  }
+  .glass-light {
+    @apply bg-white/60 backdrop-blur-md border border-white/40;
+  }
+  .text-cyan {
+    @apply text-brand-cyan;
+  }
+  .bg-cyan {
+    @apply bg-brand-cyan;
+  }
+}
