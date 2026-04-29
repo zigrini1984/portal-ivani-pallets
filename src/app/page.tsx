@@ -49,29 +49,21 @@ export default function Home() {
     };
 
     try {
-      const response = await fetch(`${supabaseUrl}/rest/v1/leads?select=id`, {
+      const response = await fetch(`${supabaseUrl}/rest/v1/leads`, {
         method: "POST",
         headers: {
           apikey: supabaseAnonKey,
           Authorization: `Bearer ${supabaseAnonKey}`,
           "Content-Type": "application/json",
-          Prefer: "return=representation"
+          Prefer: "return=minimal"
         },
         body: JSON.stringify(lead)
       });
 
-      const result = await response.json();
+      const result = response.ok ? null : await response.json();
 
       if (!response.ok) {
         const message = result?.message ?? "Erro desconhecido ao salvar lead no Supabase.";
-        console.error("[leads] Erro real do Supabase:", result);
-        setLeadStatus("erro");
-        setLeadMessage(message);
-        return;
-      }
-
-      if (!Array.isArray(result) || result.length === 0) {
-        const message = "Supabase nao retornou confirmacao do lead criado.";
         console.error("[leads] Erro real do Supabase:", result);
         setLeadStatus("erro");
         setLeadMessage(message);
