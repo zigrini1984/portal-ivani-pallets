@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { 
   ArrowRight, 
@@ -20,6 +21,74 @@ import {
 import Link from "next/link";
 
 export default function Home() {
+  const [leadStatus, setLeadStatus] = useState<"sucesso" | "erro" | null>(null);
+  const [leadMessage, setLeadMessage] = useState("");
+
+  async function handleLeadSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      const message = "Variaveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY nao configuradas.";
+      console.error("[leads] Erro:", message);
+      setLeadStatus("erro");
+      setLeadMessage(message);
+      return;
+    }
+
+    const lead = {
+      nome: String(formData.get("nome") ?? "").trim(),
+      empresa: String(formData.get("empresa") ?? "").trim(),
+      whatsapp: String(formData.get("whatsapp") ?? "").trim(),
+      email: String(formData.get("email") ?? "").trim(),
+      cidade: String(formData.get("cidade") ?? "").trim(),
+      mensagem: String(formData.get("mensagem") ?? "").trim()
+    };
+
+    try {
+      const response = await fetch(`${supabaseUrl}/rest/v1/leads?select=id`, {
+        method: "POST",
+        headers: {
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${supabaseAnonKey}`,
+          "Content-Type": "application/json",
+          Prefer: "return=representation"
+        },
+        body: JSON.stringify(lead)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        const message = result?.message ?? "Erro desconhecido ao salvar lead no Supabase.";
+        console.error("[leads] Erro real do Supabase:", result);
+        setLeadStatus("erro");
+        setLeadMessage(message);
+        return;
+      }
+
+      if (!Array.isArray(result) || result.length === 0) {
+        const message = "Supabase nao retornou confirmacao do lead criado.";
+        console.error("[leads] Erro real do Supabase:", result);
+        setLeadStatus("erro");
+        setLeadMessage(message);
+        return;
+      }
+
+      setLeadStatus("sucesso");
+      setLeadMessage("Solicitação enviada com sucesso. Em breve a Ivani Pallets entrará em contato.");
+      event.currentTarget.reset();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erro inesperado ao conectar com o Supabase.";
+      console.error("[leads] Erro real do Supabase:", error);
+      setLeadStatus("erro");
+      setLeadMessage(message);
+    }
+  }
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -322,35 +391,37 @@ export default function Home() {
               </div>
 
               <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  alert("Solicitação enviada com sucesso. Em breve a Ivani Pallets entrará em contato.");
-                }}
+                onSubmit={handleLeadSubmit}
                 className="grid grid-cols-1 md:grid-cols-2 gap-6"
               >
+                {leadStatus && (
+                  <div className={`md:col-span-2 rounded-xl px-4 py-3 text-sm font-semibold ${leadStatus === "sucesso" ? "bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20" : "bg-red-50 text-red-700 border border-red-200"}`}>
+                    {leadMessage}
+                  </div>
+                )}
                 <div className="md:col-span-1">
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dark/40 mb-2 ml-1">Nome</label>
-                  <input required type="text" placeholder="Nome completo" className="w-full h-12 bg-bg-primary border border-brand-pink/30 rounded-xl px-4 focus:outline-none focus:border-brand-cyan/50 transition-colors" />
+                  <input required name="nome" type="text" placeholder="Nome completo" className="w-full h-12 bg-bg-primary border border-brand-pink/30 rounded-xl px-4 focus:outline-none focus:border-brand-cyan/50 transition-colors" />
                 </div>
                 <div className="md:col-span-1">
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dark/40 mb-2 ml-1">Empresa</label>
-                  <input required type="text" placeholder="Nome da empresa" className="w-full h-12 bg-bg-primary border border-brand-pink/30 rounded-xl px-4 focus:outline-none focus:border-brand-cyan/50 transition-colors" />
+                  <input required name="empresa" type="text" placeholder="Nome da empresa" className="w-full h-12 bg-bg-primary border border-brand-pink/30 rounded-xl px-4 focus:outline-none focus:border-brand-cyan/50 transition-colors" />
                 </div>
                 <div className="md:col-span-1">
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dark/40 mb-2 ml-1">WhatsApp</label>
-                  <input required type="tel" placeholder="WhatsApp com DDD" className="w-full h-12 bg-bg-primary border border-brand-pink/30 rounded-xl px-4 focus:outline-none focus:border-brand-cyan/50 transition-colors" />
+                  <input required name="whatsapp" type="tel" placeholder="WhatsApp com DDD" className="w-full h-12 bg-bg-primary border border-brand-pink/30 rounded-xl px-4 focus:outline-none focus:border-brand-cyan/50 transition-colors" />
                 </div>
                 <div className="md:col-span-1">
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dark/40 mb-2 ml-1">E-mail</label>
-                  <input required type="email" placeholder="email@empresa.com.br" className="w-full h-12 bg-bg-primary border border-brand-pink/30 rounded-xl px-4 focus:outline-none focus:border-brand-cyan/50 transition-colors" />
+                  <input required name="email" type="email" placeholder="email@empresa.com.br" className="w-full h-12 bg-bg-primary border border-brand-pink/30 rounded-xl px-4 focus:outline-none focus:border-brand-cyan/50 transition-colors" />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dark/40 mb-2 ml-1">Cidade</label>
-                  <input required type="text" placeholder="Cidade / Estado" className="w-full h-12 bg-bg-primary border border-brand-pink/30 rounded-xl px-4 focus:outline-none focus:border-brand-cyan/50 transition-colors" />
+                  <input required name="cidade" type="text" placeholder="Cidade / Estado" className="w-full h-12 bg-bg-primary border border-brand-pink/30 rounded-xl px-4 focus:outline-none focus:border-brand-cyan/50 transition-colors" />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dark/40 mb-2 ml-1">Mensagem</label>
-                  <textarea rows={3} placeholder="Escreva brevemente como podemos ajudar" className="w-full bg-bg-primary border border-brand-pink/30 rounded-xl px-4 py-3 focus:outline-none focus:border-brand-cyan/50 transition-colors resize-none"></textarea>
+                  <textarea name="mensagem" rows={3} placeholder="Escreva brevemente como podemos ajudar" className="w-full bg-bg-primary border border-brand-pink/30 rounded-xl px-4 py-3 focus:outline-none focus:border-brand-cyan/50 transition-colors resize-none"></textarea>
                 </div>
                 
                 <div className="md:col-span-2 mt-4">
