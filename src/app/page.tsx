@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useActionState } from "react";
 import { motion } from "framer-motion";
 import { 
   ArrowRight, 
@@ -23,37 +23,10 @@ import { submitLeadAction } from "@/app/actions/leads";
 
 
 export default function Home() {
-  const [leadStatus, setLeadStatus] = useState<"sucesso" | "erro" | null>(null);
-  const [leadMessage, setLeadMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  async function handleLeadSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setIsSubmitting(true);
-    setLeadStatus(null);
-
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-
-    try {
-      const result = await submitLeadAction(formData);
-
-      if (result.success) {
-        setLeadStatus("sucesso");
-        setLeadMessage(result.message || "Solicitação enviada com sucesso.");
-        form.reset();
-      } else {
-        setLeadStatus("erro");
-        setLeadMessage(result.error || "Ocorreu um erro ao enviar sua solicitação.");
-      }
-    } catch (error) {
-      console.error("[leads] Erro na action:", error);
-      setLeadStatus("erro");
-      setLeadMessage("Erro inesperado ao conectar com o servidor.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
+  const [state, formAction, isPending] = useActionState(async (_prevState: any, formData: FormData) => {
+    const result = await submitLeadAction(formData);
+    return result;
+  }, null);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -357,12 +330,12 @@ export default function Home() {
               </div>
 
               <form 
-                onSubmit={handleLeadSubmit}
+                action={formAction}
                 className="grid grid-cols-1 md:grid-cols-2 gap-6"
               >
-                {leadStatus && (
-                  <div className={`md:col-span-2 rounded-xl px-4 py-3 text-sm font-semibold ${leadStatus === "sucesso" ? "bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20" : "bg-red-50 text-red-700 border border-red-200"}`}>
-                    {leadMessage}
+                {state && (
+                  <div className={`md:col-span-2 rounded-xl px-4 py-3 text-sm font-semibold ${state.success ? "bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20" : "bg-red-50 text-red-700 border border-red-200"}`}>
+                    {state.success ? state.message : state.error}
                   </div>
                 )}
                 <div className="md:col-span-1">
@@ -392,12 +365,12 @@ export default function Home() {
                 
                 <div className="md:col-span-2 mt-4">
                   <motion.button
-                    disabled={isSubmitting}
+                    disabled={isPending}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className={`w-full py-5 text-white rounded-2xl font-bold transition-all shadow-lg shadow-brand-cyan/20 ${isSubmitting ? "bg-brand-cyan/50 cursor-not-allowed" : "bg-brand-cyan hover:bg-[#1a6e74]"}`}
+                    className={`w-full py-5 text-white rounded-2xl font-bold transition-all shadow-lg shadow-brand-cyan/20 ${isPending ? "bg-brand-cyan/50 cursor-not-allowed" : "bg-brand-cyan hover:bg-[#1a6e74]"}`}
                   >
-                    {isSubmitting ? "Enviando..." : "Solicitar contato agora"}
+                    {isPending ? "Enviando..." : "Solicitar contato agora"}
                   </motion.button>
                 </div>
               </form>
