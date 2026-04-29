@@ -27,7 +27,8 @@ export default function Home() {
   async function handleLeadSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -72,7 +73,7 @@ export default function Home() {
 
       setLeadStatus("sucesso");
       setLeadMessage("Solicitação enviada com sucesso. Em breve a Ivani Pallets entrará em contato.");
-      event.currentTarget.reset();
+      form.reset();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Erro inesperado ao conectar com o Supabase.";
       console.error("[leads] Erro real do Supabase:", error);
