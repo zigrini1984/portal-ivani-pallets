@@ -46,7 +46,8 @@ export default function Home() {
       whatsapp: String(formData.get("whatsapp") ?? "").trim(),
       email: String(formData.get("email") ?? "").trim(),
       cidade: String(formData.get("cidade") ?? "").trim(),
-      mensagem: String(formData.get("mensagem") ?? "").trim()
+      mensagem: String(formData.get("mensagem") ?? "").trim(),
+      created_at: new Date().toISOString()
     };
 
     try {
@@ -74,6 +75,23 @@ export default function Home() {
       setLeadStatus("sucesso");
       setLeadMessage("Solicitação enviada com sucesso. Em breve a Ivani Pallets entrará em contato.");
       form.reset();
+
+      fetch("/api/send-lead", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(lead)
+      })
+        .then(async (notificationResponse) => {
+          if (!notificationResponse.ok) {
+            const notificationError = await notificationResponse.json();
+            console.error("[leads] Lead salvo, mas a notificacao por e-mail falhou:", notificationError);
+          }
+        })
+        .catch((error) => {
+          console.error("[leads] Lead salvo, mas a notificacao por e-mail falhou:", error);
+        });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Erro inesperado ao conectar com o Supabase.";
       console.error("[leads] Erro real do Supabase:", error);
