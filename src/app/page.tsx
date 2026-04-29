@@ -19,84 +19,39 @@ import {
   CheckCircle2
 } from "lucide-react";
 import Link from "next/link";
+import { submitLeadAction } from "@/app/actions/leads";
+
 
 export default function Home() {
   const [leadStatus, setLeadStatus] = useState<"sucesso" | "erro" | null>(null);
   const [leadMessage, setLeadMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleLeadSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setIsSubmitting(true);
+    setLeadStatus(null);
 
     const form = event.currentTarget;
     const formData = new FormData(form);
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      const message = "Variaveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY nao configuradas.";
-      console.error("[leads] Erro:", message);
-      setLeadStatus("erro");
-      setLeadMessage(message);
-      return;
-    }
-
-    const lead = {
-      nome: String(formData.get("nome") ?? "").trim(),
-      empresa: String(formData.get("empresa") ?? "").trim(),
-      whatsapp: String(formData.get("whatsapp") ?? "").trim(),
-      email: String(formData.get("email") ?? "").trim(),
-      cidade: String(formData.get("cidade") ?? "").trim(),
-      mensagem: String(formData.get("mensagem") ?? "").trim(),
-      created_at: new Date().toISOString()
-    };
 
     try {
-      const response = await fetch(`${supabaseUrl}/rest/v1/leads`, {
-        method: "POST",
-        headers: {
-          apikey: supabaseAnonKey,
-          Authorization: `Bearer ${supabaseAnonKey}`,
-          "Content-Type": "application/json",
-          Prefer: "return=minimal"
-        },
-        body: JSON.stringify(lead)
-      });
+      const result = await submitLeadAction(formData);
 
-      const result = response.ok ? null : await response.json();
-
-      if (!response.ok) {
-        const message = result?.message ?? "Erro desconhecido ao salvar lead no Supabase.";
-        console.error("[leads] Erro real do Supabase:", result);
+      if (result.success) {
+        setLeadStatus("sucesso");
+        setLeadMessage(result.message || "Solicitação enviada com sucesso.");
+        form.reset();
+      } else {
         setLeadStatus("erro");
-        setLeadMessage(message);
-        return;
+        setLeadMessage(result.error || "Ocorreu um erro ao enviar sua solicitação.");
       }
-
-      setLeadStatus("sucesso");
-      setLeadMessage("Solicitação enviada com sucesso. Em breve a Ivani Pallets entrará em contato.");
-      form.reset();
-
-      fetch("/api/send-lead", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(lead)
-      })
-        .then(async (notificationResponse) => {
-          if (!notificationResponse.ok) {
-            const notificationError = await notificationResponse.json();
-            console.error("[leads] Lead salvo, mas a notificacao por e-mail falhou:", notificationError);
-          }
-        })
-        .catch((error) => {
-          console.error("[leads] Lead salvo, mas a notificacao por e-mail falhou:", error);
-        });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Erro inesperado ao conectar com o Supabase.";
-      console.error("[leads] Erro real do Supabase:", error);
+      console.error("[leads] Erro na action:", error);
       setLeadStatus("erro");
-      setLeadMessage(message);
+      setLeadMessage("Erro inesperado ao conectar com o servidor.");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -437,11 +392,12 @@ export default function Home() {
                 
                 <div className="md:col-span-2 mt-4">
                   <motion.button
+                    disabled={isSubmitting}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full py-5 bg-brand-cyan hover:bg-[#1a6e74] text-white rounded-2xl font-bold transition-all shadow-lg shadow-brand-cyan/20"
+                    className={`w-full py-5 text-white rounded-2xl font-bold transition-all shadow-lg shadow-brand-cyan/20 ${isSubmitting ? "bg-brand-cyan/50 cursor-not-allowed" : "bg-brand-cyan hover:bg-[#1a6e74]"}`}
                   >
-                    Solicitar contato agora
+                    {isSubmitting ? "Enviando..." : "Solicitar contato agora"}
                   </motion.button>
                 </div>
               </form>
