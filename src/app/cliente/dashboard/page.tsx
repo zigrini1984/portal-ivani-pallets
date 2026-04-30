@@ -13,21 +13,62 @@ import {
   ArrowRight,
   Filter,
   Search,
-  LayoutDashboard,
   LogOut,
   ChevronRight,
-  CircleDot
+  CircleDot,
+  TrendingUp,
+  TrendingDown,
+  Target,
+  Activity,
+  Wallet,
+  ShieldCheck,
+  Banknote,
+  Leaf,
+  Recycle,
+  Wind,
+  Trees,
+  RotateCw,
+  Settings,
+  List
 } from "lucide-react";
 import { motion } from "framer-motion";
 
-// Dados mockados para visualização imediata
-const MOCK_STATS = [
-  { label: "Recebidos", value: 1250, icon: <Package className="text-brand-cyan" />, color: "bg-brand-cyan/10" },
-  { label: "Em Triagem", value: 450, icon: <ClipboardCheck className="text-brand-yellow" />, color: "bg-brand-yellow/10" },
-  { label: "Manutenção", value: 380, icon: <Hammer className="text-brand-brown" />, color: "bg-brand-brown/10" },
-  { label: "Descartados", value: 120, icon: <Trash2 className="text-red-500" />, color: "bg-red-50" },
-  { label: "Comprados", value: 210, icon: <DollarSign className="text-green-500" />, color: "bg-green-50" },
-  { label: "Finalizados", value: 890, icon: <CheckCircle2 className="text-brand-cyan" />, color: "bg-brand-cyan/10" },
+// --- MOCK DATA ---
+
+const MOCK_STATS_OPERACAO = [
+  { label: "Total Recebidos", value: "1.250", icon: <Package />, color: "text-brand-cyan", bg: "bg-brand-cyan/10" },
+  { label: "Em Triagem", value: "450", icon: <ClipboardCheck />, color: "text-brand-yellow", bg: "bg-brand-yellow/10" },
+  { label: "Em Manutenção", value: "380", icon: <Hammer />, color: "text-brand-brown", bg: "bg-brand-brown/10" },
+  { label: "Em Remanufatura", value: "120", icon: <Settings />, color: "text-brand-blue", bg: "bg-brand-blue/10" },
+  { label: "Descartados", value: "120", icon: <Trash2 />, color: "text-red-500", bg: "bg-red-50" },
+  { label: "Comprados pela Ivani", value: "210", icon: <DollarSign />, color: "text-green-500", bg: "bg-green-50" },
+  { label: "Finalizados", value: "890", icon: <CheckCircle2 />, color: "text-brand-cyan", bg: "bg-brand-cyan/10" },
+  { label: "Lotes em Aberto", value: "4", icon: <List />, color: "text-brand-cyan", bg: "bg-brand-cyan/10" },
+];
+
+const MOCK_STATS_PERFORMANCE = [
+  { label: "Taxa de Recuperação", value: "82%", icon: <TrendingUp />, color: "text-green-500", bg: "bg-green-50" },
+  { label: "Taxa de Descarte", value: "9.6%", icon: <TrendingDown />, color: "text-red-500", bg: "bg-red-50" },
+  { label: "Média Triagem", value: "1.2 dias", icon: <Clock />, color: "text-brand-cyan", bg: "bg-brand-cyan/10" },
+  { label: "Média Manutenção", value: "2.4 dias", icon: <Clock />, color: "text-brand-cyan", bg: "bg-brand-cyan/10" },
+  { label: "Prazo Finalização", value: "4.1 dias", icon: <Target />, color: "text-brand-cyan", bg: "bg-brand-cyan/10" },
+  { label: "Lotes Finalizados", value: "94%", icon: <CheckCircle2 />, color: "text-green-500", bg: "bg-green-50" },
+  { label: "Média por Lote", value: "312 unid", icon: <Activity />, color: "text-brand-cyan", bg: "bg-brand-cyan/10" },
+];
+
+const MOCK_STATS_FINANCEIRO = [
+  { label: "Economia Gerada", value: "R$ 42.500", icon: <Wallet />, color: "text-green-600", bg: "bg-green-50" },
+  { label: "Valor de Compra", value: "R$ 12.800", icon: <Banknote />, color: "text-brand-cyan", bg: "bg-brand-cyan/10" },
+  { label: "Custo Evitado (Descarte)", value: "R$ 3.200", icon: <ShieldCheck />, color: "text-brand-blue", bg: "bg-brand-blue/10" },
+  { label: "Recuperado por Pallet", value: "R$ 34,00", icon: <TrendingUp />, color: "text-brand-cyan", bg: "bg-brand-cyan/10" },
+];
+
+const MOCK_STATS_AMBIENTAL = [
+  { label: "Madeira Reaproveitada", value: "~14.2 ton", icon: <Recycle />, color: "text-green-600", bg: "bg-green-50" },
+  { label: "Resíduos Evitados", value: "~850 kg", icon: <Trash2 />, color: "text-brand-cyan", bg: "bg-brand-cyan/10" },
+  { label: "CO₂ Evitado Estimado", value: "~4.8 ton", icon: <Wind />, color: "text-brand-blue", bg: "bg-brand-blue/10" },
+  { label: "Árvores Preservadas", value: "~72 unid", icon: <Trees />, color: "text-green-500", bg: "bg-green-50" },
+  { label: "Índice de Circularidade", value: "0.88", icon: <RotateCw />, color: "text-brand-cyan", bg: "bg-brand-cyan/10" },
 ];
 
 const MOCK_LOTES = [
@@ -46,9 +87,25 @@ const PROCESS_STEPS = [
   { id: 6, label: "Finalizado", status: "pending", date: "-" },
 ];
 
-export default function ClienteDashboard() {
-  const [activeTab, setActiveTab] = useState("resumo");
+// Componente de Card de KPI
+const KPICard = ({ label, value, icon, color, bg }: { label: string, value: string, icon: React.ReactNode, color: string, bg: string }) => (
+  <motion.div
+    whileHover={{ y: -2 }}
+    className="bg-white p-5 rounded-2xl card-shadow border border-brand-pink/20 transition-all flex flex-col justify-between"
+  >
+    <div className="flex justify-between items-start mb-3">
+      <div className={`p-2 rounded-lg ${bg} ${color}`}>
+        {React.isValidElement(icon) && React.cloneElement(icon as React.ReactElement<any>, { size: 18 })}
+      </div>
+      <div className="text-xs font-bold text-text-dark/30 tracking-tight text-right leading-tight">
+        {label}
+      </div>
+    </div>
+    <div className="text-xl font-bold tracking-tight text-text-dark">{value}</div>
+  </motion.div>
+);
 
+export default function ClienteDashboard() {
   return (
     <div className="min-h-screen bg-bg-primary text-text-dark font-sans pb-20">
       {/* Header / Navbar */}
@@ -64,7 +121,7 @@ export default function ClienteDashboard() {
           <div className="flex items-center gap-6">
             <div className="hidden md:flex items-center gap-2 text-sm font-medium text-text-dark/60 bg-brand-pink/20 px-4 py-2 rounded-full border border-brand-pink/50">
               <CircleDot className="text-brand-cyan" size={14} />
-              <span>Logado como: <strong>TCE Logística</strong></span>
+              <span><strong>TCE Logística</strong></span>
             </div>
             <button className="p-2 text-text-dark/40 hover:text-red-500 transition-colors">
               <LogOut size={20} />
@@ -75,38 +132,76 @@ export default function ClienteDashboard() {
 
       <main className="max-w-7xl mx-auto px-6 pt-10">
         {/* Título e Ações Rápidas */}
-        <div className="flex flex-col md:row justify-between items-start md:items-center gap-6 mb-12">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Painel de Acompanhamento</h1>
-            <p className="text-text-dark/50">Veja o status real de cada pallet enviado para nossa central.</p>
+            <h1 className="text-3xl font-bold mb-2">Painel de Controle</h1>
+            <p className="text-text-dark/50">Indicadores operacionais e impacto da sua logística de pallets.</p>
           </div>
           <button className="bg-brand-cyan hover:bg-[#1a6e74] text-white px-6 py-4 rounded-2xl font-bold flex items-center gap-3 transition-all shadow-xl shadow-brand-cyan/20">
             <Truck size={20} />
-            Solicitar Nova Coleta
+            Solicitar Coleta
           </button>
         </div>
 
-        {/* Grid de Resumo Operacional */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-16">
-          {MOCK_STATS.map((stat, i) => (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              key={i}
-              className="bg-white p-6 rounded-3xl card-shadow border border-brand-pink/20 hover:border-brand-cyan/30 transition-all group"
-            >
-              <div className={`w-12 h-12 ${stat.color} rounded-2xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110`}>
-                {stat.icon}
-              </div>
-              <div className="text-2xl font-bold mb-1">{stat.value.toLocaleString()}</div>
-              <div className="text-xs font-bold uppercase tracking-wider text-text-dark/40">{stat.label}</div>
-            </motion.div>
-          ))}
+        {/* --- SEÇÃO 1: RESUMO GERAL (OPERAÇÃO) --- */}
+        <div className="mb-12">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-text-dark/40 mb-6 flex items-center gap-2">
+            <Activity size={16} className="text-brand-cyan" />
+            Resumo Geral Operacional
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+            {MOCK_STATS_OPERACAO.map((kpi, i) => (
+              <KPICard key={i} {...kpi} />
+            ))}
+          </div>
         </div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
+          {/* --- SEÇÃO 2: PERFORMANCE OPERACIONAL --- */}
+          <div>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-text-dark/40 mb-6 flex items-center gap-2">
+              <TrendingUp size={16} className="text-brand-cyan" />
+              Performance Operacional
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {MOCK_STATS_PERFORMANCE.map((kpi, i) => (
+                <KPICard key={i} {...kpi} />
+              ))}
+            </div>
+          </div>
+
+          {/* --- SEÇÃO 3: IMPACTO FINANCEIRO --- */}
+          <div>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-text-dark/40 mb-6 flex items-center gap-2">
+              <DollarSign size={16} className="text-brand-cyan" />
+              Impacto Financeiro
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              {MOCK_STATS_FINANCEIRO.map((kpi, i) => (
+                <KPICard key={i} {...kpi} />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* --- SEÇÃO 4: IMPACTO AMBIENTAL ESTIMADO --- */}
+        <div className="mb-16">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-sm font-bold uppercase tracking-widest text-text-dark/40 flex items-center gap-2">
+              <Leaf size={16} className="text-green-600" />
+              Impacto Ambiental Estimado
+            </h2>
+            <span className="text-[10px] font-bold text-text-dark/30 italic uppercase">* Valores calculados com base em médias operacionais</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {MOCK_STATS_AMBIENTAL.map((kpi, i) => (
+              <KPICard key={i} {...kpi} />
+            ))}
+          </div>
+        </div>
+
+        {/* --- TABELA E TIMELINE (MANTIDOS) --- */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          {/* Tabela de Lotes (Coluna Larga) */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-[2.5rem] card-shadow border border-brand-pink/20 overflow-hidden">
               <div className="p-8 border-b border-brand-pink/20 flex justify-between items-center bg-white">
@@ -119,11 +214,11 @@ export default function ClienteDashboard() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dark/30" size={16} />
                     <input 
                       type="text" 
-                      placeholder="Buscar lote..." 
+                      placeholder="Buscar..." 
                       className="pl-10 pr-4 py-2 bg-bg-primary border border-brand-pink/30 rounded-xl text-sm focus:outline-none focus:border-brand-cyan/50"
                     />
                   </div>
-                  <button className="p-2 bg-bg-primary border border-brand-pink/30 rounded-xl text-text-dark/50 hover:text-brand-cyan transition-colors">
+                  <button className="p-2 bg-bg-primary border border-brand-pink/30 rounded-xl text-text-dark/50 hover:text-brand-cyan">
                     <Filter size={18} />
                   </button>
                 </div>
@@ -135,9 +230,9 @@ export default function ClienteDashboard() {
                     <tr className="bg-bg-primary/50 text-[10px] font-bold uppercase tracking-widest text-text-dark/40">
                       <th className="px-8 py-4">Lote / Data</th>
                       <th className="px-6 py-4">Quantidade</th>
-                      <th className="px-6 py-4">Status Atual</th>
+                      <th className="px-6 py-4">Status</th>
                       <th className="px-6 py-4">Destino</th>
-                      <th className="px-8 py-4 text-right"></th>
+                      <th className="px-8 py-4"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-brand-pink/10">
@@ -147,21 +242,15 @@ export default function ClienteDashboard() {
                           <div className="font-bold text-sm mb-1">{lote.id}</div>
                           <div className="text-xs text-text-dark/40">{new Date(lote.data).toLocaleDateString('pt-BR')}</div>
                         </td>
-                        <td className="px-6 py-6">
-                          <span className="font-bold text-brand-cyan">{lote.qtd}</span>
-                          <span className="text-xs text-text-dark/40 ml-1">unid.</span>
-                        </td>
-                        <td className="px-6 py-6">
+                        <td className="px-6 py-6 font-bold text-brand-cyan">{lote.qtd} unid.</td>
+                        <td className="px-6 py-6 text-sm font-medium">
                           <div className="flex items-center gap-2">
                             <div className={`w-2 h-2 rounded-full ${lote.status === 'Finalizado' ? 'bg-green-500' : 'bg-brand-yellow'} animate-pulse`} />
-                            <span className="text-sm font-medium">{lote.status}</span>
+                            {lote.status}
                           </div>
-                          <div className="text-[10px] text-text-dark/30 italic mt-1">Atu: {lote.atualizado}</div>
                         </td>
                         <td className="px-6 py-6">
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                            lote.destino === 'A definir' ? 'bg-bg-primary text-text-dark/40 border border-brand-pink/50' : 'bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20'
-                          }`}>
+                          <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase border border-brand-cyan/20 text-brand-cyan bg-brand-cyan/5">
                             {lote.destino}
                           </span>
                         </td>
@@ -175,36 +264,27 @@ export default function ClienteDashboard() {
                   </tbody>
                 </table>
               </div>
-              
-              <div className="p-6 bg-bg-primary/30 border-t border-brand-pink/20 text-center">
-                <button className="text-sm font-bold text-brand-cyan hover:underline flex items-center gap-2 mx-auto">
-                  Ver todo o histórico de lotes
-                  <ArrowRight size={14} />
-                </button>
-              </div>
             </div>
           </div>
 
-          {/* Timeline do Lote em Destaque (Coluna Estreita) */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-[2.5rem] card-shadow border border-brand-pink/20 p-8 h-full">
               <h2 className="text-xl font-bold mb-8 flex items-center gap-3">
                 <CircleDot className="text-brand-cyan" size={20} />
-                Status do Lote Ativo
+                Tracking do Lote
               </h2>
               
               <div className="mb-8 p-4 bg-brand-cyan/5 rounded-2xl border border-brand-cyan/10">
-                <div className="text-xs font-bold text-brand-cyan uppercase tracking-widest mb-1">Acompanhando agora:</div>
                 <div className="text-lg font-bold">LOTE-2024-002</div>
-                <div className="text-xs text-text-dark/40">Iniciado em 26 de Abril de 2024</div>
+                <div className="text-xs text-text-dark/40 italic">Atu: Há 5 horas</div>
               </div>
 
               <div className="space-y-8 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-brand-pink/30">
                 {PROCESS_STEPS.map((step, i) => (
                   <div key={i} className="flex gap-6 relative">
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 z-10 ${
-                      step.status === 'complete' ? 'bg-brand-cyan text-white shadow-lg shadow-brand-cyan/20' : 
-                      step.status === 'active' ? 'bg-brand-yellow text-white shadow-lg shadow-brand-yellow/30 scale-125' : 
+                      step.status === 'complete' ? 'bg-brand-cyan text-white' : 
+                      step.status === 'active' ? 'bg-brand-yellow text-white scale-125 shadow-lg' : 
                       'bg-bg-primary border-2 border-brand-pink/30'
                     }`}>
                       {step.status === 'complete' && <CheckCircle2 size={14} />}
@@ -214,28 +294,18 @@ export default function ClienteDashboard() {
                       <span className={`text-sm font-bold ${step.status === 'pending' ? 'text-text-dark/30' : 'text-text-dark'}`}>
                         {step.label}
                       </span>
-                      <span className="text-[10px] text-text-dark/40 font-medium">{step.date}</span>
+                      <span className="text-[10px] text-text-dark/40">{step.date}</span>
                     </div>
                   </div>
                 ))}
-              </div>
-
-              <div className="mt-12 pt-8 border-t border-brand-pink/20">
-                <p className="text-xs text-text-dark/50 leading-relaxed italic">
-                  * Este material está passando pela triagem criteriosa da nossa equipe técnica para definir o melhor reaproveitamento.
-                </p>
               </div>
             </div>
           </div>
         </div>
       </main>
 
-      {/* Footer Simples */}
-      <footer className="mt-20 pt-10 pb-10 border-t border-brand-pink/30 px-6 text-center">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <Package className="text-brand-cyan/40" size={16} />
-          <span className="text-xs font-bold tracking-widest uppercase text-text-dark/30">© 2024 Ivani Pallets — Portal do Cliente</span>
-        </div>
+      <footer className="mt-20 py-10 border-t border-brand-pink/30 px-6 text-center text-xs font-bold tracking-widest uppercase text-text-dark/30">
+        © 2024 Ivani Pallets — Gestão de Logística Reversa
       </footer>
     </div>
   );
