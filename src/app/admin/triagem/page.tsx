@@ -391,32 +391,35 @@ export default function AdminTriagemPage() {
                 <motion.div 
                   key={item.id} 
                   layout 
-                  className={`bg-white rounded-3xl border p-6 card-shadow transition-all group relative
-                    ${isPendente ? 'border-orange-200 bg-orange-50/10' : 'border-brand-pink/20'}
-                    ${isFinalizada ? 'opacity-80' : 'hover:border-brand-cyan/30'}
+                  className={`bg-white rounded-3xl border p-6 card-shadow transition-all group relative overflow-hidden
+                    ${isPendente ? 'border-amber-100 bg-white hover:border-amber-300' : 'border-brand-pink/20'}
+                    ${isFinalizada ? 'opacity-80 grayscale-[0.1]' : 'hover:border-brand-cyan/30'}
                   `}
                 >
+                  {/* Indicador de prioridade superior para pendentes */}
+                  {isPendente && <div className="absolute top-0 left-0 right-0 h-1 bg-amber-400/40" />}
+
                   <div className="flex justify-between items-start mb-6">
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center 
-                        ${isPendente ? 'bg-orange-100 text-orange-500' : isFinalizada ? 'bg-gray-100 text-gray-400' : 'bg-brand-cyan/5 text-brand-cyan'}
+                        ${isPendente ? 'bg-amber-50 text-amber-600' : isFinalizada ? 'bg-gray-100 text-gray-400' : 'bg-brand-cyan/5 text-brand-cyan'}
                       `}>
                         {isPendente ? <AlertCircle size={20} /> : <Activity size={20} />}
                       </div>
                       <div>
                         <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block">Status</span>
                         <div className={`text-[10px] font-bold uppercase flex items-center gap-1.5
-                          ${isFinalizada ? 'text-green-600' : isPendente ? 'text-orange-500' : 'text-brand-cyan'}
+                          ${isFinalizada ? 'text-green-600' : isPendente ? 'text-amber-600' : 'text-brand-cyan'}
                         `}>
-                          <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isFinalizada ? 'bg-green-600 animate-none' : isPendente ? 'bg-orange-500' : 'bg-brand-cyan'}`} />
+                          <div className={`w-1.5 h-1.5 rounded-full ${isFinalizada ? 'bg-green-600' : isPendente ? 'bg-amber-500 animate-pulse' : 'bg-brand-cyan animate-pulse'}`} />
                           {isFinalizada ? 'Finalizada' : isPendente ? 'Aguardando triagem' : 'Em classificação'}
                         </div>
                       </div>
                     </div>
                     <button 
                       onClick={() => { setEditingTriagem(item); setIsModalOpen(true); }}
-                      className={`p-2 rounded-lg transition-all flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest 
-                        ${isFinalizada ? 'text-text-dark/40 bg-gray-50' : isPendente ? 'text-orange-600 bg-orange-100/50 hover:bg-orange-100' : 'text-brand-cyan bg-brand-cyan/5 hover:bg-brand-cyan/10'}
+                      className={`p-2 px-3 rounded-lg transition-all flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest 
+                        ${isFinalizada ? 'text-text-dark/40 bg-gray-50 hover:bg-gray-100' : isPendente ? 'text-amber-700 bg-amber-50 hover:bg-amber-100' : 'text-brand-cyan bg-brand-cyan/5 hover:bg-brand-cyan/10'}
                       `}
                     >
                       {isFinalizada ? <><Eye size={14} /> Detalhes</> : <><Edit3 size={14} /> Classificar</>}
@@ -425,10 +428,9 @@ export default function AdminTriagemPage() {
 
                   <div className="space-y-4">
                     {isPendente && (
-                      <div className="bg-orange-100/30 p-3 rounded-2xl border border-orange-200/30 mb-2">
-                        <p className="text-[10px] font-bold text-orange-600 leading-tight">
-                          Esta carga ainda precisa ser classificada. Clique em "Classificar" para iniciar a separação por modelo.
-                        </p>
+                      <div className="bg-amber-50/40 px-3 py-2 rounded-xl border border-amber-100/50 mb-1 flex items-center gap-2">
+                        <AlertCircle size={12} className="text-amber-600" />
+                        <p className="text-[10px] font-bold text-amber-700">Classificação pendente</p>
                       </div>
                     )}
 
@@ -454,18 +456,18 @@ export default function AdminTriagemPage() {
                           {item.itens!.length > 3 && <div className="px-2 py-1 bg-gray-50 rounded-lg text-[9px] font-bold text-text-dark/30">+{item.itens!.length - 3}</div>}
                         </div>
                       ) : (
-                        <div className="text-[10px] font-medium text-text-dark/30 italic">Sem itens classificados</div>
+                        <div className="text-[10px] font-medium text-text-dark/20 italic">Aguardando separação...</div>
                       )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 pt-2">
-                      <div className={`p-3 rounded-2xl border ${isPendente ? 'bg-gray-50/50 border-gray-100' : 'bg-red-50/50 border-red-100/50'}`}>
-                        <span className={`text-[9px] font-bold uppercase tracking-tighter block mb-1 ${isPendente ? 'text-text-dark/20' : 'text-red-500'}`}>Sucata (Resto)</span>
-                        <div className={`text-base font-bold ${isPendente ? 'text-text-dark/20' : 'text-red-500'}`}>{isPendente ? '-' : item.quantidade_sucata}</div>
+                      <div className={`p-3 rounded-2xl border ${isPendente ? 'bg-gray-50/30 border-gray-100/50' : 'bg-red-50/50 border-red-100/50'}`}>
+                        <span className={`text-[9px] font-bold uppercase tracking-tighter block mb-1 ${isPendente ? 'text-text-dark/10' : 'text-red-500'}`}>Sucata (Resto)</span>
+                        <div className={`text-base font-bold ${isPendente ? 'text-text-dark/10' : 'text-red-500'}`}>{isPendente ? '-' : item.quantidade_sucata}</div>
                       </div>
-                      <div className={`p-3 rounded-2xl border ${isPendente ? 'bg-gray-50/50 border-gray-100' : 'bg-brand-cyan/5 border-brand-cyan/10'}`}>
-                        <span className={`text-[9px] font-bold uppercase tracking-tighter block mb-1 ${isPendente ? 'text-text-dark/20' : 'text-brand-cyan'}`}>Compra Ivani</span>
-                        <div className={`text-base font-bold ${isPendente ? 'text-text-dark/20' : 'text-brand-cyan'}`}>{isPendente ? '-' : item.quantidade_compra_ivani}</div>
+                      <div className={`p-3 rounded-2xl border ${isPendente ? 'bg-gray-50/30 border-gray-100/50' : 'bg-brand-cyan/5 border-brand-cyan/10'}`}>
+                        <span className={`text-[9px] font-bold uppercase tracking-tighter block mb-1 ${isPendente ? 'text-text-dark/10' : 'text-brand-cyan'}`}>Compra Ivani</span>
+                        <div className={`text-base font-bold ${isPendente ? 'text-text-dark/10' : 'text-brand-cyan'}`}>{isPendente ? '-' : item.quantidade_compra_ivani}</div>
                       </div>
                     </div>
                   </div>
