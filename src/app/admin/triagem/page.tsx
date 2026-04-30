@@ -18,7 +18,10 @@ import {
   History,
   Lock,
   Eye,
-  Trash2
+  Trash2,
+  Plus,
+  Box,
+  ChevronDown
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -26,6 +29,24 @@ import { createClient } from "@/lib/supabase/client";
 import { logout } from "@/app/actions/auth";
 
 // --- TIPAGEM ---
+
+interface ModeloPallet {
+  id: string;
+  nome: string;
+  codigo: string;
+  medidas: string;
+}
+
+interface TriagemItem {
+  id?: string;
+  triagem_id: string;
+  modelo_pallet_id: string;
+  quantidade_reforma: number;
+  quantidade_remanufatura: number;
+  quantidade_compra_ivani: number;
+  // Join data
+  modelo_pallet?: ModeloPallet;
+}
 
 interface Triagem {
   id: string;
@@ -43,12 +64,15 @@ interface Triagem {
   status: 'em_triagem' | 'classificada' | 'finalizada';
   observacao: string;
   created_at: string;
+  // Itens vinculados
+  itens?: TriagemItem[];
 }
 
 const supabase = createClient();
 
 export default function AdminTriagemPage() {
   const [triagens, setTriagens] = useState<Triagem[]>([]);
+  const [modelosPallets, setModelosPallets] = useState<ModeloPallet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -56,20 +80,23 @@ export default function AdminTriagemPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
-  // Estados locais do formulário para classificação operacional
-  const [formValues, setFormValues] = useState({
-    quantidade_manutencao: 0,
-    quantidade_remanufatura: 0,
-    quantidade_compra_ivani: 0,
-    observacao: ""
-  });
+  // Estados do formulário de itens
+  const [itensForm, setItensForm] = useState<TriagemItem[]>([]);
+  const [observacaoForm, setObservacaoForm] = useState("");
 
   const fetchTriagens = async () => {
     try {
       setLoading(true);
+      // Buscar triagens e seus itens
       const { data, error: fetchError } = await supabase
         .from("triagens")
-        .select("id, cliente_id, coleta_id, nf_saida_pce, motorista, caminhao, data_coleta, quantidade_total, quantidade_sucata, quantidade_manutencao, quantidade_remanufatura, quantidade_compra_ivani, status, observacao, created_at")
+        .select(`
+          *,
+          itens:triagem_itens(
+            *,
+            modelo_pallet:modelos_pallets(id, nome, codigo, medidas)
+          )
+        `)
         .order("created_at", { ascending: false });
 
       if (fetchError) throw fetchError;
@@ -83,6 +110,15 @@ export default function AdminTriagemPage() {
     }
   };
 
+  const fetchModelos = async () => {
+    const { data } = await supabase
+      .from("modelos_pallets")
+      .select("id, nome, codigo, medidas")
+      .eq("ativo", true)
+      .order("nome");
+    setModelosPallets(data || []);
+  };
+
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser();
@@ -90,76 +126,154 @@ export default function AdminTriagemPage() {
     };
     getUser();
     fetchTriagens();
+    fetchModelos();
   }, []);
 
   useEffect(() => {
     if (editingTriagem) {
-      setFormValues({
-        quantidade_manutencao: editingTriagem.quantidade_manutencao || 0,
-        quantidade_remanufatura: editingTriagem.quantidade_remanufatura || 0,
-        quantidade_compra_ivani: editingTriagem.quantidade_compra_ivani || 0,
-        observacao: editingTriagem.observacao || ""
-      });
+      setObservacaoForm(editingTriagem.observacao || "");
+      // Carregar itens existentes ou iniciar vazio
+      if (editingTriagem.itens && editingTriagem.itens.length > 0) {
+        setItensForm(editingTriagem.itens.map(item => ({
+          ...item,
+          quantidade_reforma: item.quantidade_reforma || 0,
+          quantidade_remanufatura: item.quantidade_remanufatura || 0,
+          quantidade_compra_ivani: item.quantidade_compra_ivani || 0
+        })));
+      } else {
+        setItensForm([]);
+      }
     }
   }, [editingTriagem]);
 
-  // Cálculos Operacionais
-  const somaClassificada = useMemo(() => {
-    return formValues.quantidade_manutencao + formValues.quantidade_remanufatura + formValues.quantidade_compra_ivani;
-  }, [formValues]);
+  // --- CÁLCULOS ---
 
-  const porcentagemClassificada = useMemo(() => {
-    if (!editingTriagem || editingTriagem.quantidade_total === 0) return 0;
-    return Math.min(100, (somaClassificada / editingTriagem.quantidade_total) * 100);
-  }, [editingTriagem, somaClassificada]);
+  const somaClassificada = useMemo(() => {
+    return itensForm.reduce((acc, item) => 
+      acc + item.quantidade_reforma + item.quantidade_remanufatura + item.quantidade_compra_ivani, 0
+    );
+  }, [itensForm]);
 
   const sucataCalculada = useMemo(() => {
     if (!editingTriagem) return 0;
     return editingTriagem.quantidade_total - somaClassificada;
   }, [editingTriagem, somaClassificada]);
 
-  const handleUpdateTriagem = async (finalizar: boolean = false) => {
+  const porcentagemClassificada = useMemo(() => {
+    if (!editingTriagem || editingTriagem.quantidade_total === 0) return 0;
+    return Math.min(100, (somaClassificada / editingTriagem.quantidade_total) * 100);
+  }, [editingTriagem, somaClassificada]);
+
+  // --- AÇÕES DO FORMULÁRIO ---
+
+  const handleAddItem = () => {
+    // Pegar o primeiro modelo disponível que ainda não está na lista
+    const disponivel = modelosPallets.find(m => !itensForm.some(it => it.modelo_pallet_id === m.id));
+    if (!disponivel) {
+      alert("Todos os modelos disponíveis já foram adicionados.");
+      return;
+    }
+
+    setItensForm(prev => [...prev, {
+      triagem_id: editingTriagem!.id,
+      modelo_pallet_id: disponivel.id,
+      quantidade_reforma: 0,
+      quantidade_remanufatura: 0,
+      quantidade_compra_ivani: 0,
+      modelo_pallet: disponivel
+    }]);
+  };
+
+  const handleRemoveItem = (index: number) => {
+    setItensForm(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateItemField = (index: number, field: keyof TriagemItem, value: any) => {
+    setItensForm(prev => {
+      const newItens = [...prev];
+      if (field === 'modelo_pallet_id') {
+        const modelo = modelosPallets.find(m => m.id === value);
+        newItens[index] = { ...newItens[index], [field]: value, modelo_pallet: modelo };
+      } else {
+        newItens[index] = { ...newItens[index], [field]: value };
+      }
+      return newItens;
+    });
+  };
+
+  const handleSaveTriagem = async (finalizar: boolean = false) => {
     if (!editingTriagem) return;
 
     if (somaClassificada > editingTriagem.quantidade_total) {
-      alert(`Erro: A soma classificada (${somaClassificada}) não pode ultrapassar a quantidade total coletada (${editingTriagem.quantidade_total}).`);
+      alert(`A soma classificada (${somaClassificada}) não pode exceder o total coletado (${editingTriagem.quantidade_total}).`);
       return;
     }
 
     try {
       setIsSubmitting(true);
-      
-      const novosDadosOperacionais = {
-        quantidade_manutencao: formValues.quantidade_manutencao,
-        quantidade_remanufatura: formValues.quantidade_remanufatura,
-        quantidade_compra_ivani: formValues.quantidade_compra_ivani,
-        observacao: formValues.observacao,
+
+      // 1. Calcular totais para atualização do cabeçalho
+      const totalReforma = itensForm.reduce((acc, it) => acc + it.quantidade_reforma, 0);
+      const totalRemanufatura = itensForm.reduce((acc, it) => acc + it.quantidade_remanufatura, 0);
+      const totalCompra = itensForm.reduce((acc, it) => acc + it.quantidade_compra_ivani, 0);
+
+      // 2. Atualizar Triagem (Cabeçalho)
+      const novosDadosTriagem = {
+        status: finalizar ? 'finalizada' : 'classificada',
+        quantidade_manutencao: totalReforma,
+        quantidade_remanufatura: totalRemanufatura,
+        quantidade_compra_ivani: totalCompra,
         quantidade_sucata: sucataCalculada,
-        status: finalizar ? "finalizada" : "classificada"
+        observacao: observacaoForm
       };
 
-      const { error: updateError } = await supabase
+      const { error: errorTriagem } = await supabase
         .from("triagens")
-        .update(novosDadosOperacionais)
+        .update(novosDadosTriagem)
         .eq("id", editingTriagem.id);
 
-      if (updateError) throw updateError;
+      if (errorTriagem) throw errorTriagem;
 
-      // Auditoria (Removidos campos financeiros do log)
+      // 3. Atualizar Itens (Sincronização: Deletar antigos e inserir novos para garantir integridade)
+      // Em um cenário de produção com alto volume, faríamos UPSERT, mas aqui DELETE/INSERT é mais seguro e simples para garantir que itens removidos sumam.
+      const { error: errorDelete } = await supabase
+        .from("triagem_itens")
+        .delete()
+        .eq("triagem_id", editingTriagem.id);
+      
+      if (errorDelete) throw errorDelete;
+
+      if (itensForm.length > 0) {
+        const itensParaInserir = itensForm.map(it => ({
+          triagem_id: it.triagem_id,
+          modelo_pallet_id: it.modelo_pallet_id,
+          quantidade_reforma: it.quantidade_reforma,
+          quantidade_remanufatura: it.quantidade_remanufatura,
+          quantidade_compra_ivani: it.quantidade_compra_ivani
+        }));
+
+        const { error: errorInsert } = await supabase
+          .from("triagem_itens")
+          .insert(itensParaInserir);
+        
+        if (errorInsert) throw errorInsert;
+      }
+
+      // 4. Auditoria
       await supabase.from("triagem_auditoria").insert({
         triagem_id: editingTriagem.id,
         usuario_id: userId,
         acao: finalizar ? "finalizado" : "editado",
         dados_antes: editingTriagem,
-        dados_depois: { ...editingTriagem, ...novosDadosOperacionais },
-        observacao: finalizar ? "Triagem operacional finalizada" : "Edição operacional"
+        dados_depois: { ...editingTriagem, ...novosDadosTriagem, itens: itensForm },
+        observacao: finalizar ? "Triagem finalizada com itens" : "Edição de itens da triagem"
       });
 
       setIsModalOpen(false);
       setEditingTriagem(null);
       fetchTriagens();
     } catch (err: any) {
-      alert("Erro ao processar: " + err.message);
+      alert("Erro ao salvar triagem: " + err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -179,7 +293,7 @@ export default function AdminTriagemPage() {
                   <ClipboardList className="text-white" size={18} />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-bold text-sm leading-none text-brand-cyan">Triagem Operacional</span>
+                  <span className="font-bold text-sm leading-none text-brand-cyan">Triagem por Modelo</span>
                   <span className="text-[10px] font-bold text-text-dark/30 uppercase tracking-tighter mt-0.5">Ivani Pallets — Admin</span>
                 </div>
               </div>
@@ -201,38 +315,27 @@ export default function AdminTriagemPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-10">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight">Classificação Física da Carga</h1>
-          <p className="text-text-dark/50 text-sm mt-1">Gestão operacional de pallets por categoria. (Financeiro desabilitado)</p>
+          <h1 className="text-2xl font-bold tracking-tight">Triagem Técnica (PCE)</h1>
+          <p className="text-text-dark/50 text-sm mt-1">Classifique a carga coletada por modelo de pallet e estado físico.</p>
         </div>
 
         {loading ? (
           <div className="py-20 flex flex-col items-center gap-4">
             <Loader2 className="animate-spin text-brand-cyan" size={32} />
-            <p className="text-xs font-bold text-text-dark/30 uppercase tracking-widest">Carregando...</p>
-          </div>
-        ) : error ? (
-          <div className="py-20 text-center">
-            <AlertCircle className="text-red-500 mx-auto mb-4" size={40} />
-            <p className="text-sm font-medium text-text-dark/50">{error}</p>
+            <p className="text-xs font-bold text-text-dark/30 uppercase tracking-widest text-center">Processando dados...</p>
           </div>
         ) : triagens.length === 0 ? (
           <div className="py-32 text-center bg-white rounded-3xl border border-brand-pink/20">
             <ClipboardList className="mx-auto text-text-dark/10 mb-4" size={64} />
-            <h3 className="text-lg font-bold text-text-dark/60 text-center">Aguardando Coletas</h3>
+            <h3 className="text-lg font-bold text-text-dark/60">Sem triagens pendentes</h3>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {triagens.map((item) => (
-              <motion.div 
-                key={item.id}
-                layout
-                className="bg-white rounded-3xl border border-brand-pink/20 p-6 card-shadow hover:border-brand-cyan/30 transition-all group"
-              >
+              <motion.div key={item.id} layout className="bg-white rounded-3xl border border-brand-pink/20 p-6 card-shadow hover:border-brand-cyan/30 transition-all group">
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-brand-cyan/5 rounded-xl flex items-center justify-center text-brand-cyan">
-                      <Activity size={20} />
-                    </div>
+                    <div className="w-10 h-10 bg-brand-cyan/5 rounded-xl flex items-center justify-center text-brand-cyan"><Activity size={20} /></div>
                     <div>
                       <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block">Status</span>
                       <div className={`text-[10px] font-bold uppercase ${item.status === 'finalizada' ? 'text-green-600' : 'text-brand-cyan'}`}>
@@ -244,44 +347,46 @@ export default function AdminTriagemPage() {
                     onClick={() => { setEditingTriagem(item); setIsModalOpen(true); }}
                     className={`p-2 rounded-lg transition-all flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest ${item.status === 'finalizada' ? 'text-text-dark/40 bg-gray-50' : 'text-brand-cyan bg-brand-cyan/5 hover:bg-brand-cyan/10'}`}
                   >
-                    {item.status === 'finalizada' ? <><Eye size={14} /> Ver</> : <><Edit3 size={14} /> Classificar</>}
+                    {item.status === 'finalizada' ? <><Eye size={14} /> Detalhes</> : <><Edit3 size={14} /> Classificar</>}
                   </button>
                 </div>
 
                 <div className="space-y-4">
-                  <div className="flex justify-between items-end">
+                  <div className="flex justify-between items-end pb-4 border-b border-brand-pink/5">
                     <div>
-                      <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block mb-1">Total Coletado</span>
-                      <div className="text-2xl font-black text-text-dark">{item.quantidade_total} <span className="text-xs font-bold text-text-dark/20">un</span></div>
+                      <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block mb-1">Carga Bruta</span>
+                      <div className="text-2xl font-black text-text-dark">{item.quantidade_total} <span className="text-xs font-bold text-text-dark/20 uppercase tracking-tighter">un</span></div>
                     </div>
                     <div className="text-right">
-                      <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block mb-1">Data</span>
-                      <div className="text-[11px] font-bold text-text-dark/60">{new Date(item.data_coleta).toLocaleDateString('pt-BR')}</div>
+                       <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block mb-1">Classificado</span>
+                       <div className="text-sm font-black text-brand-cyan">{(item.quantidade_manutencao + item.quantidade_remanufatura + item.quantidade_compra_ivani)} un</div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 pt-4 border-t border-brand-pink/10">
-                    <div className="bg-bg-primary p-3 rounded-2xl">
-                      <span className="text-[9px] font-bold text-text-dark/40 uppercase tracking-tighter block mb-1">Manutenção</span>
-                      <div className="text-base font-bold text-text-dark">{item.quantidade_manutencao}</div>
-                    </div>
-                    <div className="bg-bg-primary p-3 rounded-2xl">
-                      <span className="text-[9px] font-bold text-text-dark/40 uppercase tracking-tighter block mb-1">Remanufatura</span>
-                      <div className="text-base font-bold text-text-dark">{item.quantidade_remanufatura}</div>
-                    </div>
+                  <div className="space-y-2">
+                    {item.itens && item.itens.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {item.itens.slice(0, 3).map(it => (
+                          <div key={it.id} className="px-2 py-1 bg-bg-primary rounded-lg text-[9px] font-bold text-text-dark/60 border border-brand-pink/5">
+                            {it.modelo_pallet?.codigo || it.modelo_pallet?.nome.split(' ')[0]}
+                          </div>
+                        ))}
+                        {item.itens.length > 3 && <div className="px-2 py-1 bg-gray-50 rounded-lg text-[9px] font-bold text-text-dark/30">+{item.itens.length - 3}</div>}
+                      </div>
+                    ) : (
+                      <div className="text-[10px] font-medium text-text-dark/30 italic">Aguardando separação por modelo</div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-2">
                     <div className="bg-red-50/50 p-3 rounded-2xl border border-red-100/50">
-                      <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter block mb-1">Sucata</span>
+                      <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter block mb-1">Sucata (Resto)</span>
                       <div className="text-base font-bold text-red-500">{item.quantidade_sucata}</div>
                     </div>
                     <div className="bg-brand-cyan/5 p-3 rounded-2xl border border-brand-cyan/10">
                       <span className="text-[9px] font-bold text-brand-cyan uppercase tracking-tighter block mb-1">Compra Ivani</span>
                       <div className="text-base font-bold text-brand-cyan">{item.quantidade_compra_ivani}</div>
                     </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-[10px] text-text-dark/30 font-medium pt-2">
-                    <div className="flex items-center gap-1.5"><Hash size={12} /> {item.nf_saida_pce || "S/NF"}</div>
-                    <div className="flex items-center gap-1.5"><History size={12} /> {new Date(item.created_at).toLocaleDateString('pt-BR')}</div>
                   </div>
                 </div>
               </motion.div>
@@ -294,94 +399,154 @@ export default function AdminTriagemPage() {
         {isModalOpen && editingTriagem && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-text-dark/20 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-brand-pink/20 overflow-hidden" >
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-brand-pink/20 overflow-hidden" >
+              
+              {/* Header Modal */}
               <div className="px-8 py-6 border-b border-brand-pink/10 flex justify-between items-center bg-white sticky top-0 z-10">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-brand-cyan/10 rounded-xl flex items-center justify-center text-brand-cyan">
                     {editingTriagem.status === 'finalizada' ? <Lock size={20} /> : <Calculator size={20} />}
                   </div>
-                  <h3 className="font-bold text-lg">{editingTriagem.status === 'finalizada' ? "Triagem Finalizada" : "Classificar Carga"}</h3>
+                  <div>
+                    <h3 className="font-bold text-lg leading-tight">{editingTriagem.status === 'finalizada' ? "Triagem Finalizada" : "Classificação por Modelo"}</h3>
+                    <p className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest mt-0.5">NF: {editingTriagem.nf_saida_pce || "S/NF"} — Total: {editingTriagem.quantidade_total} un</p>
+                  </div>
                 </div>
                 <button onClick={() => setIsModalOpen(false)} className="text-text-dark/30 hover:text-text-dark transition-colors"><X size={20} /></button>
               </div>
 
+              {/* Barra de Progresso */}
               <div className="px-8 pt-6 pb-2">
                  <div className="flex justify-between items-end mb-2">
-                    <div className="flex flex-col">
-                       <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest">Status da Carga</span>
-                       <span className="text-xs font-black text-brand-cyan">{porcentagemClassificada.toFixed(0)}% Classificada</span>
-                    </div>
-                    {sucataCalculada > 0 && (
-                       <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100 flex items-center gap-1.5 shadow-sm">
-                          <AlertCircle size={12} /> Faltam {sucataCalculada} pallets
-                       </span>
-                    )}
+                    <span className="text-xs font-black text-brand-cyan">{porcentagemClassificada.toFixed(0)}% Classificada</span>
+                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${sucataCalculada < 0 ? 'bg-red-50 text-red-600 border-red-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                       <AlertCircle size={12} /> {sucataCalculada < 0 ? `Excesso de ${Math.abs(sucataCalculada)} un` : `${sucataCalculada} un restantes (Sucata)`}
+                    </span>
                  </div>
-                 <div className="w-full h-3 bg-bg-primary rounded-full overflow-hidden border border-brand-pink/10 shadow-inner p-0.5">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${porcentagemClassificada}%` }}
-                      className={`h-full rounded-full ${sucataCalculada < 0 ? 'bg-red-500' : 'bg-brand-cyan'} transition-all`}
-                    />
+                 <div className="w-full h-3 bg-bg-primary rounded-full overflow-hidden border border-brand-pink/10 p-0.5 shadow-inner">
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${porcentagemClassificada}%` }} className={`h-full rounded-full ${sucataCalculada < 0 ? 'bg-red-500' : 'bg-brand-cyan'} transition-all`} />
                  </div>
               </div>
 
-              <div className="p-8 space-y-6 pt-2">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-bg-primary p-4 rounded-2xl border border-gray-100 text-center">
-                     <span className="text-[10px] font-bold text-text-dark/40 uppercase block mb-1 tracking-widest">Total Coletado</span>
-                     <div className="text-3xl font-black text-text-dark">{editingTriagem.quantidade_total}</div>
-                  </div>
-                  <div className={`p-4 rounded-2xl border transition-all text-center ${sucataCalculada < 0 ? 'bg-red-50 border-red-200' : 'bg-red-50/50 border-red-100'}`}>
-                     <span className={`text-[10px] font-bold uppercase block mb-1 tracking-widest ${sucataCalculada < 0 ? 'text-red-500' : 'text-red-400'}`}>Sucata Gerada</span>
-                     <div className={`text-3xl font-black ${sucataCalculada < 0 ? 'text-red-600' : 'text-red-500'}`}>
-                        {sucataCalculada < 0 ? "Erro!" : sucataCalculada}
-                     </div>
-                  </div>
+              <div className="p-8 space-y-6 pt-4">
+                
+                {/* Cabeçalho da Lista de Itens */}
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-text-dark/40">Decomposição da Carga</h4>
+                  {editingTriagem.status !== 'finalizada' && (
+                    <button 
+                      onClick={handleAddItem}
+                      className="flex items-center gap-1.5 text-[10px] font-bold text-brand-cyan hover:text-[#1a6e74] transition-colors bg-brand-cyan/5 px-3 py-1.5 rounded-lg border border-brand-cyan/10"
+                    >
+                      <Plus size={14} /> Adicionar Modelo
+                    </button>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-1.5 p-4 bg-bg-primary/50 rounded-2xl border border-brand-pink/5">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/60 ml-1">Manutenção</label>
-                    <input disabled={editingTriagem.status === 'finalizada'} type="number" min="0" value={formValues.quantidade_manutencao} onChange={(e) => setFormValues(prev => ({ ...prev, quantidade_manutencao: parseInt(e.target.value || "0") }))} className="w-full px-4 py-3 bg-white border border-brand-pink/20 rounded-xl text-sm font-bold outline-none disabled:opacity-50" />
-                  </div>
-                  <div className="space-y-1.5 p-4 bg-bg-primary/50 rounded-2xl border border-brand-pink/5">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/60 ml-1">Remanufatura</label>
-                    <input disabled={editingTriagem.status === 'finalizada'} type="number" min="0" value={formValues.quantidade_remanufatura} onChange={(e) => setFormValues(prev => ({ ...prev, quantidade_remanufatura: parseInt(e.target.value || "0") }))} className="w-full px-4 py-3 bg-white border border-brand-pink/20 rounded-xl text-sm font-bold outline-none disabled:opacity-50" />
-                  </div>
-                  <div className="space-y-1.5 p-4 bg-brand-cyan/5 rounded-2xl border border-brand-cyan/10">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-brand-cyan ml-1">Compra Ivani</label>
-                    <input disabled={editingTriagem.status === 'finalizada'} type="number" min="0" value={formValues.quantidade_compra_ivani} onChange={(e) => setFormValues(prev => ({ ...prev, quantidade_compra_ivani: parseInt(e.target.value || "0") }))} className="w-full px-4 py-3 bg-white border border-brand-pink/20 rounded-xl text-sm font-black outline-none text-brand-cyan disabled:opacity-50" />
-                  </div>
+                {/* Lista de Modelos */}
+                <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                  {itensForm.length === 0 ? (
+                    <div className="py-12 text-center border-2 border-dashed border-gray-100 rounded-3xl">
+                      <Box className="mx-auto text-text-dark/10 mb-3" size={32} />
+                      <p className="text-[11px] font-bold text-text-dark/30 uppercase tracking-widest">Nenhum modelo classificado</p>
+                    </div>
+                  ) : (
+                    itensForm.map((item, idx) => (
+                      <div key={idx} className="bg-white rounded-2xl border border-brand-pink/20 p-4 shadow-sm hover:border-brand-cyan/20 transition-all">
+                        <div className="flex flex-col md:flex-row gap-4">
+                          {/* Seleção do Modelo */}
+                          <div className="flex-1 space-y-1.5">
+                            <label className="text-[9px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">Modelo de Pallet</label>
+                            <div className="relative">
+                              <select 
+                                disabled={editingTriagem.status === 'finalizada'}
+                                value={item.modelo_pallet_id} 
+                                onChange={(e) => handleUpdateItemField(idx, 'modelo_pallet_id', e.target.value)}
+                                className="w-full appearance-none px-4 py-2.5 bg-bg-primary border border-brand-pink/10 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-brand-cyan/20 disabled:opacity-60"
+                              >
+                                {modelosPallets.map(m => (
+                                  <option key={m.id} value={m.id}>{m.codigo ? `[${m.codigo}] ` : ""}{m.nome} ({m.medidas})</option>
+                                ))}
+                              </select>
+                              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-text-dark/30 pointer-events-none" size={14} />
+                            </div>
+                          </div>
+
+                          {/* Quantidades */}
+                          <div className="grid grid-cols-3 gap-2 flex-[1.5]">
+                            <div className="space-y-1.5">
+                              <label className="text-[9px] font-bold uppercase tracking-tighter text-amber-600/70 ml-1">Reforma</label>
+                              <input 
+                                disabled={editingTriagem.status === 'finalizada'}
+                                type="number" min="0" 
+                                value={item.quantidade_reforma} 
+                                onChange={(e) => handleUpdateItemField(idx, 'quantidade_reforma', parseInt(e.target.value || "0"))}
+                                className="w-full px-3 py-2.5 bg-amber-50/30 border border-amber-100 rounded-xl text-xs font-bold text-amber-700 outline-none focus:ring-2 focus:ring-amber-200" 
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[9px] font-bold uppercase tracking-tighter text-purple-600/70 ml-1">Remanuf.</label>
+                              <input 
+                                disabled={editingTriagem.status === 'finalizada'}
+                                type="number" min="0" 
+                                value={item.quantidade_remanufatura} 
+                                onChange={(e) => handleUpdateItemField(idx, 'quantidade_remanufatura', parseInt(e.target.value || "0"))}
+                                className="w-full px-3 py-2.5 bg-purple-50/30 border border-purple-100 rounded-xl text-xs font-bold text-purple-700 outline-none focus:ring-2 focus:ring-purple-200" 
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[9px] font-bold uppercase tracking-tighter text-brand-cyan ml-1">Compra</label>
+                              <input 
+                                disabled={editingTriagem.status === 'finalizada'}
+                                type="number" min="0" 
+                                value={item.quantidade_compra_ivani} 
+                                onChange={(e) => handleUpdateItemField(idx, 'quantidade_compra_ivani', parseInt(e.target.value || "0"))}
+                                className="w-full px-3 py-2.5 bg-brand-cyan/5 border border-brand-cyan/20 rounded-xl text-xs font-bold text-brand-cyan outline-none focus:ring-2 focus:ring-brand-cyan/20" 
+                              />
+                            </div>
+                          </div>
+
+                          {/* Botão Remover */}
+                          {editingTriagem.status !== 'finalizada' && (
+                            <button 
+                              onClick={() => handleRemoveItem(idx)}
+                              className="self-end md:self-center p-2.5 text-text-dark/20 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
 
-                {sucataCalculada < 0 && (
-                   <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3">
-                      <AlertCircle className="text-red-500 flex-shrink-0" size={18} />
-                      <p className="text-xs font-bold text-red-600 leading-tight uppercase tracking-tight">
-                        A soma classificada ({somaClassificada}) excede o total coletado ({editingTriagem.quantidade_total}).
-                      </p>
-                   </div>
-                )}
-
+                {/* Observações */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">Observações da Triagem</label>
-                  <textarea disabled={editingTriagem.status === 'finalizada'} value={formValues.observacao} onChange={(e) => setFormValues(prev => ({ ...prev, observacao: e.target.value }))} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none min-h-[80px] resize-none disabled:opacity-50" placeholder="Ex: Carga em bom estado, 2 unidades com avarias graves..." />
+                  <textarea 
+                    disabled={editingTriagem.status === 'finalizada'} 
+                    value={observacaoForm} 
+                    onChange={(e) => setObservacaoForm(e.target.value)} 
+                    className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none min-h-[70px] resize-none focus:ring-2 focus:ring-brand-cyan/20 disabled:opacity-60" 
+                    placeholder="Notas adicionais sobre a carga..." 
+                  />
                 </div>
 
-                <div className="flex gap-3">
+                {/* Ações */}
+                <div className="flex gap-3 pt-2">
                   {editingTriagem.status !== 'finalizada' ? (
                     <>
-                      <button type="button" onClick={() => handleUpdateTriagem(false)} disabled={isSubmitting || sucataCalculada < 0} className="flex-1 px-6 py-3 border border-brand-cyan text-brand-cyan rounded-xl text-xs font-bold hover:bg-brand-cyan/5 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                        {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Salvar Rascunho
+                      <button type="button" onClick={() => handleSaveTriagem(false)} disabled={isSubmitting || sucataCalculada < 0} className="flex-1 px-6 py-3 border border-brand-cyan text-brand-cyan rounded-xl text-xs font-bold hover:bg-brand-cyan/5 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                        {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Rascunho
                       </button>
-                      <button type="button" onClick={() => handleUpdateTriagem(true)} disabled={isSubmitting || sucataCalculada < 0} className="flex-[1.5] px-6 py-3 bg-brand-cyan text-white rounded-xl text-xs font-bold shadow-lg hover:bg-[#1a6e74] disabled:opacity-50 flex items-center justify-center gap-2 transition-all">
-                        {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />} Finalizar Triagem
+                      <button type="button" onClick={() => handleSaveTriagem(true)} disabled={isSubmitting || sucataCalculada < 0} className="flex-[1.5] px-6 py-3 bg-brand-cyan text-white rounded-xl text-xs font-bold shadow-lg hover:bg-[#1a6e74] disabled:opacity-50 flex items-center justify-center gap-2 transition-all">
+                        {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />} Finalizar
                       </button>
                     </>
                   ) : (
                     <button type="button" onClick={() => setIsModalOpen(false)} className="w-full px-6 py-3 bg-gray-100 text-text-dark/60 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
-                      <Lock size={16} /> Triagem Finalizada (Bloqueada para Edição)
+                      <Lock size={16} /> Triagem Bloqueada (Finalizada)
                     </button>
                   )}
                 </div>
