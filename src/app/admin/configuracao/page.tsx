@@ -73,28 +73,45 @@ export default function AdminConfiguracaoPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      // Buscar Modelos
+      // 1. Buscar Modelos
       const { data: mData, error: mError } = await supabase
         .from("modelos_pallets")
         .select("*")
-        .order("nome", { ascending: true });
-      if (mError) throw mError;
-      setModelos(mData || []);
+        .eq("cliente_id", "pce")
+        .order("codigo", { ascending: true });
+      
+      console.log("MODEL DATA:", mData);
+      console.log("MODEL ERROR:", mError);
 
-      // Buscar Logs de Acesso
-      const { data: lData, error: lError } = await supabase
-        .from("portal_acessos")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(100);
-      if (lError) throw lError;
-      setLogs(lData || []);
+      if (mError) {
+        console.error("Erro Modelos:", mError);
+        setError("Erro ao carregar modelos");
+      } else {
+        setModelos(mData || []);
+      }
 
-      setError(null);
+      // 2. Buscar Logs de Acesso (Opcional, não deve travar o painel se falhar)
+      try {
+        const { data: lData, error: lError } = await supabase
+          .from("portal_acessos")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(100);
+        
+        if (lError) {
+          console.warn("Aviso: Falha ao carregar logs de acesso:", lError);
+        } else {
+          setLogs(lData || []);
+        }
+      } catch (logErr) {
+        console.warn("Erro silencioso nos logs:", logErr);
+      }
+
     } catch (err: any) {
-      console.error("Erro ao buscar dados:", err);
-      setError("Falha ao carregar configurações.");
+      console.error("Erro crítico na página de configuração:", err);
+      setError("Falha crítica ao carregar configurações.");
     } finally {
       setLoading(false);
     }
