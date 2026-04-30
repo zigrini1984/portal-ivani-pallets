@@ -89,21 +89,14 @@ export default function AdminTriagemPage() {
       setLoading(true);
       setError(null);
       
-      // Buscar triagens e seus itens (LEFT JOIN automático do Supabase)
-      const { data, error: fetchError } = await supabase
+      // 1. Buscar triagens (Simples e Direto)
+      const { data: triagensData, error: fetchError } = await supabase
         .from("triagens")
-        .select(`
-          *,
-          itens:triagem_itens(
-            *,
-            modelo_pallet:modelos_pallets(id, nome, codigo, medidas)
-          )
-        `)
+        .select("*")
         .eq("cliente_id", "pce")
         .order("created_at", { ascending: false });
 
-      console.log("TRIAGEM DATA:", data);
-      console.log("TRIAGEM ERROR:", fetchError);
+      console.log("TRIAGENS BRUTAS:", triagensData);
 
       if (fetchError) {
         console.error("Erro na query de triagens:", fetchError);
@@ -111,7 +104,32 @@ export default function AdminTriagemPage() {
         return;
       }
 
-      setTriagens(data || []);
+      if (!triagensData || triagensData.length === 0) {
+        setTriagens([]);
+        return;
+      }
+
+      // 2. Buscar todos os itens das triagens listadas
+      const triagemIds = triagensData.map(t => t.id);
+      const { data: itensData, error: itensError } = await supabase
+        .from("triagem_itens")
+        .select(`
+          *,
+          modelo_pallet:modelos_pallets(id, nome, codigo, medidas)
+        `)
+        .in("triagem_id", triagemIds);
+
+      if (itensError) {
+        console.warn("Aviso: Falha ao carregar detalhes dos itens:", itensError);
+      }
+
+      // 3. Mesclar os itens em suas respectivas triagens
+      const triagensMapeadas = triagensData.map(t => ({
+        ...t,
+        itens: itensData?.filter(it => it.triagem_id === t.id) || []
+      }));
+
+      setTriagens(triagensMapeadas);
     } catch (err: any) {
       console.error("Erro crítico na página de triagem:", err);
       setError("Falha crítica ao carregar triagens.");
