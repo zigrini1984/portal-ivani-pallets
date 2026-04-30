@@ -144,8 +144,29 @@ export default function AdminTriagemPage() {
       .select("id, nome, codigo, medidas")
       .eq("ativo", true)
       .order("nome");
-    setModelosPallets(data || []);
+      setModelosPallets(data || []);
   };
+
+  const sortedTriagens = useMemo(() => {
+    return [...triagens].sort((a, b) => {
+      const getPriority = (t: Triagem) => {
+        const totalClassificado = (t.quantidade_manutencao || 0) + (t.quantidade_remanufatura || 0) + (t.quantidade_compra_ivani || 0);
+        const temItens = t.itens && t.itens.length > 0;
+        
+        if (t.status === 'finalizada') return 3; // Finalizada (Última)
+        if (!temItens || totalClassificado === 0) return 1; // Não triada/Pendente (Primeira)
+        return 2; // Em andamento
+      };
+
+      const pA = getPriority(a);
+      const pB = getPriority(b);
+
+      if (pA !== pB) return pA - pB;
+      
+      // Mesmo grupo, ordenar por data decrescente
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [triagens]);
 
   useEffect(() => {
     const getUser = async () => {
@@ -359,66 +380,98 @@ export default function AdminTriagemPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {triagens.map((item) => (
-              <motion.div key={item.id} layout className="bg-white rounded-3xl border border-brand-pink/20 p-6 card-shadow hover:border-brand-cyan/30 transition-all group">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-brand-cyan/5 rounded-xl flex items-center justify-center text-brand-cyan"><Activity size={20} /></div>
-                    <div>
-                      <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block">Status</span>
-                      <div className={`text-[10px] font-bold uppercase ${item.status === 'finalizada' ? 'text-green-600' : 'text-brand-cyan'}`}>
-                        {item.status.replace('_', ' ')}
+            {sortedTriagens.map((item) => {
+              const totalClassificado = (item.quantidade_manutencao || 0) + (item.quantidade_remanufatura || 0) + (item.quantidade_compra_ivani || 0);
+              const temItens = item.itens && item.itens.length > 0;
+              const isPendente = (!temItens || totalClassificado === 0) && item.status !== 'finalizada';
+              const isEmAndamento = temItens && totalClassificado > 0 && item.status !== 'finalizada';
+              const isFinalizada = item.status === 'finalizada';
+
+              return (
+                <motion.div 
+                  key={item.id} 
+                  layout 
+                  className={`bg-white rounded-3xl border p-6 card-shadow transition-all group relative
+                    ${isPendente ? 'border-orange-200 bg-orange-50/10' : 'border-brand-pink/20'}
+                    ${isFinalizada ? 'opacity-80' : 'hover:border-brand-cyan/30'}
+                  `}
+                >
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center 
+                        ${isPendente ? 'bg-orange-100 text-orange-500' : isFinalizada ? 'bg-gray-100 text-gray-400' : 'bg-brand-cyan/5 text-brand-cyan'}
+                      `}>
+                        {isPendente ? <AlertCircle size={20} /> : <Activity size={20} />}
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block">Status</span>
+                        <div className={`text-[10px] font-bold uppercase flex items-center gap-1.5
+                          ${isFinalizada ? 'text-green-600' : isPendente ? 'text-orange-500' : 'text-brand-cyan'}
+                        `}>
+                          <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isFinalizada ? 'bg-green-600 animate-none' : isPendente ? 'bg-orange-500' : 'bg-brand-cyan'}`} />
+                          {isFinalizada ? 'Finalizada' : isPendente ? 'Aguardando triagem' : 'Em classificação'}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <button 
-                    onClick={() => { setEditingTriagem(item); setIsModalOpen(true); }}
-                    className={`p-2 rounded-lg transition-all flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest ${item.status === 'finalizada' ? 'text-text-dark/40 bg-gray-50' : 'text-brand-cyan bg-brand-cyan/5 hover:bg-brand-cyan/10'}`}
-                  >
-                    {item.status === 'finalizada' ? <><Eye size={14} /> Detalhes</> : <><Edit3 size={14} /> Classificar</>}
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex justify-between items-end pb-4 border-b border-brand-pink/5">
-                    <div>
-                      <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block mb-1">Carga Bruta</span>
-                      <div className="text-2xl font-black text-text-dark">{item.quantidade_total} <span className="text-xs font-bold text-text-dark/20 uppercase tracking-tighter">un</span></div>
-                    </div>
-                    <div className="text-right">
-                       <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block mb-1">Classificado</span>
-                       <div className="text-sm font-black text-brand-cyan">{(item.quantidade_manutencao + item.quantidade_remanufatura + item.quantidade_compra_ivani)} un</div>
-                    </div>
+                    <button 
+                      onClick={() => { setEditingTriagem(item); setIsModalOpen(true); }}
+                      className={`p-2 rounded-lg transition-all flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest 
+                        ${isFinalizada ? 'text-text-dark/40 bg-gray-50' : isPendente ? 'text-orange-600 bg-orange-100/50 hover:bg-orange-100' : 'text-brand-cyan bg-brand-cyan/5 hover:bg-brand-cyan/10'}
+                      `}
+                    >
+                      {isFinalizada ? <><Eye size={14} /> Detalhes</> : <><Edit3 size={14} /> Classificar</>}
+                    </button>
                   </div>
 
-                  <div className="space-y-2">
-                    {item.itens && item.itens.length > 0 ? (
-                      <div className="flex flex-wrap gap-1.5">
-                        {item.itens.slice(0, 3).map(it => (
-                          <div key={it.id} className="px-2 py-1 bg-bg-primary rounded-lg text-[9px] font-bold text-text-dark/60 border border-brand-pink/5">
-                            {it.modelo_pallet?.codigo || it.modelo_pallet?.nome.split(' ')[0]}
-                          </div>
-                        ))}
-                        {item.itens.length > 3 && <div className="px-2 py-1 bg-gray-50 rounded-lg text-[9px] font-bold text-text-dark/30">+{item.itens.length - 3}</div>}
+                  <div className="space-y-4">
+                    {isPendente && (
+                      <div className="bg-orange-100/30 p-3 rounded-2xl border border-orange-200/30 mb-2">
+                        <p className="text-[10px] font-bold text-orange-600 leading-tight">
+                          Esta carga ainda precisa ser classificada. Clique em "Classificar" para iniciar a separação por modelo.
+                        </p>
                       </div>
-                    ) : (
-                      <div className="text-[10px] font-medium text-text-dark/30 italic">Sem itens classificados</div>
                     )}
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-2 pt-2">
-                    <div className="bg-red-50/50 p-3 rounded-2xl border border-red-100/50">
-                      <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter block mb-1">Sucata (Resto)</span>
-                      <div className="text-base font-bold text-red-500">{item.quantidade_sucata}</div>
+                    <div className="flex justify-between items-end pb-4 border-b border-brand-pink/5">
+                      <div>
+                        <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block mb-1">Carga Bruta</span>
+                        <div className="text-2xl font-black text-text-dark">{item.quantidade_total} <span className="text-xs font-bold text-text-dark/20 uppercase tracking-tighter">un</span></div>
+                      </div>
+                      <div className="text-right">
+                         <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block mb-1">Classificado</span>
+                         <div className={`text-sm font-black ${isPendente ? 'text-text-dark/20' : 'text-brand-cyan'}`}>{totalClassificado} un</div>
+                      </div>
                     </div>
-                    <div className="bg-brand-cyan/5 p-3 rounded-2xl border border-brand-cyan/10">
-                      <span className="text-[9px] font-bold text-brand-cyan uppercase tracking-tighter block mb-1">Compra Ivani</span>
-                      <div className="text-base font-bold text-brand-cyan">{item.quantidade_compra_ivani}</div>
+
+                    <div className="space-y-2">
+                      {temItens ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {item.itens!.slice(0, 3).map(it => (
+                            <div key={it.id} className="px-2 py-1 bg-bg-primary rounded-lg text-[9px] font-bold text-text-dark/60 border border-brand-pink/5">
+                              {it.modelo_pallet?.codigo || it.modelo_pallet?.nome.split(' ')[0]}
+                            </div>
+                          ))}
+                          {item.itens!.length > 3 && <div className="px-2 py-1 bg-gray-50 rounded-lg text-[9px] font-bold text-text-dark/30">+{item.itens!.length - 3}</div>}
+                        </div>
+                      ) : (
+                        <div className="text-[10px] font-medium text-text-dark/30 italic">Sem itens classificados</div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-2">
+                      <div className={`p-3 rounded-2xl border ${isPendente ? 'bg-gray-50/50 border-gray-100' : 'bg-red-50/50 border-red-100/50'}`}>
+                        <span className={`text-[9px] font-bold uppercase tracking-tighter block mb-1 ${isPendente ? 'text-text-dark/20' : 'text-red-500'}`}>Sucata (Resto)</span>
+                        <div className={`text-base font-bold ${isPendente ? 'text-text-dark/20' : 'text-red-500'}`}>{isPendente ? '-' : item.quantidade_sucata}</div>
+                      </div>
+                      <div className={`p-3 rounded-2xl border ${isPendente ? 'bg-gray-50/50 border-gray-100' : 'bg-brand-cyan/5 border-brand-cyan/10'}`}>
+                        <span className={`text-[9px] font-bold uppercase tracking-tighter block mb-1 ${isPendente ? 'text-text-dark/20' : 'text-brand-cyan'}`}>Compra Ivani</span>
+                        <div className={`text-base font-bold ${isPendente ? 'text-text-dark/20' : 'text-brand-cyan'}`}>{isPendente ? '-' : item.quantidade_compra_ivani}</div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </main>
