@@ -14,12 +14,11 @@ import {
   Hash,
   Activity,
   CheckCircle2,
-  DollarSign,
   Calculator,
-  ArrowDownCircle,
   History,
   Lock,
-  Eye
+  Eye,
+  Trash2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -41,8 +40,6 @@ interface Triagem {
   quantidade_manutencao: number;
   quantidade_remanufatura: number;
   quantidade_compra_ivani: number;
-  valor_unitario_compra: number;
-  valor_total_compra: number;
   status: 'em_triagem' | 'classificada' | 'finalizada';
   observacao: string;
   created_at: string;
@@ -59,12 +56,11 @@ export default function AdminTriagemPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
-  // Estados locais do formulário para cálculos em tempo real
+  // Estados locais do formulário para classificação operacional
   const [formValues, setFormValues] = useState({
     quantidade_manutencao: 0,
     quantidade_remanufatura: 0,
     quantidade_compra_ivani: 0,
-    valor_unitario_compra: 0,
     observacao: ""
   });
 
@@ -73,7 +69,7 @@ export default function AdminTriagemPage() {
       setLoading(true);
       const { data, error: fetchError } = await supabase
         .from("triagens")
-        .select("*")
+        .select("id, cliente_id, coleta_id, nf_saida_pce, motorista, caminhao, data_coleta, quantidade_total, quantidade_sucata, quantidade_manutencao, quantidade_remanufatura, quantidade_compra_ivani, status, observacao, created_at")
         .order("created_at", { ascending: false });
 
       if (fetchError) throw fetchError;
@@ -96,20 +92,18 @@ export default function AdminTriagemPage() {
     fetchTriagens();
   }, []);
 
-  // Monitorar mudanças no modal para resetar valores de cálculo
   useEffect(() => {
     if (editingTriagem) {
       setFormValues({
         quantidade_manutencao: editingTriagem.quantidade_manutencao || 0,
         quantidade_remanufatura: editingTriagem.quantidade_remanufatura || 0,
         quantidade_compra_ivani: editingTriagem.quantidade_compra_ivani || 0,
-        valor_unitario_compra: editingTriagem.valor_unitario_compra || 0,
         observacao: editingTriagem.observacao || ""
       });
     }
   }, [editingTriagem]);
 
-  // Cálculos automáticos
+  // Cálculos Operacionais
   const somaClassificada = useMemo(() => {
     return formValues.quantidade_manutencao + formValues.quantidade_remanufatura + formValues.quantidade_compra_ivani;
   }, [formValues]);
@@ -124,10 +118,6 @@ export default function AdminTriagemPage() {
     return editingTriagem.quantidade_total - somaClassificada;
   }, [editingTriagem, somaClassificada]);
 
-  const valorTotalCompra = useMemo(() => {
-    return formValues.quantidade_compra_ivani * formValues.valor_unitario_compra;
-  }, [formValues.quantidade_compra_ivani, formValues.valor_unitario_compra]);
-
   const handleUpdateTriagem = async (finalizar: boolean = false) => {
     if (!editingTriagem) return;
 
@@ -139,29 +129,30 @@ export default function AdminTriagemPage() {
     try {
       setIsSubmitting(true);
       
-      const novosDados = {
-        ...formValues,
+      const novosDadosOperacionais = {
+        quantidade_manutencao: formValues.quantidade_manutencao,
+        quantidade_remanufatura: formValues.quantidade_remanufatura,
+        quantidade_compra_ivani: formValues.quantidade_compra_ivani,
+        observacao: formValues.observacao,
         quantidade_sucata: sucataCalculada,
-        valor_total_compra: valorTotalCompra,
         status: finalizar ? "finalizada" : "classificada"
       };
 
-      // 1. Atualizar triagem
       const { error: updateError } = await supabase
         .from("triagens")
-        .update(novosDados)
+        .update(novosDadosOperacionais)
         .eq("id", editingTriagem.id);
 
       if (updateError) throw updateError;
 
-      // 2. Registrar auditoria
+      // Auditoria (Removidos campos financeiros do log)
       await supabase.from("triagem_auditoria").insert({
         triagem_id: editingTriagem.id,
         usuario_id: userId,
         acao: finalizar ? "finalizado" : "editado",
         dados_antes: editingTriagem,
-        dados_depois: { ...editingTriagem, ...novosDados },
-        observacao: finalizar ? "Triagem finalizada com trava de segurança" : "Edição de rascunho"
+        dados_depois: { ...editingTriagem, ...novosDadosOperacionais },
+        observacao: finalizar ? "Triagem operacional finalizada" : "Edição operacional"
       });
 
       setIsModalOpen(false);
@@ -188,7 +179,7 @@ export default function AdminTriagemPage() {
                   <ClipboardList className="text-white" size={18} />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-bold text-sm leading-none text-brand-cyan">Processo de Triagem</span>
+                  <span className="font-bold text-sm leading-none text-brand-cyan">Triagem Operacional</span>
                   <span className="text-[10px] font-bold text-text-dark/30 uppercase tracking-tighter mt-0.5">Ivani Pallets — Admin</span>
                 </div>
               </div>
@@ -209,14 +200,14 @@ export default function AdminTriagemPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-10">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight">Classificação de Materiais</h1>
-          <p className="text-text-dark/50 text-sm mt-1">Gestão de carga triada com auditoria e travas de segurança.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Classificação Física da Carga</h1>
+          <p className="text-text-dark/50 text-sm mt-1">Gestão operacional de pallets por categoria. (Financeiro desabilitado)</p>
         </div>
 
         {loading ? (
           <div className="py-20 flex flex-col items-center gap-4">
             <Loader2 className="animate-spin text-brand-cyan" size={32} />
-            <p className="text-xs font-bold text-text-dark/30 uppercase tracking-widest">Carregando triagens...</p>
+            <p className="text-xs font-bold text-text-dark/30 uppercase tracking-widest">Carregando...</p>
           </div>
         ) : error ? (
           <div className="py-20 text-center">
@@ -226,7 +217,7 @@ export default function AdminTriagemPage() {
         ) : triagens.length === 0 ? (
           <div className="py-32 text-center bg-white rounded-3xl border border-brand-pink/20">
             <ClipboardList className="mx-auto text-text-dark/10 mb-4" size={64} />
-            <h3 className="text-lg font-bold text-text-dark/60 text-center">Aguardando Envio de Coletas</h3>
+            <h3 className="text-lg font-bold text-text-dark/60 text-center">Aguardando Coletas</h3>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -252,18 +243,18 @@ export default function AdminTriagemPage() {
                     onClick={() => { setEditingTriagem(item); setIsModalOpen(true); }}
                     className={`p-2 rounded-lg transition-all flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest ${item.status === 'finalizada' ? 'text-text-dark/40 bg-gray-50' : 'text-brand-cyan bg-brand-cyan/5 hover:bg-brand-cyan/10'}`}
                   >
-                    {item.status === 'finalizada' ? <><Eye size={14} /> Visualizar</> : <><Edit3 size={14} /> Classificar</>}
+                    {item.status === 'finalizada' ? <><Eye size={14} /> Ver</> : <><Edit3 size={14} /> Classificar</>}
                   </button>
                 </div>
 
                 <div className="space-y-4">
                   <div className="flex justify-between items-end">
                     <div>
-                      <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block mb-1">Carga Coletada</span>
+                      <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block mb-1">Total Coletado</span>
                       <div className="text-2xl font-black text-text-dark">{item.quantidade_total} <span className="text-xs font-bold text-text-dark/20">un</span></div>
                     </div>
                     <div className="text-right">
-                      <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block mb-1">Origem</span>
+                      <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block mb-1">Data</span>
                       <div className="text-[11px] font-bold text-text-dark/60">{new Date(item.data_coleta).toLocaleDateString('pt-BR')}</div>
                     </div>
                   </div>
@@ -278,7 +269,7 @@ export default function AdminTriagemPage() {
                       <div className="text-base font-bold text-text-dark">{item.quantidade_remanufatura}</div>
                     </div>
                     <div className="bg-red-50/50 p-3 rounded-2xl border border-red-100/50">
-                      <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter block mb-1">Sucata (Auto)</span>
+                      <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter block mb-1">Sucata</span>
                       <div className="text-base font-bold text-red-500">{item.quantidade_sucata}</div>
                     </div>
                     <div className="bg-brand-cyan/5 p-3 rounded-2xl border border-brand-cyan/10">
@@ -308,7 +299,7 @@ export default function AdminTriagemPage() {
                   <div className="w-10 h-10 bg-brand-cyan/10 rounded-xl flex items-center justify-center text-brand-cyan">
                     {editingTriagem.status === 'finalizada' ? <Lock size={20} /> : <Calculator size={20} />}
                   </div>
-                  <h3 className="font-bold text-lg">{editingTriagem.status === 'finalizada' ? "Triagem Finalizada (Auditada)" : "Classificar Carga"}</h3>
+                  <h3 className="font-bold text-lg">{editingTriagem.status === 'finalizada' ? "Triagem Finalizada" : "Classificar Carga"}</h3>
                 </div>
                 <button onClick={() => setIsModalOpen(false)} className="text-text-dark/30 hover:text-text-dark transition-colors"><X size={20} /></button>
               </div>
@@ -316,11 +307,11 @@ export default function AdminTriagemPage() {
               <div className="px-8 pt-6 pb-2">
                  <div className="flex justify-between items-end mb-2">
                     <div className="flex flex-col">
-                       <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest">Status de Processamento</span>
-                       <span className="text-xs font-black text-brand-cyan">{porcentagemClassificada.toFixed(0)}% da carga classificada</span>
+                       <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest">Status da Carga</span>
+                       <span className="text-xs font-black text-brand-cyan">{porcentagemClassificada.toFixed(0)}% Classificada</span>
                     </div>
                     {sucataCalculada > 0 && (
-                       <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100 flex items-center gap-1.5">
+                       <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100 flex items-center gap-1.5 shadow-sm">
                           <AlertCircle size={12} /> Faltam {sucataCalculada} pallets
                        </span>
                     )}
@@ -329,19 +320,19 @@ export default function AdminTriagemPage() {
                     <motion.div 
                       initial={{ width: 0 }}
                       animate={{ width: `${porcentagemClassificada}%` }}
-                      className={`h-full rounded-full ${sucataCalculada < 0 ? 'bg-red-500' : 'bg-brand-cyan'} transition-all shadow-sm`}
+                      className={`h-full rounded-full ${sucataCalculada < 0 ? 'bg-red-500' : 'bg-brand-cyan'} transition-all`}
                     />
                  </div>
               </div>
 
               <div className="p-8 space-y-6 pt-2">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-bg-primary p-4 rounded-2xl border border-gray-100 flex flex-col items-center justify-center text-center">
+                  <div className="bg-bg-primary p-4 rounded-2xl border border-gray-100 text-center">
                      <span className="text-[10px] font-bold text-text-dark/40 uppercase block mb-1 tracking-widest">Total Coletado</span>
                      <div className="text-3xl font-black text-text-dark">{editingTriagem.quantidade_total}</div>
                   </div>
-                  <div className={`p-4 rounded-2xl border transition-all flex flex-col items-center justify-center text-center ${sucataCalculada < 0 ? 'bg-red-50 border-red-200' : 'bg-red-50/50 border-red-100'}`}>
-                     <span className={`text-[10px] font-bold uppercase block mb-1 tracking-widest ${sucataCalculada < 0 ? 'text-red-500' : 'text-red-400'}`}>Sucata Automática</span>
+                  <div className={`p-4 rounded-2xl border transition-all text-center ${sucataCalculada < 0 ? 'bg-red-50 border-red-200' : 'bg-red-50/50 border-red-100'}`}>
+                     <span className={`text-[10px] font-bold uppercase block mb-1 tracking-widest ${sucataCalculada < 0 ? 'text-red-500' : 'text-red-400'}`}>Sucata Gerada</span>
                      <div className={`text-3xl font-black ${sucataCalculada < 0 ? 'text-red-600' : 'text-red-500'}`}>
                         {sucataCalculada < 0 ? "Erro!" : sucataCalculada}
                      </div>
@@ -357,43 +348,24 @@ export default function AdminTriagemPage() {
                     <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/60 ml-1">Remanufatura</label>
                     <input disabled={editingTriagem.status === 'finalizada'} type="number" min="0" value={formValues.quantidade_remanufatura} onChange={(e) => setFormValues(prev => ({ ...prev, quantidade_remanufatura: parseInt(e.target.value || "0") }))} className="w-full px-4 py-3 bg-white border border-brand-pink/20 rounded-xl text-sm font-bold outline-none disabled:opacity-50" />
                   </div>
-                  <div className="space-y-1.5 p-4 bg-green-50/30 rounded-2xl border border-green-100/50">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-green-600 ml-1">Compra Ivani</label>
-                    <input disabled={editingTriagem.status === 'finalizada'} type="number" min="0" value={formValues.quantidade_compra_ivani} onChange={(e) => setFormValues(prev => ({ ...prev, quantidade_compra_ivani: parseInt(e.target.value || "0") }))} className="w-full px-4 py-3 bg-white border border-brand-pink/20 rounded-xl text-sm font-black outline-none text-green-600 disabled:opacity-50" />
+                  <div className="space-y-1.5 p-4 bg-brand-cyan/5 rounded-2xl border border-brand-cyan/10">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-brand-cyan ml-1">Compra Ivani</label>
+                    <input disabled={editingTriagem.status === 'finalizada'} type="number" min="0" value={formValues.quantidade_compra_ivani} onChange={(e) => setFormValues(prev => ({ ...prev, quantidade_compra_ivani: parseInt(e.target.value || "0") }))} className="w-full px-4 py-3 bg-white border border-brand-pink/20 rounded-xl text-sm font-black outline-none text-brand-cyan disabled:opacity-50" />
                   </div>
                 </div>
 
-                <div className="p-5 bg-green-50 rounded-2xl border border-green-100 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2 text-green-700 font-bold text-[10px] uppercase tracking-widest">
-                      <DollarSign size={14} /> Preço Unitário de Compra
-                    </div>
-                    <div className="relative">
-                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-green-600">R$</span>
-                       <input 
-                        disabled={editingTriagem.status === 'finalizada'}
-                        type="number" 
-                        step="0.01" 
-                        min="0"
-                        value={formValues.valor_unitario_compra}
-                        onChange={(e) => setFormValues(prev => ({ ...prev, valor_unitario_compra: parseFloat(e.target.value || "0") }))}
-                        className="w-28 pl-8 pr-3 py-2 bg-white border border-green-200 rounded-lg text-xs font-black text-green-700 outline-none text-right disabled:opacity-50"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-end pt-3 border-t border-green-200/50">
-                    <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest flex items-center gap-2">
-                      <ArrowDownCircle size={14} /> Abatimento de Saldo
-                    </span>
-                    <div className="text-2xl font-black text-green-700">
-                      {valorTotalCompra.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </div>
-                  </div>
-                </div>
+                {sucataCalculada < 0 && (
+                   <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3">
+                      <AlertCircle className="text-red-500 flex-shrink-0" size={18} />
+                      <p className="text-xs font-bold text-red-600 leading-tight uppercase tracking-tight">
+                        A soma classificada ({somaClassificada}) excede o total coletado ({editingTriagem.quantidade_total}).
+                      </p>
+                   </div>
+                )}
 
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">Observações da Triagem</label>
-                  <textarea disabled={editingTriagem.status === 'finalizada'} value={formValues.observacao} onChange={(e) => setFormValues(prev => ({ ...prev, observacao: e.target.value }))} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none min-h-[60px] resize-none disabled:opacity-50" />
+                  <textarea disabled={editingTriagem.status === 'finalizada'} value={formValues.observacao} onChange={(e) => setFormValues(prev => ({ ...prev, observacao: e.target.value }))} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none min-h-[80px] resize-none disabled:opacity-50" placeholder="Ex: Carga em bom estado, 2 unidades com avarias graves..." />
                 </div>
 
                 <div className="flex gap-3">
@@ -408,7 +380,7 @@ export default function AdminTriagemPage() {
                     </>
                   ) : (
                     <button type="button" onClick={() => setIsModalOpen(false)} className="w-full px-6 py-3 bg-gray-100 text-text-dark/60 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
-                      <Lock size={16} /> Triagem Finalizada — Somente Leitura
+                      <Lock size={16} /> Triagem Finalizada (Bloqueada para Edição)
                     </button>
                   )}
                 </div>
