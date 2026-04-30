@@ -24,6 +24,7 @@ import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { logout } from "@/app/actions/auth";
+import { sincronizarEstoqueOperacional } from "@/lib/services/estoque";
 
 const supabase = createClient();
 
@@ -103,110 +104,25 @@ export default function AdminEstoquePage() {
   };
 
   useEffect(() => {
-    fetchData();
+    const init = async () => {
+      await sincronizarEstoqueOperacional(); // Sincronização automática no load
+      await fetchData();
+    };
+    init();
   }, []);
 
   const handleSync = async () => {
     try {
       setSyncing(true);
-      
-      // 1. Manutenções Finalizadas -> Entrada
-      const { data: manut } = await supabase
-        .from("manutencoes")
-        .select("*")
-        .eq("status", "finalizada")
-        .eq("cliente_id", "pce");
-
-      if (manut) {
-        for (const m of manut) {
-          if (m.quantidade_concluida > 0) {
-            // Tentar inserir movimentação (unique index impede duplicata)
-            const { data: existing } = await supabase
-              .from("estoque_movimentacoes")
-              .select("id")
-              .eq("origem", "manutencao")
-              .eq("origem_id", m.id)
-              .maybeSingle();
-
-            if (!existing) {
-              await processarEntrada(m.modelo_pallet_id, m.quantidade_concluida, "manutencao", m.id, `Entrada automática via Manutenção (ID: ${m.id.substring(0,8)})`);
-            }
-          }
-        }
-      }
-
-      // 2. Triagem Remanufatura -> Entrada
-      const { data: triagemItens } = await supabase
-        .from("triagem_itens")
-        .select("*, triagem:triagens(id, status, cliente_id)")
-        .gt("quantidade_remanufatura", 0)
-        .eq("triagem.cliente_id", "pce");
-
-      if (triagemItens) {
-        for (const it of triagemItens) {
-          const { data: existing } = await supabase
-            .from("estoque_movimentacoes")
-            .select("id")
-            .eq("origem", "triagem_remanufatura")
-            .eq("origem_id", it.id)
-            .maybeSingle();
-
-          if (!existing) {
-            await processarEntrada(it.modelo_pallet_id, it.quantidade_remanufatura, "triagem_remanufatura", it.id, `Entrada automática via Remanufatura (Triagem ID: ${it.triagem_id.substring(0,8)})`);
-          }
-        }
-      }
-
+      await sincronizarEstoqueOperacional();
       await fetchData();
-      alert("Sincronização concluída!");
+      alert("Estoque reprocessado com sucesso!");
     } catch (err: any) {
       console.error(err);
       alert("Erro ao sincronizar: " + err.message);
     } finally {
       setSyncing(false);
     }
-  };
-
-  const processarEntrada = async (modeloId: string, qtd: number, origem: string, origemId: string, desc: string) => {
-    // 1. Garantir registro em estoque_pallets
-    const { data: est, error: estErr } = await supabase
-      .from("estoque_pallets")
-      .select("id, quantidade_disponivel")
-      .eq("modelo_pallet_id", modeloId)
-      .eq("cliente_id", "pce")
-      .maybeSingle();
-
-    let estoqueId = est?.id;
-
-    if (!est) {
-      const { data: newEst } = await supabase
-        .from("estoque_pallets")
-        .insert([{
-          cliente_id: 'pce',
-          modelo_pallet_id: modeloId,
-          quantidade_disponivel: qtd
-        }])
-        .select()
-        .single();
-      estoqueId = newEst?.id;
-    } else {
-      await supabase
-        .from("estoque_pallets")
-        .update({ quantidade_disponivel: est.quantidade_disponivel + qtd })
-        .eq("id", est.id);
-    }
-
-    // 2. Registrar movimentação
-    await supabase.from("estoque_movimentacoes").insert([{
-      cliente_id: 'pce',
-      estoque_id: estoqueId,
-      modelo_pallet_id: modeloId,
-      origem,
-      origem_id: origemId,
-      tipo: 'entrada',
-      quantidade: qtd,
-      descricao: desc
-    }]);
   };
 
   const handleOutflow = async () => {
@@ -221,15 +137,7 @@ export default function AdminEstoquePage() {
     try {
       setSyncing(true);
       
-      // 1. Reduzir saldo
-      const { error: upErr } = await supabase
-        .from("estoque_pallets")
-        .update({ quantidade_disponivel: estItem.quantidade_disponivel - outflowQty })
-        .eq("id", estItem.id);
-
-      if (upErr) throw upErr;
-
-      // 2. Registrar movimentação
+      // Registrar movimentação - O trigger trg_atualizar_saldo_estoque cuidará do saldo no estoque_pallets
       const { error: movErr } = await supabase.from("estoque_movimentacoes").insert([{
         cliente_id: 'pce',
         estoque_id: estItem.id,
@@ -290,7 +198,7 @@ export default function AdminEstoquePage() {
                 className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white border border-brand-pink/20 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all disabled:opacity-50"
                >
                  {syncing ? <Loader2 className="animate-spin" size={14} /> : <RefreshCcw size={14} />}
-                 Sincronizar Operação
+                 Reprocessar Estoque
                </button>
                <button onClick={() => logout()} className="p-2 text-text-dark/40 hover:text-red-500 transition-colors"><LogOut size={18} /></button>
             </div>

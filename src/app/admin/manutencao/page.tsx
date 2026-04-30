@@ -25,6 +25,7 @@ import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { logout } from "@/app/actions/auth";
+import { sincronizarEstoqueOperacional } from "@/lib/services/estoque";
 
 interface ModeloPallet {
   id: string;
@@ -182,9 +183,11 @@ export default function AdminManutencaoPage() {
         if (inError) throw inError;
       }
 
+      await fetchData();
+      await sincronizarEstoqueOperacional();
       setIsModalOpen(false);
       setEditingItem(null);
-      fetchData();
+      alert("Manutenção atualizada com sucesso!");
     } catch (err: any) {
       alert("Erro ao salvar: " + err.message);
     } finally {

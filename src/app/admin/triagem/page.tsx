@@ -27,6 +27,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { logout } from "@/app/actions/auth";
+import { sincronizarEstoqueOperacional } from "@/lib/services/estoque";
 
 // --- TIPAGEM ---
 
@@ -318,6 +319,7 @@ export default function AdminTriagemPage() {
         observacao: finalizar ? "Triagem finalizada com itens" : "Edição de itens da triagem"
       });
 
+      await sincronizarEstoqueOperacional();
       setIsModalOpen(false);
       setEditingTriagem(null);
       fetchTriagens();
