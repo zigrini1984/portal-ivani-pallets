@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useState } from "react";
 import { 
   ArrowRight, 
   Truck, 
@@ -19,9 +20,36 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { LeadForm } from "@/components/lead-form";
+import { login } from "@/app/actions/auth";
 
 
 export default function Home() {
+  const [portalEmail, setPortalEmail] = useState("");
+  const [portalPassword, setPortalPassword] = useState("");
+  const [portalError, setPortalError] = useState<string | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  async function handlePortalLogin(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPortalLoading(true);
+    setPortalError(null);
+
+    const formData = new FormData();
+    formData.set("email", portalEmail);
+    formData.set("password", portalPassword);
+
+    try {
+      const result = await login(formData);
+
+      if (result?.error) {
+        setPortalError(result.error);
+        setPortalLoading(false);
+      }
+    } catch (err) {
+      setPortalError(err instanceof Error ? err.message : "Nao foi possivel entrar. Tente novamente.");
+      setPortalLoading(false);
+    }
+  }
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -94,34 +122,58 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative"
+            className="relative pointer-events-auto"
           >
-            <div className="bg-white p-8 md:p-10 rounded-[2.5rem] card-shadow border border-brand-pink relative z-10">
+            <div className="bg-white p-8 md:p-10 rounded-[2.5rem] card-shadow border border-brand-pink relative z-10 pointer-events-auto">
               <div className="text-center mb-10">
                 <h3 className="font-display text-2xl font-bold mb-2">Portal do Cliente</h3>
                 <p className="text-sm text-text-dark/50">Acompanhe seus pallets em tempo real</p>
               </div>
 
-              <div className="space-y-6 mb-8">
+              <form onSubmit={handlePortalLogin} className="relative z-20 space-y-6 mb-10 pointer-events-auto">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-text-dark/40 mb-2 ml-1">E-mail</label>
-                  <div className="w-full h-14 bg-brand-primary/50 border border-brand-pink rounded-2xl px-5 flex items-center text-text-dark/30 italic">
-                    exemplo@empresa.com.br
-                  </div>
+                  <input
+                    name="email"
+                    type="email"
+                    required
+                    value={portalEmail}
+                    onChange={(event) => setPortalEmail(event.target.value)}
+                    disabled={portalLoading}
+                    placeholder="exemplo@empresa.com.br"
+                    autoComplete="email"
+                    className="w-full h-14 bg-brand-primary/50 border border-brand-pink rounded-2xl px-5 text-text-dark placeholder:text-text-dark/30 focus:outline-none focus:border-brand-cyan/50 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-text-dark/40 mb-2 ml-1">Senha</label>
-                  <div className="w-full h-14 bg-brand-primary/50 border border-brand-pink rounded-2xl px-5 flex items-center text-text-dark/30 italic">
-                    ••••••••••••
-                  </div>
+                  <input
+                    name="password"
+                    type="password"
+                    required
+                    value={portalPassword}
+                    onChange={(event) => setPortalPassword(event.target.value)}
+                    disabled={portalLoading}
+                    placeholder="************"
+                    autoComplete="current-password"
+                    className="w-full h-14 bg-brand-primary/50 border border-brand-pink rounded-2xl px-5 text-text-dark placeholder:text-text-dark/30 focus:outline-none focus:border-brand-cyan/50 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                  />
                 </div>
-              </div>
 
-              <motion.button
-                className="w-full py-5 bg-brand-cyan/10 text-brand-cyan rounded-2xl font-bold border border-brand-cyan/20 mb-10"
-              >
-                Entrar no Portal
-              </motion.button>
+                {portalError && (
+                  <p className="text-red-500 text-sm text-center font-medium bg-red-50 py-3 rounded-xl border border-red-100">
+                    {portalError === "Invalid login credentials" ? "E-mail ou senha incorretos" : portalError}
+                  </p>
+                )}
+
+                <motion.button
+                  type="submit"
+                  disabled={portalLoading}
+                  className="w-full py-5 bg-brand-cyan/10 text-brand-cyan rounded-2xl font-bold border border-brand-cyan/20 disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {portalLoading ? "Entrando..." : "Entrar no Portal"}
+                </motion.button>
+              </form>
 
               <div className="grid grid-cols-3 gap-4">
                 {[
@@ -141,8 +193,8 @@ export default function Home() {
             </div>
 
             {/* Elementos Decorativos */}
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-brand-yellow/20 blur-[60px] rounded-full" />
-            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-brand-cyan/10 blur-[60px] rounded-full" />
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-brand-yellow/20 blur-[60px] rounded-full pointer-events-none" />
+            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-brand-cyan/10 blur-[60px] rounded-full pointer-events-none" />
           </motion.div>
         </div>
       </section>
