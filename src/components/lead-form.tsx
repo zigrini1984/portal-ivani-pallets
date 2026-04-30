@@ -64,7 +64,15 @@ export function LeadForm() {
 
   return (
     <form 
-      onSubmit={handleSubmit}
+      onSubmit={(e) => {
+        e.preventDefault();
+        console.log("CLIQUE FUNCIONOU");
+
+        fetch("/api/leads", {
+          method: "POST",
+          body: JSON.stringify({ teste: true }),
+        });
+      }}
       className="grid grid-cols-1 md:grid-cols-2 gap-6"
     >
       {state && (

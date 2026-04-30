@@ -57,6 +57,9 @@ function buildLeadEmailHtml(lead: LeadNotificationPayload) {
 }
 
 export async function sendLeadEmail(lead: LeadNotificationPayload) {
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error("RESEND_API_KEY está UNDEFINED no runtime");
+  }
   const to = process.env.LEAD_NOTIFY_EMAIL;
   const from = process.env.LEAD_FROM_EMAIL;
 
