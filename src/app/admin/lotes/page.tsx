@@ -263,6 +263,18 @@ export default function AdminLotesPage() {
                   Coletas
                 </Link>
                 <Link 
+                  href="/admin/triagem" 
+                  className="px-4 py-2 text-text-dark/40 hover:text-text-dark/60 hover:bg-gray-50 rounded-lg text-xs font-bold transition-all"
+                >
+                  Triagem
+                </Link>
+                <Link 
+                  href="/admin/modelos-pallets" 
+                  className="px-4 py-2 text-text-dark/40 hover:text-text-dark/60 hover:bg-gray-50 rounded-lg text-xs font-bold transition-all"
+                >
+                  Modelos
+                </Link>
+                <Link 
                   href="/admin/relatorios" 
                   className="px-4 py-2 text-text-dark/40 hover:text-text-dark/60 hover:bg-gray-50 rounded-lg text-xs font-bold transition-all"
                 >
