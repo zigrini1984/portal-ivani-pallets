@@ -257,6 +257,12 @@ export default function AdminLotesPage() {
                   Lotes
                 </Link>
                 <Link 
+                  href="/admin/coleta" 
+                  className="px-4 py-2 text-text-dark/40 hover:text-text-dark/60 hover:bg-gray-50 rounded-lg text-xs font-bold transition-all"
+                >
+                  Coletas
+                </Link>
+                <Link 
                   href="/admin/relatorios" 
                   className="px-4 py-2 text-text-dark/40 hover:text-text-dark/60 hover:bg-gray-50 rounded-lg text-xs font-bold transition-all"
                 >

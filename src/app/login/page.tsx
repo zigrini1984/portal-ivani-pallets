@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
 import { Package, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
@@ -7,6 +7,8 @@ import { useState } from "react";
 import { login } from "@/app/actions/auth";
 
 export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -15,11 +17,19 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const formData = new FormData(event.currentTarget);
-    const result = await login(formData);
+    const formData = new FormData();
+    formData.set("email", email);
+    formData.set("password", password);
 
-    if (result?.error) {
-      setError(result.error);
+    try {
+      const result = await login(formData);
+
+      if (result?.error) {
+        setError(result.error);
+        setLoading(false);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível entrar. Tente novamente.");
       setLoading(false);
     }
   }
@@ -29,13 +39,13 @@ export default function LoginPage() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
+        className="relative z-10 w-full max-w-md pointer-events-auto"
       >
         <Link href="/" className="inline-flex items-center gap-2 text-brand-cyan font-bold mb-8 hover:gap-3 transition-all">
           <ArrowLeft size={20} /> Voltar para o início
         </Link>
 
-        <div className="bg-white p-10 rounded-[3rem] card-shadow border border-brand-pink">
+        <div className="relative z-10 bg-white p-10 rounded-[3rem] card-shadow border border-brand-pink pointer-events-auto">
           <div className="flex justify-center mb-8">
             <div className="w-16 h-16 bg-brand-cyan rounded-2xl flex items-center justify-center shadow-lg shadow-brand-cyan/20">
               <Package className="text-white" size={32} />
@@ -47,15 +57,19 @@ export default function LoginPage() {
             <p className="text-sm text-text-dark/50">Entre com suas credenciais para acessar sua área</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="relative z-20 space-y-6 pointer-events-auto">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-text-dark/40 mb-2 ml-1">E-mail</label>
               <input 
                 name="email"
                 type="email" 
                 required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                disabled={loading}
                 placeholder="seu@email.com.br"
-                className="w-full h-14 bg-bg-primary border border-brand-pink rounded-2xl px-5 focus:outline-none focus:border-brand-cyan/50 transition-colors"
+                autoComplete="email"
+                className="w-full h-14 bg-bg-primary border border-brand-pink rounded-2xl px-5 focus:outline-none focus:border-brand-cyan/50 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
               />
             </div>
             <div>
@@ -64,8 +78,12 @@ export default function LoginPage() {
                 name="password"
                 type="password" 
                 required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                disabled={loading}
                 placeholder="Sua senha"
-                className="w-full h-14 bg-bg-primary border border-brand-pink rounded-2xl px-5 focus:outline-none focus:border-brand-cyan/50 transition-colors"
+                autoComplete="current-password"
+                className="w-full h-14 bg-bg-primary border border-brand-pink rounded-2xl px-5 focus:outline-none focus:border-brand-cyan/50 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
               />
             </div>
 
