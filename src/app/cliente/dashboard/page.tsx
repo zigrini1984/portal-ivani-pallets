@@ -190,6 +190,7 @@ const DonutChart = ({ data }: { data: { label: string, value: number, color: str
 
 import { createClient } from "@/lib/supabase/client";
 import { logout } from "@/app/actions/auth";
+import { registrarAcesso } from "@/lib/utils/monitoramento";
 
 // Instância estável do Supabase
 const supabase = createClient();
@@ -278,6 +279,7 @@ export default function ClienteDashboardPCE() {
 
   useEffect(() => {
     fetchData();
+    registrarAcesso("cliente/dashboard");
   }, []);
 
   useEffect(() => {

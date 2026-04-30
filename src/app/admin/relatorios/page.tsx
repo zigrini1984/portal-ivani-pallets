@@ -246,10 +246,10 @@ export default function AdminRelatoriosPage() {
                   Triagem
                 </Link>
                 <Link 
-                  href="/admin/modelos-pallets" 
+                  href="/admin/configuracao" 
                   className="px-4 py-2 text-text-dark/40 hover:text-text-dark/60 hover:bg-gray-50 rounded-lg text-xs font-bold transition-all"
                 >
-                  Modelos
+                  Configuração
                 </Link>
                 <Link 
                   href="/admin/relatorios" 

@@ -72,6 +72,7 @@ const Badge = ({ children, variant = "default" }: { children: React.ReactNode, v
 
 import { createClient } from "@/lib/supabase/client";
 import { logout } from "@/app/actions/auth";
+import { registrarAcesso } from "@/lib/utils/monitoramento";
 import { sendStatusUpdateEmail } from "@/app/actions/notifications";
 
 // Cliente Supabase instanciado fora do componente para estabilidade
@@ -116,6 +117,7 @@ export default function AdminLotesPage() {
 
   useEffect(() => {
     fetchLotes();
+    registrarAcesso("admin/lotes");
   }, []);
 
   // --- AÇÕES ---
@@ -269,10 +271,10 @@ export default function AdminLotesPage() {
                   Triagem
                 </Link>
                 <Link 
-                  href="/admin/modelos-pallets" 
+                  href="/admin/configuracao" 
                   className="px-4 py-2 text-text-dark/40 hover:text-text-dark/60 hover:bg-gray-50 rounded-lg text-xs font-bold transition-all"
                 >
-                  Modelos
+                  Configuração
                 </Link>
                 <Link 
                   href="/admin/relatorios" 
