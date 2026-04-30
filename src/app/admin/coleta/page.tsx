@@ -18,10 +18,10 @@ import {
   ClipboardList,
   User,
   Hash,
-  History,
-  RotateCcw,
   ArrowRightLeft,
-  CheckCircle2
+  CheckCircle2,
+  History,
+  Clock
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -39,7 +39,7 @@ interface Coleta {
   data_coleta: string;
   quantidade_material_bruto: number;
   observacao: string;
-  status: string;
+  status: 'coletado' | 'enviado_triagem';
   enviado_triagem: boolean;
   data_envio_triagem: string | null;
   created_at: string;
@@ -111,7 +111,11 @@ export default function AdminColetaPage() {
       } else {
         const { error: insertError } = await supabase
           .from("coletas")
-          .insert(coletaData);
+          .insert({
+            ...coletaData,
+            status: 'coletado',
+            enviado_triagem: false
+          });
 
         if (insertError) throw insertError;
       }
@@ -136,7 +140,7 @@ export default function AdminColetaPage() {
     try {
       setTransferringId(coleta.id);
 
-      // 1. Verificar se já existe em triagens para evitar duplicação
+      // 1. Verificar se já existe em triagens
       const { data: existingTriagem } = await supabase
         .from("triagens")
         .select("id")
@@ -144,14 +148,13 @@ export default function AdminColetaPage() {
         .single();
 
       if (existingTriagem) {
-        alert("Esta coleta já foi enviada para triagem anteriormente.");
-        // Sincronizar status local se necessário
-        await supabase.from("coletas").update({ enviado_triagem: true }).eq("id", coleta.id);
+        alert("Esta coleta já foi enviada para triagem.");
+        await supabase.from("coletas").update({ enviado_triagem: true, status: 'enviado_triagem' }).eq("id", coleta.id);
         fetchColetas();
         return;
       }
 
-      // 2. Criar registro em Triagens
+      // 2. Criar registro em Triagens (Ajustado para V2)
       const { error: insertError } = await supabase
         .from("triagens")
         .insert({
@@ -162,6 +165,10 @@ export default function AdminColetaPage() {
           caminhao: coleta.caminhao,
           data_coleta: coleta.data_coleta,
           quantidade_total: coleta.quantidade_material_bruto,
+          quantidade_sucata: 0,
+          quantidade_manutencao: 0,
+          quantidade_remanufatura: 0,
+          quantidade_compra_ivani: 0,
           status: "em_triagem"
         });
 
@@ -172,7 +179,7 @@ export default function AdminColetaPage() {
         .from("coletas")
         .update({
           enviado_triagem: true,
-          status: "em_triagem",
+          status: "enviado_triagem",
           data_envio_triagem: new Date().toISOString()
         })
         .eq("id", coleta.id);
@@ -249,8 +256,8 @@ export default function AdminColetaPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-10">
         <div className="flex justify-between items-end mb-8">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Coletas PCE Logística</h1>
-            <p className="text-text-dark/50 text-sm mt-1">Registro e transferência de material para a etapa de triagem.</p>
+            <h1 className="text-2xl font-bold tracking-tight">Registro de Coletas</h1>
+            <p className="text-text-dark/50 text-sm mt-1">Gerencie a entrada de carga da PCE Logística para o pátio.</p>
           </div>
         </div>
 
@@ -282,14 +289,19 @@ export default function AdminColetaPage() {
                   exit={{ opacity: 0, scale: 0.9 }}
                   className="bg-white rounded-3xl border border-brand-pink/20 p-6 card-shadow hover:border-brand-cyan/30 transition-all group relative overflow-hidden"
                 >
-                  {coleta.enviado_triagem && (
-                    <div className="absolute top-0 right-0 p-3">
-                      <div className="bg-brand-cyan/10 text-brand-cyan px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider border border-brand-cyan/20 flex items-center gap-1.5">
+                  <div className="absolute top-0 right-0 p-3">
+                    {coleta.status === 'enviado_triagem' ? (
+                      <div className="bg-brand-cyan/10 text-brand-cyan px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider border border-brand-cyan/20 flex items-center gap-1.5 shadow-sm">
                         <CheckCircle2 size={12} />
-                        Em Triagem
+                        Enviado para Triagem
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="bg-bg-primary text-text-dark/40 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider border border-gray-100 flex items-center gap-1.5 shadow-sm">
+                        <Clock size={12} />
+                        Coletado
+                      </div>
+                    )}
+                  </div>
 
                   <div className="flex justify-between items-start mb-6">
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${coleta.enviado_triagem ? 'bg-brand-cyan/5 text-brand-cyan' : 'bg-bg-primary text-brand-cyan group-hover:bg-brand-cyan/5'}`}>
@@ -307,7 +319,7 @@ export default function AdminColetaPage() {
                     <div className="flex justify-between items-end">
                       <div>
                         <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block mb-1">Data da Coleta</span>
-                        <div className="flex items-center gap-2 text-text-dark font-bold">
+                        <div className="flex items-center gap-2 text-text-dark font-bold text-xs">
                           <Calendar size={14} className="text-brand-cyan" />
                           {new Date(coleta.data_coleta).toLocaleDateString('pt-BR')}
                         </div>
@@ -321,15 +333,15 @@ export default function AdminColetaPage() {
                     <div className="pt-4 border-t border-brand-pink/10 grid grid-cols-2 gap-4">
                       <div className="flex items-center gap-2">
                         <Hash size={14} className="text-text-dark/20" />
-                        <span className="text-[11px] font-semibold text-text-dark/60 truncate">{coleta.nf_saida_pce || "Sem NF"}</span>
+                        <span className="text-[11px] font-semibold text-text-dark/60 truncate" title="NF">{coleta.nf_saida_pce || "Sem NF"}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <User size={14} className="text-text-dark/20" />
-                        <span className="text-[11px] font-semibold text-text-dark/60 truncate">{coleta.motorista || "Não informado"}</span>
+                        <span className="text-[11px] font-semibold text-text-dark/60 truncate" title="Motorista">{coleta.motorista || "Não informado"}</span>
                       </div>
                     </div>
 
-                    {!coleta.enviado_triagem ? (
+                    {coleta.status !== 'enviado_triagem' ? (
                       <button 
                         onClick={() => handleSendToTriagem(coleta)}
                         disabled={transferringId === coleta.id}
@@ -339,7 +351,7 @@ export default function AdminColetaPage() {
                         Enviar para Triagem
                       </button>
                     ) : (
-                      <div className="w-full mt-4 py-3 bg-gray-50 border border-gray-100 text-text-dark/30 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2">
+                      <div className="w-full mt-4 py-3 bg-brand-cyan/5 border border-brand-cyan/10 text-brand-cyan rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2">
                         <History size={14} />
                         Enviado em {new Date(coleta.data_envio_triagem!).toLocaleDateString('pt-BR')}
                       </div>
@@ -362,42 +374,41 @@ export default function AdminColetaPage() {
                   <div className="w-10 h-10 bg-brand-cyan/10 rounded-xl flex items-center justify-center text-brand-cyan"><Truck size={20} /></div>
                   <h3 className="font-bold text-lg">{editingColeta ? "Editar Registro" : "Nova Coleta"}</h3>
                 </div>
-                <button onClick={() => setIsModalOpen(false)} className="text-text-dark/30 hover:text-text-dark transition-colors"><X size={20} /></button>
+                <button onClick={() => setIsModalOpen(false)} className="text-text-dark/30 hover:text-text-dark"><X size={20} /></button>
               </div>
               <form onSubmit={handleSaveColeta} className="p-8 space-y-5 overflow-y-auto max-h-[70vh]">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">Data da Coleta *</label>
-                    <input name="data_coleta" type="date" defaultValue={editingColeta?.data_coleta} required className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm focus:ring-2 focus:ring-brand-cyan/20 focus:border-brand-cyan outline-none" />
+                    <input name="data_coleta" type="date" defaultValue={editingColeta?.data_coleta} required className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none" />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">Material Bruto (Qtd) *</label>
-                    <input name="quantidade_material_bruto" type="number" min="1" defaultValue={editingColeta?.quantidade_material_bruto} required placeholder="Ex: 450" className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm focus:ring-2 focus:ring-brand-cyan/20 focus:border-brand-cyan outline-none" />
+                    <input name="quantidade_material_bruto" type="number" min="1" defaultValue={editingColeta?.quantidade_material_bruto} required className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none" />
                   </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">NF Saída PCE</label>
-                  <input name="nf_saida_pce" defaultValue={editingColeta?.nf_saida_pce} placeholder="Número da nota fiscal" className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm focus:ring-2 focus:ring-brand-cyan/20 focus:border-brand-cyan outline-none" />
+                  <input name="nf_saida_pce" defaultValue={editingColeta?.nf_saida_pce} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none" />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">Motorista</label>
-                    <input name="motorista" defaultValue={editingColeta?.motorista} placeholder="Nome do motorista" className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm focus:ring-2 focus:ring-brand-cyan/20 focus:border-brand-cyan outline-none" />
+                    <input name="motorista" defaultValue={editingColeta?.motorista} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none" />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">Caminhão (Placa)</label>
-                    <input name="caminhao" defaultValue={editingColeta?.caminhao} placeholder="ABC-1234" className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm focus:ring-2 focus:ring-brand-cyan/20 focus:border-brand-cyan outline-none uppercase" />
+                    <input name="caminhao" defaultValue={editingColeta?.caminhao} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none uppercase" />
                   </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">Observação</label>
-                  <textarea name="observacao" defaultValue={editingColeta?.observacao} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm focus:ring-2 focus:ring-brand-cyan/20 focus:border-brand-cyan outline-none min-h-[100px] resize-none" placeholder="Informações adicionais..." />
+                  <textarea name="observacao" defaultValue={editingColeta?.observacao} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none min-h-[100px] resize-none" />
                 </div>
                 <div className="pt-4 flex gap-3 sticky bottom-0 bg-white">
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-3 border border-gray-200 rounded-xl text-xs font-bold hover:bg-gray-50 transition-all text-text-dark/60">Cancelar</button>
-                  <button type="submit" disabled={isSubmitting} className="flex-1 px-6 py-3 bg-brand-cyan text-white rounded-xl text-xs font-bold shadow-lg shadow-brand-cyan/20 hover:bg-[#1a6e74] transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                    {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                    {editingColeta ? "Salvar Alterações" : "Registrar Coleta"}
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-3 border border-gray-200 rounded-xl text-xs font-bold text-text-dark/60">Cancelar</button>
+                  <button type="submit" disabled={isSubmitting} className="flex-1 px-6 py-3 bg-brand-cyan text-white rounded-xl text-xs font-bold shadow-lg disabled:opacity-50 flex items-center justify-center gap-2">
+                    {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Salvar
                   </button>
                 </div>
               </form>
