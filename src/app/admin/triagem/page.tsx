@@ -20,7 +20,9 @@ import {
   Calculator,
   ArrowDownCircle,
   History,
-  Trash2
+  Trash2,
+  BarChart3,
+  ArrowRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -107,6 +109,11 @@ export default function AdminTriagemPage() {
     return formValues.quantidade_manutencao + formValues.quantidade_remanufatura + formValues.quantidade_compra_ivani;
   }, [formValues]);
 
+  const porcentagemClassificada = useMemo(() => {
+    if (!editingTriagem || editingTriagem.quantidade_total === 0) return 0;
+    return Math.min(100, (somaClassificada / editingTriagem.quantidade_total) * 100);
+  }, [editingTriagem, somaClassificada]);
+
   const sucataCalculada = useMemo(() => {
     if (!editingTriagem) return 0;
     return editingTriagem.quantidade_total - somaClassificada;
@@ -134,7 +141,7 @@ export default function AdminTriagemPage() {
           quantidade_sucata: sucataCalculada,
           valor_total_compra: valorTotalCompra,
           observacao: new FormData(e.currentTarget).get("observacao") as string,
-          status: "finalizada" // Como a sucata é automática, a triagem sempre fecha a conta total
+          status: "finalizada"
         })
         .eq("id", editingTriagem.id);
 
@@ -186,7 +193,7 @@ export default function AdminTriagemPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-10">
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight">Classificação de Materiais</h1>
-          <p className="text-text-dark/50 text-sm mt-1">Triagem completa da carga coletada (fechamento automático de sucata).</p>
+          <p className="text-text-dark/50 text-sm mt-1">Triagem operacional completa para abate de saldo PCE.</p>
         </div>
 
         {loading ? (
@@ -235,7 +242,7 @@ export default function AdminTriagemPage() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-end">
                     <div>
-                      <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block mb-1">Carga Recebida</span>
+                      <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block mb-1">Carga Coletada</span>
                       <div className="text-2xl font-black text-text-dark">{item.quantidade_total} <span className="text-xs font-bold text-text-dark/20">un</span></div>
                     </div>
                     <div className="text-right">
@@ -265,7 +272,7 @@ export default function AdminTriagemPage() {
 
                   {item.quantidade_compra_ivani > 0 && (
                     <div className="p-3 bg-green-50 rounded-2xl border border-green-100 flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Valor de Abatimento</span>
+                      <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Abatimento de Saldo</span>
                       <div className="text-xs font-black text-green-700">
                         {item.valor_total_compra.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </div>
@@ -293,10 +300,36 @@ export default function AdminTriagemPage() {
                   <div className="w-10 h-10 bg-brand-cyan/10 rounded-xl flex items-center justify-center text-brand-cyan"><Calculator size={20} /></div>
                   <h3 className="font-bold text-lg">Classificar Carga</h3>
                 </div>
-                <button onClick={() => setIsModalOpen(false)} className="text-text-dark/30 hover:text-text-dark"><X size={20} /></button>
+                <button onClick={() => setIsModalOpen(false)} className="text-text-dark/30 hover:text-text-dark transition-colors"><X size={20} /></button>
               </div>
 
-              <form onSubmit={handleUpdateTriagem} className="p-8 space-y-6">
+              <div className="px-8 pt-6 pb-2">
+                 <div className="flex justify-between items-end mb-2">
+                    <div className="flex flex-col">
+                       <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest">Progresso Operacional</span>
+                       <span className="text-xs font-black text-brand-cyan">{porcentagemClassificada.toFixed(0)}% Classificado</span>
+                    </div>
+                    {sucataCalculada > 0 && (
+                       <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100 flex items-center gap-1.5">
+                          <AlertCircle size={12} /> Faltam {sucataCalculada} pallets para classificação total
+                       </span>
+                    )}
+                    {sucataCalculada === 0 && (
+                       <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 flex items-center gap-1.5">
+                          <CheckCircle2 size={12} /> 100% da carga classificada
+                       </span>
+                    )}
+                 </div>
+                 <div className="w-full h-3 bg-bg-primary rounded-full overflow-hidden border border-brand-pink/10 shadow-inner p-0.5">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${porcentagemClassificada}%` }}
+                      className={`h-full rounded-full ${sucataCalculada < 0 ? 'bg-red-500' : 'bg-brand-cyan'} transition-all shadow-sm`}
+                    />
+                 </div>
+              </div>
+
+              <form onSubmit={handleUpdateTriagem} className="p-8 space-y-6 pt-2">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-bg-primary p-4 rounded-2xl border border-gray-100 flex flex-col items-center justify-center text-center">
                      <span className="text-[10px] font-bold text-text-dark/40 uppercase block mb-1 tracking-widest">Total Coletado</span>
@@ -310,18 +343,18 @@ export default function AdminTriagemPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1.5 p-4 bg-bg-primary/50 rounded-2xl border border-brand-pink/5">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/60 ml-1">Manutenção</label>
-                    <input type="number" min="0" value={formValues.quantidade_manutencao} onChange={(e) => setFormValues(prev => ({ ...prev, quantidade_manutencao: parseInt(e.target.value || "0") }))} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-brand-cyan/20" />
+                    <input type="number" min="0" value={formValues.quantidade_manutencao} onChange={(e) => setFormValues(prev => ({ ...prev, quantidade_manutencao: parseInt(e.target.value || "0") }))} className="w-full px-4 py-3 bg-white border border-brand-pink/20 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-brand-cyan/20" />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-1.5 p-4 bg-bg-primary/50 rounded-2xl border border-brand-pink/5">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/60 ml-1">Remanufatura</label>
-                    <input type="number" min="0" value={formValues.quantidade_remanufatura} onChange={(e) => setFormValues(prev => ({ ...prev, quantidade_remanufatura: parseInt(e.target.value || "0") }))} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-brand-cyan/20" />
+                    <input type="number" min="0" value={formValues.quantidade_remanufatura} onChange={(e) => setFormValues(prev => ({ ...prev, quantidade_remanufatura: parseInt(e.target.value || "0") }))} className="w-full px-4 py-3 bg-white border border-brand-pink/20 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-brand-cyan/20" />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-1.5 p-4 bg-green-50/30 rounded-2xl border border-green-100/50">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-green-600 ml-1">Compra Ivani</label>
-                    <input type="number" min="0" value={formValues.quantidade_compra_ivani} onChange={(e) => setFormValues(prev => ({ ...prev, quantidade_compra_ivani: parseInt(e.target.value || "0") }))} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm font-black outline-none focus:ring-2 focus:ring-green-500/20 text-green-600" />
+                    <input type="number" min="0" value={formValues.quantidade_compra_ivani} onChange={(e) => setFormValues(prev => ({ ...prev, quantidade_compra_ivani: parseInt(e.target.value || "0") }))} className="w-full px-4 py-3 bg-white border border-brand-pink/20 rounded-xl text-sm font-black outline-none focus:ring-2 focus:ring-green-500/20 text-green-600" />
                   </div>
                 </div>
 
@@ -329,7 +362,7 @@ export default function AdminTriagemPage() {
                    <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3">
                       <AlertCircle className="text-red-500 flex-shrink-0" size={18} />
                       <p className="text-xs font-bold text-red-600 leading-tight uppercase tracking-tight">
-                        A soma classificada ({somaClassificada}) não pode ultrapassar a quantidade total coletada ({editingTriagem.quantidade_total}).
+                        A soma classificada ({somaClassificada}) não pode ultrapassar o total ({editingTriagem.quantidade_total}).
                       </p>
                    </div>
                 )}
@@ -353,7 +386,7 @@ export default function AdminTriagemPage() {
                   </div>
                   <div className="flex justify-between items-end pt-3 border-t border-green-200/50">
                     <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest flex items-center gap-2">
-                      <ArrowDownCircle size={14} /> Total para Abatimento
+                      <ArrowDownCircle size={14} /> Abatimento de Saldo
                     </span>
                     <div className="text-2xl font-black text-green-700">
                       {valorTotalCompra.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
