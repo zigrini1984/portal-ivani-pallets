@@ -85,6 +85,55 @@ const Card = ({ children, className = "" }: { children: React.ReactNode, classNa
   </div>
 );
 
+const KPICard = ({ 
+  label, 
+  value, 
+  description, 
+  icon, 
+  trend, 
+  trendUp 
+}: { 
+  label: string, 
+  value: string | number, 
+  description: string, 
+  icon: React.ReactNode,
+  trend?: string,
+  trendUp?: boolean
+}) => (
+  <Card className="p-6 relative group overflow-hidden border-brand-pink/10 min-h-[160px] flex flex-col justify-between">
+    {/* Decorative Background Icon */}
+    <div className="absolute top-[-20px] right-[-20px] opacity-[0.03] group-hover:opacity-[0.08] transition-all duration-500 pointer-events-none rotate-12 group-hover:rotate-0">
+       {React.isValidElement(icon) && React.cloneElement(icon as React.ReactElement<any>, { size: 140 })}
+    </div>
+    
+    <div className="relative z-10">
+      <div className="flex justify-between items-start mb-2">
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest leading-none">{label}</span>
+          <div className="w-6 h-1 bg-brand-cyan/20 rounded-full" />
+        </div>
+        {trend && (
+          <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${trendUp ? 'bg-green-50 text-green-600' : 'bg-brand-cyan/5 text-brand-cyan'}`}>
+            {trend}
+          </div>
+        )}
+      </div>
+      
+      <div className="mt-4">
+        <span className="text-2xl sm:text-3xl font-bold tracking-tight text-text-dark block truncate leading-none" title={String(value)}>
+          {value}
+        </span>
+      </div>
+    </div>
+
+    <div className="relative z-10 mt-6">
+      <p className="text-[10px] text-text-dark/50 font-medium leading-relaxed border-t border-brand-pink/5 pt-3">
+        {description}
+      </p>
+    </div>
+  </Card>
+);
+
 // --- COMPONENTES DE GRÁFICOS ---
 
 const SimpleBarChart = ({ data }: { data: { label: string, value: number, color: string }[] }) => {
@@ -381,37 +430,41 @@ export default function ClienteDashboardPCE() {
             <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-10">
               {/* KPIs com dados reais */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                <Card className="p-6 relative group overflow-hidden border-brand-pink/10">
-                  <div className="absolute top-0 right-0 p-4 opacity-5"><Package size={64} /></div>
-                  <div className="w-10 h-10 bg-brand-cyan/5 text-brand-cyan rounded-lg flex items-center justify-center mb-4"><Package size={20} /></div>
-                  <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest mb-1">Pallets Recebidos</span>
-                  <span className="text-2xl sm:text-3xl font-bold tracking-tight text-text-dark">{kpis.totalPallets.toLocaleString()}</span>
-                  <span className="text-[10px] text-text-dark/40 font-medium mt-1">Total histórico processado</span>
-                </Card>
+                <KPICard 
+                  label="Pallets Recebidos"
+                  value={kpis.totalPallets.toLocaleString()}
+                  description="Total histórico de material processado"
+                  icon={<Package />}
+                  trend="+12%"
+                  trendUp={true}
+                />
 
-                <Card className="p-6 relative group overflow-hidden border-brand-pink/10">
-                  <div className="absolute top-0 right-0 p-4 opacity-5"><Wallet size={64} /></div>
-                  <div className="w-10 h-10 bg-brand-cyan/5 text-brand-cyan rounded-lg flex items-center justify-center mb-4"><Wallet size={20} /></div>
-                  <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest mb-1">Economia Gerada</span>
-                  <span className="text-2xl sm:text-3xl font-bold tracking-tight text-text-dark">{kpis.economia}</span>
-                  <span className="text-[10px] text-text-dark/40 font-medium mt-1">Estimativa de custo evitado</span>
-                </Card>
+                <KPICard 
+                  label="Economia Gerada"
+                  value={kpis.economia}
+                  description="Estimativa baseada em material recuperado"
+                  icon={<Wallet />}
+                  trend="R$ 12k/mês"
+                  trendUp={true}
+                />
 
-                <Card className="p-6 relative group overflow-hidden border-brand-pink/10">
-                  <div className="absolute top-0 right-0 p-4 opacity-5"><RotateCw size={64} /></div>
-                  <div className="w-10 h-10 bg-brand-cyan/5 text-brand-cyan rounded-lg flex items-center justify-center mb-4"><RotateCw size={20} /></div>
-                  <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest mb-1">Circularidade</span>
-                  <span className="text-2xl sm:text-3xl font-bold tracking-tight text-text-dark">{kpis.circularidade}</span>
-                  <span className="text-[10px] text-text-dark/40 font-medium mt-1">Taxa de reaproveitamento</span>
-                </Card>
+                <KPICard 
+                  label="Circularidade"
+                  value={kpis.circularidade}
+                  description="Índice de reaproveitamento de material"
+                  icon={<RotateCw />}
+                  trend="Alta"
+                  trendUp={true}
+                />
 
-                <Card className="p-6 relative group overflow-hidden border-brand-pink/10">
-                  <div className="absolute top-0 right-0 p-4 opacity-5"><Activity size={64} /></div>
-                  <div className="w-10 h-10 bg-brand-cyan/5 text-brand-cyan rounded-lg flex items-center justify-center mb-4"><Activity size={20} /></div>
-                  <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest mb-1">Lotes Ativos</span>
-                  <span className="text-2xl sm:text-3xl font-bold tracking-tight text-text-dark">{kpis.ativos}</span>
-                  <span className="text-[10px] text-text-dark/40 font-medium mt-1">Em processo na central</span>
-                </Card>
+                <KPICard 
+                  label="Lotes Ativos"
+                  value={kpis.ativos}
+                  description="Lotes em processamento na central"
+                  icon={<Activity />}
+                  trend="Normal"
+                  trendUp={false}
+                />
               </div>
 
               {/* Data Visualization Group */}
