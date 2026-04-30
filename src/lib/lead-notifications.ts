@@ -57,18 +57,20 @@ function buildLeadEmailHtml(lead: LeadNotificationPayload) {
 }
 
 export async function sendLeadEmail(lead: LeadNotificationPayload) {
-  const apiKey = process.env.RESEND_API_KEY;
   const to = process.env.LEAD_NOTIFY_EMAIL;
   const from = process.env.LEAD_FROM_EMAIL;
 
-  if (!apiKey || !to || !from) {
+  console.log("[resend] key prefix:", process.env.RESEND_API_KEY?.slice(0, 6));
+  console.log("[resend] key length:", process.env.RESEND_API_KEY?.length);
+
+  if (!process.env.RESEND_API_KEY || !to || !from) {
     throw new Error("Variaveis RESEND_API_KEY, LEAD_NOTIFY_EMAIL e LEAD_FROM_EMAIL precisam estar configuradas.");
   }
 
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
