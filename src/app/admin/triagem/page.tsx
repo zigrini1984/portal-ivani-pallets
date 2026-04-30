@@ -19,7 +19,8 @@ import {
   DollarSign,
   Calculator,
   ArrowDownCircle,
-  History
+  History,
+  Trash2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -60,7 +61,6 @@ export default function AdminTriagemPage() {
 
   // Estados locais do formulário para cálculos em tempo real
   const [formValues, setFormValues] = useState({
-    quantidade_sucata: 0,
     quantidade_manutencao: 0,
     quantidade_remanufatura: 0,
     quantidade_compra_ivani: 0,
@@ -94,7 +94,6 @@ export default function AdminTriagemPage() {
   useEffect(() => {
     if (editingTriagem) {
       setFormValues({
-        quantidade_sucata: editingTriagem.quantidade_sucata || 0,
         quantidade_manutencao: editingTriagem.quantidade_manutencao || 0,
         quantidade_remanufatura: editingTriagem.quantidade_remanufatura || 0,
         quantidade_compra_ivani: editingTriagem.quantidade_compra_ivani || 0,
@@ -103,20 +102,26 @@ export default function AdminTriagemPage() {
     }
   }, [editingTriagem]);
 
+  // Cálculos automáticos
+  const somaClassificada = useMemo(() => {
+    return formValues.quantidade_manutencao + formValues.quantidade_remanufatura + formValues.quantidade_compra_ivani;
+  }, [formValues]);
+
+  const sucataCalculada = useMemo(() => {
+    if (!editingTriagem) return 0;
+    return editingTriagem.quantidade_total - somaClassificada;
+  }, [editingTriagem, somaClassificada]);
+
   const valorTotalCompra = useMemo(() => {
     return formValues.quantidade_compra_ivani * formValues.valor_unitario_compra;
   }, [formValues.quantidade_compra_ivani, formValues.valor_unitario_compra]);
-
-  const somaClassificada = useMemo(() => {
-    return formValues.quantidade_sucata + formValues.quantidade_manutencao + formValues.quantidade_remanufatura + formValues.quantidade_compra_ivani;
-  }, [formValues]);
 
   const handleUpdateTriagem = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!editingTriagem) return;
 
     if (somaClassificada > editingTriagem.quantidade_total) {
-      alert(`A soma das quantidades (${somaClassificada}) excede o total recebido (${editingTriagem.quantidade_total}).`);
+      alert(`Erro: A soma classificada (${somaClassificada}) não pode ultrapassar a quantidade total coletada (${editingTriagem.quantidade_total}).`);
       return;
     }
 
@@ -126,9 +131,10 @@ export default function AdminTriagemPage() {
         .from("triagens")
         .update({
           ...formValues,
+          quantidade_sucata: sucataCalculada,
           valor_total_compra: valorTotalCompra,
           observacao: new FormData(e.currentTarget).get("observacao") as string,
-          status: somaClassificada === editingTriagem.quantidade_total ? "finalizada" : "classificada"
+          status: "finalizada" // Como a sucata é automática, a triagem sempre fecha a conta total
         })
         .eq("id", editingTriagem.id);
 
@@ -180,7 +186,7 @@ export default function AdminTriagemPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-10">
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight">Classificação de Materiais</h1>
-          <p className="text-text-dark/50 text-sm mt-1">Desmembre a carga coletada em categorias operacionais e financeiras.</p>
+          <p className="text-text-dark/50 text-sm mt-1">Triagem completa da carga coletada (fechamento automático de sucata).</p>
         </div>
 
         {loading ? (
@@ -247,9 +253,9 @@ export default function AdminTriagemPage() {
                       <span className="text-[9px] font-bold text-text-dark/40 uppercase tracking-tighter block mb-1">Remanufatura</span>
                       <div className="text-base font-bold text-text-dark">{item.quantidade_remanufatura}</div>
                     </div>
-                    <div className="bg-bg-primary p-3 rounded-2xl">
-                      <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter block mb-1">Sucata/Descarte</span>
-                      <div className="text-base font-bold text-text-dark">{item.quantidade_sucata}</div>
+                    <div className="bg-red-50/50 p-3 rounded-2xl border border-red-100/50">
+                      <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter block mb-1">Sucata (Auto)</span>
+                      <div className="text-base font-bold text-red-500">{item.quantidade_sucata}</div>
                     </div>
                     <div className="bg-brand-cyan/5 p-3 rounded-2xl border border-brand-cyan/10">
                       <span className="text-[9px] font-bold text-brand-cyan uppercase tracking-tighter block mb-1">Compra Ivani</span>
@@ -282,7 +288,7 @@ export default function AdminTriagemPage() {
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-text-dark/20 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-brand-pink/20 overflow-hidden" >
-              <div className="px-8 py-6 border-b border-brand-pink/10 flex justify-between items-center bg-white">
+              <div className="px-8 py-6 border-b border-brand-pink/10 flex justify-between items-center bg-white sticky top-0 z-10">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-brand-cyan/10 rounded-xl flex items-center justify-center text-brand-cyan"><Calculator size={20} /></div>
                   <h3 className="font-bold text-lg">Classificar Carga</h3>
@@ -292,54 +298,64 @@ export default function AdminTriagemPage() {
 
               <form onSubmit={handleUpdateTriagem} className="p-8 space-y-6">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-bg-primary p-4 rounded-2xl border border-gray-100">
-                     <span className="text-[10px] font-bold text-text-dark/40 uppercase block mb-1">Total Recebido</span>
-                     <div className="text-2xl font-black text-text-dark">{editingTriagem.quantidade_total}</div>
+                  <div className="bg-bg-primary p-4 rounded-2xl border border-gray-100 flex flex-col items-center justify-center text-center">
+                     <span className="text-[10px] font-bold text-text-dark/40 uppercase block mb-1 tracking-widest">Total Coletado</span>
+                     <div className="text-3xl font-black text-text-dark">{editingTriagem.quantidade_total}</div>
                   </div>
-                  <div className={`p-4 rounded-2xl border ${somaClassificada > editingTriagem.quantidade_total ? 'bg-red-50 border-red-100' : 'bg-brand-cyan/5 border-brand-cyan/10'}`}>
-                     <span className="text-[10px] font-bold uppercase block mb-1">Total Classificado</span>
-                     <div className={`text-2xl font-black ${somaClassificada > editingTriagem.quantidade_total ? 'text-red-500' : 'text-brand-cyan'}`}>{somaClassificada}</div>
+                  <div className={`p-4 rounded-2xl border transition-all flex flex-col items-center justify-center text-center ${sucataCalculada < 0 ? 'bg-red-50 border-red-200' : 'bg-red-50/50 border-red-100'}`}>
+                     <span className={`text-[10px] font-bold uppercase block mb-1 tracking-widest ${sucataCalculada < 0 ? 'text-red-500' : 'text-red-400'}`}>Sucata Automática</span>
+                     <div className={`text-3xl font-black ${sucataCalculada < 0 ? 'text-red-600' : 'text-red-500'}`}>
+                        {sucataCalculada < 0 ? "Erro!" : sucataCalculada}
+                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/60 ml-1">Manutenção</label>
-                    <input type="number" min="0" value={formValues.quantidade_manutencao} onChange={(e) => setFormValues(prev => ({ ...prev, quantidade_manutencao: parseInt(e.target.value || "0") }))} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none" />
+                    <input type="number" min="0" value={formValues.quantidade_manutencao} onChange={(e) => setFormValues(prev => ({ ...prev, quantidade_manutencao: parseInt(e.target.value || "0") }))} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-brand-cyan/20" />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/60 ml-1">Remanufatura</label>
-                    <input type="number" min="0" value={formValues.quantidade_remanufatura} onChange={(e) => setFormValues(prev => ({ ...prev, quantidade_remanufatura: parseInt(e.target.value || "0") }))} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-red-500 ml-1">Sucata/Descarte</label>
-                    <input type="number" min="0" value={formValues.quantidade_sucata} onChange={(e) => setFormValues(prev => ({ ...prev, quantidade_sucata: parseInt(e.target.value || "0") }))} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none" />
+                    <input type="number" min="0" value={formValues.quantidade_remanufatura} onChange={(e) => setFormValues(prev => ({ ...prev, quantidade_remanufatura: parseInt(e.target.value || "0") }))} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-brand-cyan/20" />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-green-600 ml-1">Compra Ivani</label>
-                    <input type="number" min="0" value={formValues.quantidade_compra_ivani} onChange={(e) => setFormValues(prev => ({ ...prev, quantidade_compra_ivani: parseInt(e.target.value || "0") }))} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none font-bold text-green-600" />
+                    <input type="number" min="0" value={formValues.quantidade_compra_ivani} onChange={(e) => setFormValues(prev => ({ ...prev, quantidade_compra_ivani: parseInt(e.target.value || "0") }))} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm font-black outline-none focus:ring-2 focus:ring-green-500/20 text-green-600" />
                   </div>
                 </div>
+
+                {sucataCalculada < 0 && (
+                   <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3">
+                      <AlertCircle className="text-red-500 flex-shrink-0" size={18} />
+                      <p className="text-xs font-bold text-red-600 leading-tight uppercase tracking-tight">
+                        A soma classificada ({somaClassificada}) não pode ultrapassar a quantidade total coletada ({editingTriagem.quantidade_total}).
+                      </p>
+                   </div>
+                )}
 
                 <div className="p-5 bg-green-50 rounded-2xl border border-green-100 space-y-4">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2 text-green-700 font-bold text-[10px] uppercase tracking-widest">
                       <DollarSign size={14} /> Preço Unitário de Compra
                     </div>
-                    <input 
-                      type="number" 
-                      step="0.01" 
-                      min="0"
-                      value={formValues.valor_unitario_compra}
-                      onChange={(e) => setFormValues(prev => ({ ...prev, valor_unitario_compra: parseFloat(e.target.value || "0") }))}
-                      className="w-24 px-3 py-1 bg-white border border-green-200 rounded-lg text-xs font-bold text-green-700 outline-none text-right"
-                    />
+                    <div className="relative">
+                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-green-600">R$</span>
+                       <input 
+                        type="number" 
+                        step="0.01" 
+                        min="0"
+                        value={formValues.valor_unitario_compra}
+                        onChange={(e) => setFormValues(prev => ({ ...prev, valor_unitario_compra: parseFloat(e.target.value || "0") }))}
+                        className="w-28 pl-8 pr-3 py-2 bg-white border border-green-200 rounded-lg text-xs font-black text-green-700 outline-none text-right focus:ring-2 focus:ring-green-500/20"
+                      />
+                    </div>
                   </div>
-                  <div className="flex justify-between items-end pt-2 border-t border-green-200/50">
+                  <div className="flex justify-between items-end pt-3 border-t border-green-200/50">
                     <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest flex items-center gap-2">
                       <ArrowDownCircle size={14} /> Total para Abatimento
                     </span>
-                    <div className="text-xl font-black text-green-700">
+                    <div className="text-2xl font-black text-green-700">
                       {valorTotalCompra.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </div>
                   </div>
@@ -347,13 +363,13 @@ export default function AdminTriagemPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">Observações da Triagem</label>
-                  <textarea name="observacao" defaultValue={editingTriagem.observacao} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none min-h-[60px] resize-none" />
+                  <textarea name="observacao" defaultValue={editingTriagem.observacao} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none min-h-[60px] resize-none focus:ring-2 focus:ring-brand-cyan/20" />
                 </div>
 
                 <div className="flex gap-3">
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-3 border border-gray-200 rounded-xl text-xs font-bold text-text-dark/60">Cancelar</button>
-                  <button type="submit" disabled={isSubmitting || somaClassificada > editingTriagem.quantidade_total} className="flex-1 px-6 py-3 bg-brand-cyan text-white rounded-xl text-xs font-bold shadow-lg hover:bg-[#1a6e74] disabled:opacity-50 flex items-center justify-center gap-2">
-                    {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Salvar Classificação
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-3 border border-gray-200 rounded-xl text-xs font-bold text-text-dark/60 hover:bg-gray-50 transition-colors">Cancelar</button>
+                  <button type="submit" disabled={isSubmitting || sucataCalculada < 0} className="flex-1 px-6 py-3 bg-brand-cyan text-white rounded-xl text-xs font-bold shadow-lg hover:bg-[#1a6e74] disabled:opacity-50 flex items-center justify-center gap-2 transition-all">
+                    {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Finalizar Triagem
                   </button>
                 </div>
               </form>
