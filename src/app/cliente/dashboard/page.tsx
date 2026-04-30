@@ -188,6 +188,12 @@ const DonutChart = ({ data }: { data: { label: string, value: number, color: str
   );
 };
 
+import { createClient } from "@/lib/supabase/client";
+import { logout } from "@/app/actions/auth";
+
+// Instância estável do Supabase
+const supabase = createClient();
+
 export default function ClienteDashboardPCE() {
   const [activeTab, setActiveTab] = useState("overview");
   const [lotes, setLotes] = useState<Lote[]>([]);
@@ -196,58 +202,75 @@ export default function ClienteDashboardPCE() {
   const [loading, setLoading] = useState(true);
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const [userName, setUserName] = useState<string>("PCE Logística");
 
   // --- BUSCA DE DADOS ---
 
   const fetchData = async () => {
-    if (!supabaseUrl || !supabaseAnonKey) {
-      setError("Configuração do Supabase não encontrada.");
-      setLoading(false);
-      return;
-    }
-
+    console.log("Dashboard: Iniciando fetchData...");
     try {
       setLoading(true);
-      const response = await fetch(`${supabaseUrl}/rest/v1/lotes?order=data_entrada.desc`, {
-        headers: {
-          apikey: supabaseAnonKey as string,
-          Authorization: `Bearer ${supabaseAnonKey}`,
-        },
-      });
+      
+      // Obter usuário e perfil com segurança
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) console.warn("Dashboard: Erro ao buscar usuário auth:", authError);
+      
+      const user = authData?.user;
+      
+      if (user) {
+        console.log("Dashboard: Usuário logado:", user.id);
+        const { data: perfil, error: perfilError } = await supabase
+          .from("perfis")
+          .select("nome, cliente_id")
+          .eq("id", user.id)
+          .single();
+        
+        if (perfilError) console.error("Dashboard: Erro ao buscar perfil:", perfilError);
+        if (perfil?.nome) setUserName(perfil.nome);
+      } else {
+        console.warn("Dashboard: Nenhum usuário encontrado na sessão.");
+      }
 
-      if (!response.ok) throw new Error("Falha ao buscar lotes");
+      // Buscar lotes
+      console.log("Dashboard: Buscando lotes no Supabase...");
+      const { data, error: fetchError } = await supabase
+        .from("lotes")
+        .select("*")
+        .order("data_entrada", { ascending: false });
 
-      const data = await response.json();
-      setLotes(data);
-      if (data.length > 0) setSelectedLoteId(data[0].id);
+      if (fetchError) {
+        console.error("Dashboard: Erro na query de lotes:", fetchError);
+        throw fetchError;
+      }
+
+      console.log("Dashboard: Dados recebidos:", data?.length || 0, "lotes");
+      setLotes(data || []);
+      if (data && data.length > 0) setSelectedLoteId(data[0].id);
       setError(null);
-    } catch (err) {
-      setError("Erro ao carregar dados do dashboard.");
-      console.error(err);
+    } catch (err: any) {
+      console.error("Dashboard: Erro geral no fetchData:", err);
+      setError(`Erro ao carregar dados: ${err.message || "Erro de conexão"}`);
     } finally {
       setLoading(false);
+      console.log("Dashboard: Finalizado loading principal.");
     }
   };
 
   const fetchEvents = async (loteId: string) => {
+    if (!loteId) return;
+    console.log(`Dashboard: Buscando eventos para lote ${loteId}...`);
     try {
       setLoadingEvents(true);
-      const response = await fetch(`${supabaseUrl}/rest/v1/lote_eventos?lote_id=eq.${loteId}&order=created_at.asc`, {
-        headers: {
-          apikey: supabaseAnonKey as string,
-          Authorization: `Bearer ${supabaseAnonKey}`,
-        },
-      });
+      const { data, error: fetchError } = await supabase
+        .from("lote_eventos")
+        .select("*")
+        .eq("lote_id", loteId)
+        .order("created_at", { ascending: true });
 
-      if (!response.ok) throw new Error("Falha ao buscar eventos");
-
-      const data = await response.json();
-      setEventos(data);
+      if (fetchError) throw fetchError;
+      setEventos(data || []);
     } catch (err) {
-      console.error(err);
+      console.error("Dashboard: Erro ao buscar eventos:", err);
     } finally {
       setLoadingEvents(false);
     }
@@ -369,13 +392,17 @@ export default function ClienteDashboardPCE() {
 
             <div className="flex items-center gap-3 sm:gap-4">
               <div className="hidden sm:flex flex-col items-end">
-                <span className="text-xs font-bold text-text-dark">PCE Logística</span>
+                <span className="text-xs font-bold text-text-dark">{userName}</span>
                 <span className="text-[10px] text-brand-cyan font-bold tracking-tighter uppercase">Parceiro Estratégico</span>
               </div>
-              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-brand-pink/30 rounded-full border border-brand-pink/50 flex items-center justify-center text-brand-cyan font-bold text-xs">
-                PCE
+              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-brand-pink/30 rounded-full border border-brand-pink/50 flex items-center justify-center text-brand-cyan font-bold text-xs uppercase">
+                {userName.substring(0, 2)}
               </div>
-              <button className="p-2 text-text-dark/40 hover:text-red-500 transition-colors">
+              <button 
+                onClick={() => logout()}
+                className="p-2 text-text-dark/40 hover:text-red-500 transition-colors"
+                title="Sair"
+              >
                 <LogOut size={18} />
               </button>
             </div>

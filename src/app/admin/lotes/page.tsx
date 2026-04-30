@@ -6,6 +6,9 @@ import {
   Plus, 
   Search, 
   Filter, 
+  Calendar, 
+  MoreHorizontal, 
+  Edit2, 
   Edit3, 
   History, 
   CheckCircle2, 
@@ -17,9 +20,11 @@ import {
   Trash2,
   ChevronRight,
   LayoutDashboard,
-  ArrowLeft
+  ArrowLeft,
+  LogOut
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
 // --- TIPAGEM ---
 
@@ -64,6 +69,13 @@ const Badge = ({ children, variant = "default" }: { children: React.ReactNode, v
   );
 };
 
+import { createClient } from "@/lib/supabase/client";
+import { logout } from "@/app/actions/auth";
+import { sendStatusUpdateEmail } from "@/app/actions/notifications";
+
+// Cliente Supabase instanciado fora do componente para estabilidade
+const supabase = createClient();
+
 export default function AdminLotesPage() {
   const [lotes, setLotes] = useState<Lote[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,34 +84,32 @@ export default function AdminLotesPage() {
   const [editingLote, setEditingLote] = useState<Lote | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
   // --- BUSCA DE DADOS ---
 
   const fetchLotes = async () => {
-    if (!supabaseUrl || !supabaseAnonKey) {
-      setError("Configuração do Supabase não encontrada.");
-      return;
-    }
-
+    console.log("AdminLotesPage: Iniciando busca de lotes...");
     try {
       setLoading(true);
-      const response = await fetch(`${supabaseUrl}/rest/v1/lotes?order=data_entrada.desc`, {
-        headers: {
-          apikey: supabaseAnonKey,
-          Authorization: `Bearer ${supabaseAnonKey}`,
-        },
-      });
+      
+      const { data, error: fetchError } = await supabase
+        .from("lotes")
+        .select("*")
+        .order("data_entrada", { ascending: false });
 
-      if (!response.ok) throw new Error("Falha ao buscar lotes");
-      const data = await response.json();
-      setLotes(data);
-    } catch (err) {
-      setError("Erro ao carregar lotes.");
-      console.error(err);
+      if (fetchError) {
+        console.error("AdminLotesPage: Erro na query do Supabase:", fetchError);
+        throw fetchError;
+      }
+
+      console.log("AdminLotesPage: Lotes carregados com sucesso:", data?.length || 0);
+      setLotes(data || []);
+      setError(null);
+    } catch (err: any) {
+      console.error("AdminLotesPage: Erro capturado no catch:", err);
+      setError(`Erro ao carregar lotes: ${err.message || "Erro desconhecido"}`);
     } finally {
       setLoading(false);
+      console.log("AdminLotesPage: Finalizado estado de loading.");
     }
   };
 
@@ -111,9 +121,11 @@ export default function AdminLotesPage() {
 
   const handleSaveLote = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!supabaseUrl || !supabaseAnonKey) return;
-
     const formData = new FormData(e.currentTarget);
+    
+    // Por enquanto usamos 'pce', futuramente pode vir de um campo select de clientes
+    const CLIENTE_ID = editingLote?.cliente_id || "pce";
+
     const loteData = {
       numero_lote: formData.get("numero_lote") as string,
       data_entrada: formData.get("data_entrada") as string || new Date().toISOString(),
@@ -121,74 +133,75 @@ export default function AdminLotesPage() {
       status: formData.get("status") as string,
       destino: formData.get("destino") as string,
       observacao: formData.get("observacao") as string,
+      cliente_id: CLIENTE_ID
     };
 
     try {
       setIsSubmitting(true);
       
-      let response;
       if (editingLote) {
         // Atualizar
-        response = await fetch(`${supabaseUrl}/rest/v1/lotes?id=eq.${editingLote.id}`, {
-          method: "PATCH",
-          headers: {
-            apikey: supabaseAnonKey,
-            Authorization: `Bearer ${supabaseAnonKey}`,
-            "Content-Type": "application/json",
-            "Prefer": "return=representation"
-          },
-          body: JSON.stringify(loteData),
-        });
+        const { error: updateError } = await supabase
+          .from("lotes")
+          .update(loteData)
+          .eq("id", editingLote.id);
 
-        // Se o status mudou, criar evento
+        if (updateError) throw updateError;
+
+        // Se o status mudou, criar evento e enviar e-mail
         if (editingLote.status !== loteData.status) {
-          await fetch(`${supabaseUrl}/rest/v1/lote_eventos`, {
-            method: "POST",
-            headers: {
-              apikey: supabaseAnonKey,
-              Authorization: `Bearer ${supabaseAnonKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
+          await supabase
+            .from("lote_eventos")
+            .insert({
               lote_id: editingLote.id,
               etapa: loteData.status,
-              descricao: `Status atualizado para ${loteData.status} pela administração.`
-            }),
+              descricao: `Status atualizado para ${loteData.status} pela administração.`,
+              cliente_id: CLIENTE_ID
+            });
+
+          /* Notificação por e-mail (Desativado temporariamente - Fase final)
+          await sendStatusUpdateEmail({
+            cliente_id: CLIENTE_ID,
+            loteNumber: loteData.numero_lote,
+            status: loteData.status,
+            destino: loteData.destino,
+            observacao: loteData.observacao,
+            dataAlteracao: new Date().toLocaleString('pt-BR')
           });
+          */
         }
       } else {
         // Criar
-        response = await fetch(`${supabaseUrl}/rest/v1/lotes`, {
-          method: "POST",
-          headers: {
-            apikey: supabaseAnonKey,
-            Authorization: `Bearer ${supabaseAnonKey}`,
-            "Content-Type": "application/json",
-            "Prefer": "return=representation"
-          },
-          body: JSON.stringify(loteData),
-        });
+        const { data: createdLotes, error: insertError } = await supabase
+          .from("lotes")
+          .insert(loteData)
+          .select();
 
-        const createdLotes = await response.json();
-        if (createdLotes.length > 0) {
+        if (insertError) throw insertError;
+
+        if (createdLotes && createdLotes.length > 0) {
           // Criar evento inicial
-          await fetch(`${supabaseUrl}/rest/v1/lote_eventos`, {
-            method: "POST",
-            headers: {
-              apikey: supabaseAnonKey,
-              Authorization: `Bearer ${supabaseAnonKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
+          await supabase
+            .from("lote_eventos")
+            .insert({
               lote_id: createdLotes[0].id,
               etapa: "recebido",
-              descricao: "Lote cadastrado no sistema Ivani Pallets."
-            }),
+              descricao: "Lote cadastrado no sistema Ivani Pallets.",
+              cliente_id: CLIENTE_ID
+            });
+          
+          /* Notificação por e-mail de recebimento (Desativado temporariamente - Fase final)
+          await sendStatusUpdateEmail({
+            cliente_id: CLIENTE_ID,
+            loteNumber: loteData.numero_lote,
+            status: "recebido",
+            destino: loteData.destino,
+            observacao: loteData.observacao,
+            dataAlteracao: new Date().toLocaleString('pt-BR')
           });
+          */
         }
       }
-
-      if (!response.ok) throw new Error("Falha ao salvar lote");
 
       setIsModalOpen(false);
       setEditingLote(null);
@@ -230,9 +243,25 @@ export default function AdminLotesPage() {
                 </div>
                 <div className="flex flex-col">
                   <span className="font-bold text-sm leading-none text-brand-cyan">Gestão de Lotes</span>
-                  <span className="text-[10px] font-bold text-text-dark/30 uppercase tracking-tighter mt-0.5">Admin Ivani Pallets</span>
+                  <span className="text-[10px] font-bold text-text-dark/30 uppercase tracking-tighter mt-0.5">Ivani Pallets — Admin</span>
                 </div>
               </div>
+
+              {/* Menu de Navegação Admin */}
+              <nav className="hidden md:flex items-center gap-1 ml-6">
+                <Link 
+                  href="/admin/lotes" 
+                  className="px-4 py-2 bg-brand-cyan/5 text-brand-cyan rounded-lg text-xs font-bold"
+                >
+                  Lotes
+                </Link>
+                <Link 
+                  href="/admin/relatorios" 
+                  className="px-4 py-2 text-text-dark/40 hover:text-text-dark/60 hover:bg-gray-50 rounded-lg text-xs font-bold transition-all"
+                >
+                  Relatórios
+                </Link>
+              </nav>
             </div>
 
             <div className="flex items-center gap-4">
@@ -243,6 +272,13 @@ export default function AdminLotesPage() {
                  <Plus size={16} />
                  Novo Lote
                </button>
+               <button 
+                onClick={() => logout()}
+                className="p-2 text-text-dark/40 hover:text-red-500 transition-colors"
+                title="Sair"
+              >
+                <LogOut size={18} />
+              </button>
             </div>
           </div>
         </div>

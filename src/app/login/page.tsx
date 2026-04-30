@@ -1,10 +1,29 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Package, ArrowLeft, ArrowRight } from "lucide-react";
+import { Package, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import { login } from "@/app/actions/auth";
 
 export default function LoginPage() {
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const formData = new FormData(event.currentTarget);
+    const result = await login(formData);
+
+    if (result?.error) {
+      setError(result.error);
+      setLoading(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-bg-primary text-text-dark font-sans flex items-center justify-center px-6 py-12">
       <motion.div 
@@ -28,11 +47,13 @@ export default function LoginPage() {
             <p className="text-sm text-text-dark/50">Entre com suas credenciais para acessar sua área</p>
           </div>
 
-          <form className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-text-dark/40 mb-2 ml-1">E-mail</label>
               <input 
+                name="email"
                 type="email" 
+                required
                 placeholder="seu@email.com.br"
                 className="w-full h-14 bg-bg-primary border border-brand-pink rounded-2xl px-5 focus:outline-none focus:border-brand-cyan/50 transition-colors"
               />
@@ -40,18 +61,32 @@ export default function LoginPage() {
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-text-dark/40 mb-2 ml-1">Senha</label>
               <input 
+                name="password"
                 type="password" 
+                required
                 placeholder="Sua senha"
                 className="w-full h-14 bg-bg-primary border border-brand-pink rounded-2xl px-5 focus:outline-none focus:border-brand-cyan/50 transition-colors"
               />
             </div>
 
+            {error && (
+              <p className="text-red-500 text-sm text-center font-medium bg-red-50 py-3 rounded-xl border border-red-100">
+                {error === "Invalid login credentials" ? "E-mail ou senha incorretos" : error}
+              </p>
+            )}
+
             <motion.button
+              type="submit"
+              disabled={loading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-5 bg-brand-cyan hover:bg-[#1a6e74] text-white rounded-2xl font-bold flex items-center justify-center gap-3 transition-all shadow-xl shadow-brand-cyan/20"
+              className="w-full py-5 bg-brand-cyan hover:bg-[#1a6e74] text-white rounded-2xl font-bold flex items-center justify-center gap-3 transition-all shadow-xl shadow-brand-cyan/20 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Entrar no Portal <ArrowRight size={20} />
+              {loading ? (
+                <Loader2 className="animate-spin" size={20} />
+              ) : (
+                <>Entrar no Portal <ArrowRight size={20} /></>
+              )}
             </motion.button>
           </form>
 
