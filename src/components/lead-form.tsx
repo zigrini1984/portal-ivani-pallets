@@ -1,15 +1,70 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { submitLeadAction } from "@/app/actions/leads";
+
+type LeadFormState = {
+  success: boolean;
+  message?: string;
+  error?: string;
+} | null;
 
 export function LeadForm() {
-  const [state, formAction, isPending] = useActionState(submitLeadAction, null);
+  const [state, setState] = useState<LeadFormState>(null);
+  const [isPending, setIsPending] = useState(false);
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsPending(true);
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const lead = {
+      nome: String(formData.get("nome") ?? "").trim(),
+      empresa: String(formData.get("empresa") ?? "").trim(),
+      whatsapp: String(formData.get("whatsapp") ?? "").trim(),
+      email: String(formData.get("email") ?? "").trim(),
+      cidade: String(formData.get("cidade") ?? "").trim(),
+      mensagem: String(formData.get("mensagem") ?? "").trim()
+    };
+
+    try {
+      const response = await fetch("/api/leads", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(lead)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        setState({
+          success: false,
+          error: result.error ?? "Erro desconhecido ao enviar lead."
+        });
+        return;
+      }
+
+      setState({
+        success: true,
+        message: result.message ?? "Solicitação enviada com sucesso. Em breve a Ivani Pallets entrará em contato."
+      });
+      form.reset();
+    } catch (error) {
+      setState({
+        success: false,
+        error: error instanceof Error ? error.message : "Erro inesperado ao enviar lead."
+      });
+    } finally {
+      setIsPending(false);
+    }
+  }
 
   return (
     <form 
-      action={formAction}
+      onSubmit={handleSubmit}
       className="grid grid-cols-1 md:grid-cols-2 gap-6"
     >
       {state && (
