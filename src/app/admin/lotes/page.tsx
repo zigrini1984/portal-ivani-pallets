@@ -37,6 +37,7 @@ interface Lote {
   destino: string;
   prioridade?: string;
   observacao: string;
+  cliente_id: string;
 }
 
 interface LoteEvento {
