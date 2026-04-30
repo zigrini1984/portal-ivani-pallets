@@ -87,7 +87,9 @@ export default function AdminTriagemPage() {
   const fetchTriagens = async () => {
     try {
       setLoading(true);
-      // Buscar triagens e seus itens
+      setError(null);
+      
+      // Buscar triagens e seus itens (LEFT JOIN automático do Supabase)
       const { data, error: fetchError } = await supabase
         .from("triagens")
         .select(`
@@ -97,14 +99,22 @@ export default function AdminTriagemPage() {
             modelo_pallet:modelos_pallets(id, nome, codigo, medidas)
           )
         `)
+        .eq("cliente_id", "pce")
         .order("created_at", { ascending: false });
 
-      if (fetchError) throw fetchError;
+      console.log("TRIAGEM DATA:", data);
+      console.log("TRIAGEM ERROR:", fetchError);
+
+      if (fetchError) {
+        console.error("Erro na query de triagens:", fetchError);
+        setError("Erro ao carregar triagens: " + fetchError.message);
+        return;
+      }
+
       setTriagens(data || []);
-      setError(null);
     } catch (err: any) {
-      console.error("Erro ao buscar triagens:", err);
-      setError("Falha ao carregar triagens.");
+      console.error("Erro crítico na página de triagem:", err);
+      setError("Falha crítica ao carregar triagens.");
     } finally {
       setLoading(false);
     }
@@ -374,7 +384,7 @@ export default function AdminTriagemPage() {
                         {item.itens.length > 3 && <div className="px-2 py-1 bg-gray-50 rounded-lg text-[9px] font-bold text-text-dark/30">+{item.itens.length - 3}</div>}
                       </div>
                     ) : (
-                      <div className="text-[10px] font-medium text-text-dark/30 italic">Aguardando separação por modelo</div>
+                      <div className="text-[10px] font-medium text-text-dark/30 italic">Sem itens classificados</div>
                     )}
                   </div>
 
