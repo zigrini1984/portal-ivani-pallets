@@ -36,30 +36,48 @@ import {
   ExternalLink,
   MoreHorizontal,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Wrench,
+  Layers,
+  ArrowRightLeft
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { createClient } from "@/lib/supabase/client";
+import { logout } from "@/app/actions/auth";
+import { registrarAcesso } from "@/lib/utils/monitoramento";
 
 // --- TIPAGEM ---
 
-interface Lote {
+interface Triagem {
   id: string;
-  numero_lote: string;
-  data_entrada: string;
-  quantidade: number;
-  status: string;
-  destino: string;
-  prioridade: string;
-  observacao: string;
-  updated_at: string;
+  nf_saida_pce: string;
+  data_coleta: string;
+  quantidade_total: number;
+  quantidade_manutencao: number;
+  quantidade_remanufatura: number;
+  quantidade_compra_ivani: number;
+  quantidade_sucata: number;
+  status: 'em_triagem' | 'classificada' | 'finalizada';
+  created_at: string;
 }
 
-interface LoteEvento {
+interface Manutencao {
   id: string;
-  lote_id: string;
-  etapa: string;
-  descricao: string;
-  created_at: string;
+  triagem_id: string;
+  quantidade_recebida: number;
+  quantidade_concluida: number;
+  quantidade_sucata: number;
+  quantidade_pendente: number;
+  status: 'pendente' | 'em_andamento' | 'concluida';
+}
+
+interface EstoqueSaldo {
+  modelo_pallet_id: string;
+  quantidade_disponivel: number;
+  modelo?: {
+    nome: string;
+    codigo: string;
+  }
 }
 
 // --- COMPONENTES DE UI ---
@@ -98,10 +116,10 @@ const KPICard = ({
   description: string, 
   icon: React.ReactNode,
   trend?: string,
-  trendUp?: boolean
+  trendUp?: boolean,
+  color?: string
 }) => (
   <Card className="p-6 relative group overflow-hidden border-brand-pink/10 min-h-[160px] flex flex-col justify-between">
-    {/* Decorative Background Icon */}
     <div className="absolute top-[-20px] right-[-20px] opacity-[0.03] group-hover:opacity-[0.08] transition-all duration-500 pointer-events-none rotate-12 group-hover:rotate-0">
        {React.isValidElement(icon) && React.cloneElement(icon as React.ReactElement<any>, { size: 140 })}
     </div>
@@ -134,35 +152,6 @@ const KPICard = ({
   </Card>
 );
 
-// --- COMPONENTES DE GRÁFICOS ---
-
-const SimpleBarChart = ({ data }: { data: { label: string, value: number, color: string }[] }) => {
-  const max = Math.max(...data.map(d => d.value), 1);
-  return (
-    <div className="flex items-end gap-2 sm:gap-3 h-32 sm:h-40 w-full pt-4">
-      {data.map((d, i) => (
-        <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
-          <div className="relative w-full flex flex-col items-center justify-end h-full">
-            <motion.div 
-              initial={{ height: 0 }}
-              animate={{ height: `${(d.value / max) * 100}%` }}
-              transition={{ duration: 1, delay: i * 0.1 }}
-              className={`w-full max-w-[32px] rounded-t-md ${d.color} opacity-80 group-hover:opacity-100 transition-opacity relative`}
-            >
-               <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[9px] font-bold text-text-dark/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                {d.value}
-              </div>
-            </motion.div>
-          </div>
-          <span className="text-[9px] font-bold text-text-dark/30 uppercase tracking-tighter truncate w-full text-center">
-            {d.label}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-};
-
 const DonutChart = ({ data }: { data: { label: string, value: number, color: string }[] }) => {
   const total = data.reduce((acc, curr) => acc + curr.value, 0);
   return (
@@ -188,92 +177,72 @@ const DonutChart = ({ data }: { data: { label: string, value: number, color: str
   );
 };
 
-import { createClient } from "@/lib/supabase/client";
-import { logout } from "@/app/actions/auth";
-import { registrarAcesso } from "@/lib/utils/monitoramento";
-
 // Instância estável do Supabase
 const supabase = createClient();
 
 export default function ClienteDashboardPCE() {
   const [activeTab, setActiveTab] = useState("overview");
-  const [lotes, setLotes] = useState<Lote[]>([]);
-  const [eventos, setEventos] = useState<LoteEvento[]>([]);
-  const [selectedLoteId, setSelectedLoteId] = useState<string | null>(null);
+  const [triagens, setTriagens] = useState<Triagem[]>([]);
+  const [manutencoes, setManutencoes] = useState<Manutencao[]>([]);
+  const [estoqueSaldos, setEstoqueSaldos] = useState<EstoqueSaldo[]>([]);
+  const [selectedTriagemId, setSelectedTriagemId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadingEvents, setLoadingEvents] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("PCE Logística");
 
   // --- BUSCA DE DADOS ---
 
   const fetchData = async () => {
-    console.log("Dashboard: Iniciando fetchData...");
     try {
       setLoading(true);
       
-      // Obter usuário e perfil com segurança
-      const { data: authData, error: authError } = await supabase.auth.getUser();
-      if (authError) console.warn("Dashboard: Erro ao buscar usuário auth:", authError);
-      
+      const { data: authData } = await supabase.auth.getUser();
       const user = authData?.user;
       
       if (user) {
-        console.log("Dashboard: Usuário logado:", user.id);
-        const { data: perfil, error: perfilError } = await supabase
+        const { data: perfil } = await supabase
           .from("perfis")
           .select("nome, cliente_id")
           .eq("id", user.id)
           .single();
-        
-        if (perfilError) console.error("Dashboard: Erro ao buscar perfil:", perfilError);
         if (perfil?.nome) setUserName(perfil.nome);
-      } else {
-        console.warn("Dashboard: Nenhum usuário encontrado na sessão.");
       }
 
-      // Buscar lotes
-      console.log("Dashboard: Buscando lotes no Supabase...");
-      const { data, error: fetchError } = await supabase
-        .from("lotes")
+      // 1. Buscar Triagens (O coração da operação para o cliente)
+      const { data: triagensData, error: triagemError } = await supabase
+        .from("triagens")
         .select("*")
-        .order("data_entrada", { ascending: false });
+        .eq("cliente_id", "pce")
+        .order("data_coleta", { ascending: false });
 
-      if (fetchError) {
-        console.error("Dashboard: Erro na query de lotes:", fetchError);
-        throw fetchError;
-      }
+      if (triagemError) throw triagemError;
+      setTriagens(triagensData || []);
 
-      console.log("Dashboard: Dados recebidos:", data?.length || 0, "lotes");
-      setLotes(data || []);
-      if (data && data.length > 0) setSelectedLoteId(data[0].id);
+      // 2. Buscar Manutenções relacionadas
+      const { data: manutencoesData, error: manutencaoError } = await supabase
+        .from("manutencoes")
+        .select("*")
+        .eq("cliente_id", "pce");
+
+      if (manutencaoError) throw manutencaoError;
+      setManutencoes(manutencoesData || []);
+
+      // 3. Buscar Saldo de Estoque
+      const { data: estoqueData, error: estoqueError } = await supabase
+        .from("estoque_pallets")
+        .select("*, modelo:modelos_pallets(nome, codigo)")
+        .eq("cliente_id", "pce");
+
+      if (estoqueError) throw estoqueError;
+      setEstoqueSaldos(estoqueData || []);
+
+      if (triagensData && triagensData.length > 0) setSelectedTriagemId(triagensData[0].id);
       setError(null);
     } catch (err: any) {
-      console.error("Dashboard: Erro geral no fetchData:", err);
-      setError(`Erro ao carregar dados: ${err.message || "Erro de conexão"}`);
+      console.error("Dashboard: Erro no fetchData:", err);
+      setError(`Erro ao carregar dados operacionais: ${err.message}`);
     } finally {
       setLoading(false);
-      console.log("Dashboard: Finalizado loading principal.");
-    }
-  };
-
-  const fetchEvents = async (loteId: string) => {
-    if (!loteId) return;
-    console.log(`Dashboard: Buscando eventos para lote ${loteId}...`);
-    try {
-      setLoadingEvents(true);
-      const { data, error: fetchError } = await supabase
-        .from("lote_eventos")
-        .select("*")
-        .eq("lote_id", loteId)
-        .order("created_at", { ascending: true });
-
-      if (fetchError) throw fetchError;
-      setEventos(data || []);
-    } catch (err) {
-      console.error("Dashboard: Erro ao buscar eventos:", err);
-    } finally {
-      setLoadingEvents(false);
     }
   };
 
@@ -282,55 +251,45 @@ export default function ClienteDashboardPCE() {
     registrarAcesso("cliente/dashboard");
   }, []);
 
-  useEffect(() => {
-    if (selectedLoteId) {
-      fetchEvents(selectedLoteId);
-    }
-  }, [selectedLoteId]);
-
   // --- CÁLCULOS DE KPIS ---
 
   const kpis = useMemo(() => {
-    const totalPallets = lotes.reduce((acc, l) => acc + (l.quantidade || 0), 0);
-    const ativos = lotes.filter(l => l.status !== "finalizado").length;
-    const finalizados = lotes.filter(l => l.status === "finalizado").reduce((acc, l) => acc + (l.quantidade || 0), 0);
-    const recuperados = lotes.filter(l => ["manutencao", "remanufatura", "compra", "finalizado"].includes(l.status)).reduce((acc, l) => acc + (l.quantidade || 0), 0);
+    const totalPallets = triagens.reduce((acc, t) => acc + (t.quantidade_total || 0), 0);
+    const emProcesso = triagens.filter(t => t.status !== "finalizada").length;
     
-    const economia = recuperados * 57; // R$ 57 média de economia por pallet recuperado
-    const circularidade = totalPallets > 0 ? (recuperados / totalPallets) * 100 : 0;
+    // Recuperação
+    const reforma = triagens.reduce((acc, t) => acc + (t.quantidade_manutencao || 0), 0);
+    const remanufatura = triagens.reduce((acc, t) => acc + (t.quantidade_remanufatura || 0), 0);
+    const compra = triagens.reduce((acc, t) => acc + (t.quantidade_compra_ivani || 0), 0);
+    const sucata = triagens.reduce((acc, t) => acc + (t.quantidade_sucata || 0), 0);
+    
+    const totalRecuperados = reforma + remanufatura;
+    const economia = totalRecuperados * 57; // R$ 57 média de economia
+    const circularidade = totalPallets > 0 ? (totalRecuperados / totalPallets) * 100 : 0;
+
+    // Saldo Total em Estoque
+    const saldoEstoque = estoqueSaldos.reduce((acc, e) => acc + e.quantidade_disponivel, 0);
 
     return {
       totalPallets,
-      ativos,
+      emProcesso,
       economia: economia.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
       circularidade: `${circularidade.toFixed(0)}%`,
-      destinos: [
-        { label: "Manutenção", value: lotes.filter(l => l.status === "manutencao").length, color: "bg-brand-yellow" },
-        { label: "Remanufatura", value: lotes.filter(l => l.status === "remanufatura").length, color: "bg-brand-blue" },
-        { label: "Compra Ivani", value: lotes.filter(l => l.status === "compra").length, color: "bg-green-500" },
-        { label: "Descarte", value: lotes.filter(l => l.status === "descarte").length, color: "bg-red-400" },
+      saldoEstoque,
+      distribuicao: [
+        { label: "Manutenção", value: reforma, color: "bg-brand-yellow" },
+        { label: "Remanufatura", value: remanufatura, color: "bg-brand-blue" },
+        { label: "Compra Ivani", value: compra, color: "bg-green-500" },
+        { label: "Sucata", value: sucata, color: "bg-red-400" },
       ]
     };
-  }, [lotes]);
-
-  const evolutionData = useMemo(() => {
-    // Agrupar por mês simplificado para o gráfico
-    return [
-      { label: "Jan", value: 450, color: "bg-brand-blue/40" },
-      { label: "Fev", value: 520, color: "bg-brand-blue/40" },
-      { label: "Mar", value: 380, color: "bg-brand-blue/40" },
-      { label: "Abr", value: kpis.totalPallets, color: "bg-brand-cyan" },
-      { label: "Mai", value: 0, color: "bg-brand-blue/40" },
-      { label: "Jun", value: 0, color: "bg-brand-blue/40" },
-    ];
-  }, [kpis.totalPallets]);
+  }, [triagens, estoqueSaldos]);
 
   const tabs = [
-    { id: "overview", label: "Geral", icon: <LayoutDashboard size={16} /> },
-    { id: "operation", label: "Operação", icon: <Settings size={16} /> },
-    { id: "financial", label: "Financeiro", icon: <DollarSign size={16} /> },
-    { id: "environmental", label: "Ambiental", icon: <Leaf size={16} /> },
-    { id: "batches", label: "Lotes", icon: <List size={16} /> },
+    { id: "overview", label: "Visão Geral", icon: <LayoutDashboard size={16} /> },
+    { id: "operations", label: "Operações", icon: <ArrowRightLeft size={16} /> },
+    { id: "stock", label: "Estoque Disponível", icon: <Package size={16} /> },
+    { id: "environmental", label: "Ambiental (ESG)", icon: <Leaf size={16} /> },
   ];
 
   if (loading) {
@@ -338,20 +297,7 @@ export default function ClienteDashboardPCE() {
       <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="animate-spin text-brand-cyan" size={40} />
-          <p className="text-sm font-bold text-text-dark/40 uppercase tracking-widest">Carregando Dashboard PCE...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
-        <div className="text-center p-8 bg-white rounded-3xl card-shadow border border-red-100 max-w-md">
-          <AlertCircle className="text-red-500 mx-auto mb-4" size={48} />
-          <h2 className="text-xl font-bold mb-2">Ops! Algo deu errado.</h2>
-          <p className="text-text-dark/50 text-sm mb-6">{error}</p>
-          <button onClick={() => fetchData()} className="px-6 py-3 bg-brand-cyan text-white rounded-xl font-bold text-sm">Tentar Novamente</button>
+          <p className="text-sm font-bold text-text-dark/40 uppercase tracking-widest">Sincronizando Dados PCE...</p>
         </div>
       </div>
     );
@@ -364,7 +310,7 @@ export default function ClienteDashboardPCE() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex justify-between items-center h-16 sm:h-20">
             <div className="flex items-center gap-4 sm:gap-10">
-              <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => window.location.href = "/"}>
+              <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-brand-cyan rounded-lg flex items-center justify-center shadow-lg shadow-brand-cyan/20">
                   <Package className="text-white" size={18} />
                 </div>
@@ -393,13 +339,6 @@ export default function ClienteDashboardPCE() {
             </div>
 
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className="hidden sm:flex flex-col items-end">
-                <span className="text-xs font-bold text-text-dark">{userName}</span>
-                <span className="text-[10px] text-brand-cyan font-bold tracking-tighter uppercase">Parceiro Estratégico</span>
-              </div>
-              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-brand-pink/30 rounded-full border border-brand-pink/50 flex items-center justify-center text-brand-cyan font-bold text-xs uppercase">
-                {userName.substring(0, 2)}
-              </div>
               <button 
                 onClick={() => logout()}
                 className="p-2 text-text-dark/40 hover:text-red-500 transition-colors"
@@ -410,23 +349,6 @@ export default function ClienteDashboardPCE() {
             </div>
           </div>
         </div>
-        {/* Mobile Navigation */}
-        <div className="lg:hidden flex overflow-x-auto px-4 py-2 gap-1 border-t border-brand-pink/10 bg-white">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
-                activeTab === tab.id 
-                ? "bg-brand-cyan/5 text-brand-cyan" 
-                : "text-text-dark/40"
-              }`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
-        </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10">
@@ -434,22 +356,18 @@ export default function ClienteDashboardPCE() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8 sm:mb-12">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <div className="flex items-center gap-2 mb-3">
-              <div className="px-2 py-0.5 bg-brand-cyan/10 text-brand-cyan rounded text-[9px] font-bold uppercase tracking-wider">Dashboard Operacional Real</div>
+              <div className="px-2 py-0.5 bg-brand-cyan/10 text-brand-cyan rounded text-[9px] font-bold uppercase tracking-wider">Fluxo Operacional Real-Time</div>
               <div className="w-1 h-1 bg-text-dark/20 rounded-full" />
-              <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest">PCE — Conectado</span>
+              <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest">PCE Conectada</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-dark">Acompanhamento operacional de pallets</h1>
-            <p className="text-text-dark/50 mt-1.5 text-sm sm:text-base">Dados sincronizados em tempo real com a central Ivani.</p>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-dark">Painel de Controle Operacional</h1>
+            <p className="text-text-dark/50 mt-1.5 text-sm">Acompanhe suas cargas, triagens e saldo de estoque.</p>
           </motion.div>
           
           <div className="flex gap-2 w-full sm:w-auto">
-            <button className="flex-1 sm:flex-none px-4 py-2.5 bg-white border border-brand-pink/30 rounded-xl text-xs font-bold shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2">
-              <Calendar size={14} className="text-text-dark/40" />
-              Período
-            </button>
-            <button className="flex-1 sm:flex-none px-4 py-2.5 bg-brand-cyan text-white rounded-xl text-xs font-bold shadow-lg shadow-brand-cyan/20 hover:bg-[#1a6e74] transition-all flex items-center justify-center gap-2">
+            <button className="flex-1 sm:flex-none px-6 py-3 bg-brand-cyan text-white rounded-xl text-xs font-bold shadow-lg shadow-brand-cyan/20 hover:scale-[1.02] transition-all active:scale-95 flex items-center justify-center gap-2">
               <Truck size={14} />
-              Solicitar Coleta
+              Nova Coleta
             </button>
           </div>
         </div>
@@ -457,143 +375,162 @@ export default function ClienteDashboardPCE() {
         <AnimatePresence mode="wait">
           {activeTab === "overview" && (
             <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-10">
-              {/* KPIs com dados reais */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 <KPICard 
-                  label="Pallets Recebidos"
+                  label="Pallets Enviados"
                   value={kpis.totalPallets.toLocaleString()}
-                  description="Total histórico de material processado"
-                  icon={<Package />}
-                  trend="+12%"
+                  description="Total bruto coletado na PCE"
+                  icon={<Truck />}
+                  trend="+14% mês"
                   trendUp={true}
                 />
-
                 <KPICard 
-                  label="Economia Gerada"
+                  label="Economia Direta"
                   value={kpis.economia}
-                  description="Estimativa baseada em material recuperado"
+                  description="Redução de custo por recuperação"
                   icon={<Wallet />}
                   trend="R$ 12k/mês"
                   trendUp={true}
                 />
-
                 <KPICard 
                   label="Circularidade"
                   value={kpis.circularidade}
-                  description="Índice de reaproveitamento de material"
-                  icon={<RotateCw />}
-                  trend="Alta"
+                  description="Taxa de material reincorporado"
+                  icon={<Recycle />}
+                  trend="Excelente"
                   trendUp={true}
                 />
-
                 <KPICard 
-                  label="Lotes Ativos"
-                  value={kpis.ativos}
-                  description="Lotes em processamento na central"
-                  icon={<Activity />}
-                  trend="Normal"
-                  trendUp={false}
+                  label="Saldo Disponível"
+                  value={kpis.saldoEstoque}
+                  description="Pallets prontos para retorno"
+                  icon={<Package />}
+                  trend="Estoque"
+                  color="purple"
                 />
               </div>
 
-              {/* Data Visualization Group */}
-              <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 sm:gap-8">
-                <Card className="lg:col-span-3 p-6 sm:p-8">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+                <Card className="lg:col-span-2 p-8">
+                  <div className="flex justify-between items-center mb-8">
                     <div>
-                      <h3 className="text-base sm:text-lg font-bold flex items-center gap-2">Fluxo Logístico</h3>
-                      <p className="text-[11px] text-text-dark/40 font-medium uppercase">Pallets por período (PCE)</p>
+                      <h3 className="text-lg font-bold">Distribuição do Material</h3>
+                      <p className="text-[10px] text-text-dark/40 font-bold uppercase tracking-widest mt-1">Classificação após Triagem</p>
+                    </div>
+                    <DonutChart data={kpis.distribuicao} />
+                  </div>
+                </Card>
+
+                <Card className="p-8 bg-brand-cyan/[0.02] border-brand-cyan/20">
+                  <div className="flex items-center gap-3 mb-8">
+                    <div className="w-12 h-12 bg-brand-cyan/10 rounded-2xl flex items-center justify-center text-brand-cyan">
+                      <Leaf size={24} />
+                    </div>
+                    <h3 className="text-lg font-bold">Eco-Impacto</h3>
+                  </div>
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-green-500 border border-green-50"><Trees size={20} /></div>
+                      <div>
+                        <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block">Madeira Salva</span>
+                        <div className="text-xl font-bold text-text-dark">{(kpis.totalPallets * 0.025).toFixed(1)} <span className="text-xs font-medium opacity-40">Ton</span></div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-blue-400 border border-blue-50"><Wind size={20} /></div>
+                      <div>
+                        <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block">CO2 Evitado</span>
+                        <div className="text-xl font-bold text-text-dark">{(kpis.totalPallets * 0.015).toFixed(1)} <span className="text-xs font-medium opacity-40">Ton</span></div>
+                      </div>
                     </div>
                   </div>
-                  <SimpleBarChart data={evolutionData} />
-                </Card>
-
-                <Card className="lg:col-span-2 p-6 sm:p-8">
-                  <h3 className="text-base sm:text-lg font-bold mb-8">Distribuição de Status</h3>
-                  <DonutChart data={kpis.destinos} />
                 </Card>
               </div>
             </motion.div>
           )}
 
-          {activeTab === "batches" && (
-            <motion.div key="batches" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2 space-y-6">
-                <h3 className="text-lg font-bold">Rastreabilidade Real PCE</h3>
-                <Card className="overflow-hidden">
-                   <div className="overflow-x-auto">
-                     <table className="w-full text-left">
-                        <thead>
-                          <tr className="bg-bg-primary/50 text-[10px] font-bold uppercase tracking-widest text-text-dark/40 border-b border-brand-pink/10">
-                            <th className="px-6 py-4">Lote</th>
-                            <th className="px-4 py-4">Qtd</th>
-                            <th className="px-4 py-4">Status</th>
-                            <th className="px-4 py-4">Entrada</th>
-                            <th className="px-6 py-4 text-right"></th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-brand-pink/10">
-                          {lotes.map((lote) => (
-                            <tr 
-                              key={lote.id} 
-                              onClick={() => setSelectedLoteId(lote.id)}
-                              className={`hover:bg-brand-pink/5 transition-all cursor-pointer ${selectedLoteId === lote.id ? 'bg-brand-cyan/5' : ''}`}
-                            >
-                              <td className="px-6 py-5">
-                                <div className="font-bold text-xs">{lote.numero_lote}</div>
-                                <div className="text-[10px] text-text-dark/30">{lote.prioridade}</div>
-                              </td>
-                              <td className="px-4 py-5 font-bold text-brand-cyan text-xs">{lote.quantidade}</td>
-                              <td className="px-4 py-5"><Badge variant={lote.status === "finalizado" ? "success" : "warning"}>{lote.status}</Badge></td>
-                              <td className="px-4 py-5 text-[10px] font-medium text-text-dark/40">{new Date(lote.data_entrada).toLocaleDateString('pt-BR')}</td>
-                              <td className="px-6 py-5 text-right"><ChevronRight size={14} className="text-text-dark/20 ml-auto" /></td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                   </div>
-                </Card>
-              </div>
-
-              <div className="space-y-6">
-                <h3 className="text-lg font-bold">Timeline do Lote</h3>
-                <Card className="p-8 relative min-h-[400px]">
-                   {loadingEvents ? (
-                     <div className="absolute inset-0 flex items-center justify-center bg-white/80"><Loader2 className="animate-spin text-brand-cyan" /></div>
-                   ) : eventos.length > 0 ? (
-                     <div className="space-y-8 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[1.5px] before:bg-brand-pink/20">
-                        {eventos.map((evento, i) => (
-                          <div key={evento.id} className="flex gap-4 relative">
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 z-10 border-2 border-white bg-brand-cyan`}>
-                              <CheckCircle2 size={12} className="text-white" />
+          {activeTab === "operations" && (
+            <motion.div key="operations" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+              <Card className="overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-bg-primary/50 text-[10px] font-bold uppercase tracking-widest text-text-dark/40 border-b border-brand-pink/10">
+                        <th className="px-6 py-4">NF / Carga</th>
+                        <th className="px-4 py-4">Data Coleta</th>
+                        <th className="px-4 py-4 text-center">Material Bruto</th>
+                        <th className="px-4 py-4 text-center">Classificação</th>
+                        <th className="px-4 py-4">Status</th>
+                        <th className="px-6 py-4 text-right">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-brand-pink/10">
+                      {triagens.map((t) => (
+                        <tr key={t.id} className="hover:bg-brand-pink/5 transition-all">
+                          <td className="px-6 py-5 font-bold text-xs">{t.nf_saida_pce || "S/ NF"}</td>
+                          <td className="px-4 py-5 text-[10px] font-medium text-text-dark/40">{new Date(t.data_coleta).toLocaleDateString('pt-BR')}</td>
+                          <td className="px-4 py-5 text-center font-bold text-brand-cyan text-xs">{t.quantidade_total}</td>
+                          <td className="px-4 py-5">
+                            <div className="flex items-center justify-center gap-1.5">
+                              <div className="w-2 h-2 rounded-full bg-amber-400" title="Reforma" />
+                              <span className="text-[10px] font-bold">{t.quantidade_manutencao}</span>
+                              <div className="w-2 h-2 rounded-full bg-brand-blue ml-2" title="Remanufatura" />
+                              <span className="text-[10px] font-bold">{t.quantidade_remanufatura}</span>
                             </div>
-                            <div className="flex flex-col">
-                              <span className="text-xs font-bold text-text-dark">{evento.etapa.replace('_', ' ')}</span>
-                              <span className="text-[9px] text-text-dark/50 font-medium">{evento.descricao}</span>
-                              <span className="text-[8px] font-bold text-brand-cyan/60 uppercase mt-0.5">{new Date(evento.created_at).toLocaleString('pt-BR')}</span>
-                            </div>
-                          </div>
-                        ))}
-                     </div>
-                   ) : (
-                     <div className="text-center py-10">
-                        <Package className="mx-auto text-text-dark/10 mb-4" size={48} />
-                        <p className="text-xs text-text-dark/40 italic">Selecione um lote para ver o histórico detalhado.</p>
-                     </div>
-                   )}
-                </Card>
-              </div>
+                          </td>
+                          <td className="px-4 py-5">
+                            <Badge variant={t.status === "finalizada" ? "success" : "warning"}>
+                              {t.status.replace('_', ' ')}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-5 text-right">
+                            <button className="text-brand-cyan hover:underline text-[10px] font-bold flex items-center gap-1 ml-auto">
+                              Detalhes <ChevronRight size={12} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
             </motion.div>
           )}
 
-          {activeTab === "operation" && <div className="py-24 text-center text-sm text-text-dark/40">Módulo em desenvolvimento...</div>}
-          {activeTab === "financial" && <div className="py-24 text-center text-sm text-text-dark/40">Módulo em desenvolvimento...</div>}
-          {activeTab === "environmental" && <div className="py-24 text-center text-sm text-text-dark/40">Módulo em desenvolvimento...</div>}
+          {activeTab === "stock" && (
+            <motion.div key="stock" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {estoqueSaldos.map((s, i) => (
+                <Card key={i} className="p-6 border-brand-pink/10">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h4 className="font-bold text-sm text-text-dark">{s.modelo?.nome || "Modelo Indefinido"}</h4>
+                      <p className="text-[10px] font-bold text-brand-cyan uppercase tracking-tighter">{s.modelo?.codigo}</p>
+                    </div>
+                    <div className="w-10 h-10 bg-brand-cyan/10 rounded-xl flex items-center justify-center text-brand-cyan">
+                      <Package size={20} />
+                    </div>
+                  </div>
+                  <div className="mt-6">
+                    <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block mb-1">Saldo Disponível</span>
+                    <div className="text-3xl font-bold text-text-dark">{s.quantidade_disponivel} <span className="text-xs font-medium text-text-dark/30">un</span></div>
+                  </div>
+                  <button className="w-full mt-6 py-2.5 bg-gray-50 hover:bg-brand-cyan hover:text-white border border-gray-100 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all">Solicitar Retorno</button>
+                </Card>
+              ))}
+            </motion.div>
+          )}
+
+          {activeTab === "environmental" && (
+            <motion.div key="environmental" className="py-24 text-center">
+              <Leaf size={48} className="mx-auto text-brand-cyan/20 mb-4" />
+              <p className="text-sm font-bold text-text-dark/40 uppercase tracking-widest">Relatório ESG em processamento...</p>
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
 
       <footer className="mt-20 py-8 border-t border-brand-pink/20 px-6 text-center text-[10px] font-bold uppercase tracking-widest text-text-dark/30">
-        © 2024 Ivani Pallets — Portal PCE Real-time
+        © 2024 Ivani Pallets — Portal PCE Conectado
       </footer>
     </div>
   );
