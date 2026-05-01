@@ -28,6 +28,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { logout } from "@/app/actions/auth";
 import { AdminNav } from "@/components/admin/admin-nav";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 
 // --- TIPAGEM ---
 
@@ -258,10 +259,10 @@ export default function AdminColetaPage() {
         </div>
 
         {loading ? (
-          <div className="py-20 flex flex-col items-center gap-4">
-            <Loader2 className="animate-spin text-brand-cyan" size={32} />
-            <p className="text-xs font-bold text-text-dark/30 uppercase tracking-widest">Buscando coletas...</p>
-          </div>
+          <LoadingScreen 
+            message="Buscando Coletas" 
+            subMessage="Ivani Pallets — Gestão de Cargas"
+          />
         ) : error ? (
           <div className="py-20 text-center">
             <AlertCircle className="text-red-500 mx-auto mb-4" size={40} />

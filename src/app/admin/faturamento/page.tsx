@@ -26,6 +26,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { logout } from "@/app/actions/auth";
 import { AdminNav } from "@/components/admin/admin-nav";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 
 const supabase = createClient();
 
@@ -280,10 +281,10 @@ export default function AdminFaturamentoPage() {
         </div>
 
         {loading ? (
-          <div className="py-20 flex flex-col items-center gap-4">
-            <Loader2 className="animate-spin text-brand-cyan" size={32} />
-            <p className="text-xs font-bold text-text-dark/30 uppercase tracking-widest">Processando faturas...</p>
-          </div>
+          <LoadingScreen 
+            message="Processando Faturas" 
+            subMessage="Ivani Pallets — Apontamento Financeiro"
+          />
         ) : (
           <AnimatePresence mode="wait">
             {activeTab === 'pendentes' ? (

@@ -45,6 +45,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { logout } from "@/app/actions/auth";
 import { registrarAcesso } from "@/lib/utils/monitoramento";
+import { LoadingPage } from "@/components/ui/loading-screen";
 
 // --- TIPAGEM ---
 
@@ -306,14 +307,7 @@ export default function ClienteDashboardPCE() {
   ];
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="animate-spin text-brand-cyan" size={40} />
-          <p className="text-sm font-bold text-text-dark/40 uppercase tracking-widest">Sincronizando Dados PCE...</p>
-        </div>
-      </div>
-    );
+    return <LoadingPage />;
   }
 
   return (

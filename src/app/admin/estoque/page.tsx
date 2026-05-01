@@ -25,6 +25,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { logout } from "@/app/actions/auth";
 import { AdminNav } from "@/components/admin/admin-nav";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 import { sincronizarEstoqueOperacional } from "@/lib/services/estoque";
 
 const supabase = createClient();
@@ -222,10 +223,10 @@ export default function AdminEstoquePage() {
         </div>
 
         {loading ? (
-          <div className="py-20 flex flex-col items-center gap-4">
-            <Loader2 className="animate-spin text-brand-cyan" size={32} />
-            <p className="text-xs font-bold text-text-dark/30 uppercase tracking-widest">Calculando saldos...</p>
-          </div>
+          <LoadingScreen 
+            message="Calculando Saldos" 
+            subMessage="Ivani Pallets — Inventário em Tempo Real"
+          />
         ) : error ? (
           <div className="py-20 text-center">
             <AlertCircle className="mx-auto text-red-400 mb-4" size={48} />

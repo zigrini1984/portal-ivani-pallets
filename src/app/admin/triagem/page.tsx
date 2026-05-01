@@ -21,7 +21,8 @@ import {
   Trash2,
   Plus,
   Box,
-  ChevronDown
+  ChevronDown,
+  Info
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -29,6 +30,7 @@ import { createClient } from "@/lib/supabase/client";
 import { logout } from "@/app/actions/auth";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { sincronizarEstoqueOperacional } from "@/lib/services/estoque";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 
 // --- TIPAGEM ---
 
@@ -365,11 +367,12 @@ export default function AdminTriagemPage() {
           <p className="text-text-dark/50 text-sm mt-1">Classifique a carga coletada por modelo de pallet e estado físico.</p>
         </div>
 
+
         {loading ? (
-          <div className="py-20 flex flex-col items-center gap-4">
-            <Loader2 className="animate-spin text-brand-cyan" size={32} />
-            <p className="text-xs font-bold text-text-dark/30 uppercase tracking-widest text-center">Processando dados...</p>
-          </div>
+          <LoadingScreen 
+            message="Processando Triagens" 
+            subMessage="Buscando dados operacionais da PCE"
+          />
         ) : triagens.length === 0 ? (
           <div className="py-32 text-center bg-white rounded-3xl border border-brand-pink/20">
             <ClipboardList className="mx-auto text-text-dark/10 mb-4" size={64} />
@@ -403,8 +406,20 @@ export default function AdminTriagemPage() {
                       `}>
                         {isPendente ? <AlertCircle size={20} /> : <Activity size={20} />}
                       </div>
-                      <div>
-                        <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block">Status</span>
+                      <div className="group/status relative">
+                        <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest flex items-center gap-1 cursor-help">
+                          Status <Info size={10} className="text-text-dark/20" />
+                        </span>
+                        {/* Tooltip */}
+                        <div className="absolute bottom-full left-0 mb-2 w-48 p-2 bg-text-dark text-white text-[9px] rounded-lg opacity-0 group-hover/status:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
+                          {isFinalizada 
+                            ? "Finalizada: triagem encerrada e bloqueada para edição." 
+                            : isPendente 
+                              ? "Aguardando: carga recebida, aguardando classificação por modelo."
+                              : "Classificada: triagem já recebeu itens por modelo, mas ainda pode ser ajustada."
+                          }
+                          <div className="absolute top-full left-4 border-8 border-transparent border-t-text-dark" />
+                        </div>
                         <div className={`text-[10px] font-bold uppercase flex items-center gap-1.5
                           ${isFinalizada ? 'text-green-600' : isPendente ? 'text-amber-600' : 'text-brand-cyan'}
                         `}>

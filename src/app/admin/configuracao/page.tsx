@@ -32,6 +32,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { logout } from "@/app/actions/auth";
 import { AdminNav } from "@/components/admin/admin-nav";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 
 // --- TIPAGEM ---
 
@@ -232,10 +233,10 @@ export default function AdminConfiguracaoPage() {
         </div>
 
         {loading ? (
-          <div className="py-20 flex flex-col items-center gap-4">
-            <Loader2 className="animate-spin text-brand-cyan" size={32} />
-            <p className="text-[10px] font-black text-text-dark/20 uppercase tracking-widest">Carregando painel...</p>
-          </div>
+          <LoadingScreen 
+            message="Carregando Painel" 
+            subMessage="Ivani Pallets — Configurações do Sistema"
+          />
         ) : error ? (
           <div className="py-20 text-center bg-white rounded-3xl border border-red-100">
             <AlertCircle className="text-red-500 mx-auto mb-4" size={40} />

@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import { LoadingPage } from "@/components/ui/loading-screen";
 import { logout } from "@/app/actions/auth";
 import Link from "next/link";
 
@@ -137,24 +138,9 @@ export default function RelatorioExecutivoPCE() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
-        <div className="flex flex-col items-center gap-6">
-          <div className="relative w-16 h-16">
-            <motion.div 
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className="absolute inset-0 border-4 border-brand-cyan/20 border-t-brand-cyan rounded-full"
-            />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <FileText className="text-brand-cyan" size={24} />
-            </div>
-          </div>
-          <p className="text-xs font-bold text-text-dark/40 uppercase tracking-[0.2em] animate-pulse">Consolidando Relatório Executivo</p>
-        </div>
-      </div>
-    );
+    return <LoadingPage />;
   }
+
 
   if (error || !kpis) {
     return (
