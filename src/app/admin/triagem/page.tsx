@@ -348,8 +348,9 @@ export default function AdminTriagemPage() {
                   <span className="text-[10px] font-bold text-text-dark/30 uppercase tracking-tighter mt-0.5">Ivani Pallets — Admin</span>
                 </div>
               </div>
-
-              <nav className="hidden md:flex items-center gap-1 ml-6">
+            </div>
+            
+            <nav className="hidden md:flex items-center gap-1 ml-6">
                 <Link href="/admin/coleta" className="px-4 py-2 text-text-dark/40 hover:text-text-dark/60 hover:bg-gray-50 rounded-lg text-xs font-bold transition-all">Coletas</Link>
                 <Link href="/admin/triagem" className="px-4 py-2 bg-brand-cyan/5 text-brand-cyan rounded-lg text-xs font-bold transition-all">Triagem</Link>
                 <Link href="/admin/manutencao" className="px-4 py-2 text-text-dark/40 hover:text-text-dark/60 hover:bg-gray-50 rounded-lg text-xs font-bold transition-all">Manutenção</Link>
@@ -357,8 +358,7 @@ export default function AdminTriagemPage() {
                 <Link href="/admin/faturamento" className="px-4 py-2 text-text-dark/40 hover:text-text-dark/60 hover:bg-gray-50 rounded-lg text-xs font-bold transition-all">Faturamento</Link>
                 <Link href="/admin/configuracao" className="px-4 py-2 text-text-dark/40 hover:text-text-dark/60 hover:bg-gray-50 rounded-lg text-xs font-bold transition-all">Configuração</Link>
                 <Link href="/admin/relatorios" className="px-4 py-2 text-text-dark/40 hover:text-text-dark/60 hover:bg-gray-50 rounded-lg text-xs font-bold transition-all">Relatórios</Link>
-              </nav>
-            </div>
+            </nav>
             <div className="flex items-center gap-4">
                <button onClick={() => logout()} className="p-2 text-text-dark/40 hover:text-red-500 transition-colors" title="Sair"><LogOut size={18} /></button>
             </div>
