@@ -39,10 +39,15 @@ import {
   AlertCircle,
   Wrench,
   Layers,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Menu,
+  X,
+  FileText
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { logout } from "@/app/actions/auth";
 import { registrarAcesso } from "@/lib/utils/monitoramento";
 import { LoadingPage } from "@/components/ui/loading-screen";
@@ -306,6 +311,8 @@ export default function ClienteDashboardPCE() {
     { id: "environmental", label: "Ambiental (ESG)", icon: <Leaf size={16} /> },
   ];
 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   if (loading) {
     return <LoadingPage />;
   }
@@ -331,7 +338,7 @@ export default function ClienteDashboardPCE() {
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={() => setActiveTab(tab.id as any)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
                       activeTab === tab.id 
                       ? "bg-brand-cyan/5 text-brand-cyan" 
@@ -342,13 +349,28 @@ export default function ClienteDashboardPCE() {
                     {tab.label}
                   </button>
                 ))}
+                <Link
+                  href="/cliente/relatorio"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-text-dark/40 hover:text-brand-cyan hover:bg-brand-cyan/5 transition-all"
+                >
+                  <FileText size={16} />
+                  Relatório Executivo
+                </Link>
               </nav>
             </div>
 
             <div className="flex items-center gap-3 sm:gap-4">
+              {/* Mobile Menu Toggle */}
+              <button 
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="lg:hidden p-2 text-text-dark/60 hover:bg-gray-100 rounded-lg"
+              >
+                <Menu size={24} />
+              </button>
+
               <button 
                 onClick={() => logout()}
-                className="p-2 text-text-dark/40 hover:text-red-500 transition-colors"
+                className="hidden sm:block p-2 text-text-dark/40 hover:text-red-500 transition-colors"
                 title="Sair"
               >
                 <LogOut size={18} />
@@ -357,6 +379,82 @@ export default function ClienteDashboardPCE() {
           </div>
         </div>
       </header>
+
+      {/* Mobile Menu Drawer */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[60] lg:hidden"
+            />
+            <motion.div 
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed top-0 right-0 bottom-0 w-[280px] bg-white z-[70] lg:hidden shadow-2xl border-l border-brand-pink/10 flex flex-col p-6"
+            >
+              <div className="flex justify-between items-center mb-8">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-cyan">Navegação Portal</span>
+                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-text-dark/40">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-2 overflow-y-auto pr-2">
+                <span className="text-[9px] font-bold text-text-dark/20 uppercase tracking-widest ml-4 mb-1">Módulos</span>
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id as any);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-bold transition-all ${
+                      activeTab === tab.id 
+                      ? "bg-brand-cyan text-white shadow-lg shadow-brand-cyan/20" 
+                      : "text-text-dark/60 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      {tab.icon}
+                      {tab.label}
+                    </div>
+                    {activeTab === tab.id && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </button>
+                ))}
+
+                <div className="my-4 border-t border-brand-pink/5" />
+                <span className="text-[9px] font-bold text-text-dark/20 uppercase tracking-widest ml-4 mb-1">Estratégico</span>
+                
+                <Link
+                  href="/cliente/relatorio"
+                  className="flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold text-text-dark/60 hover:bg-gray-50 transition-all"
+                >
+                  <FileText size={18} />
+                  Relatório Executivo
+                </Link>
+
+                <button
+                  onClick={() => logout()}
+                  className="flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold text-red-500 hover:bg-red-50 transition-all mt-4"
+                >
+                  <LogOut size={18} />
+                  Sair do Portal
+                </button>
+              </div>
+
+              <div className="mt-auto pt-6 border-t border-brand-pink/5">
+                <div className="text-[9px] font-bold text-text-dark/20 uppercase tracking-widest text-center italic">Ivani Pallets — Inteligência Logística</div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10">
         {/* Welcome Section */}
