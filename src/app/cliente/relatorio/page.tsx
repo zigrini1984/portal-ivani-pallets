@@ -36,6 +36,8 @@ interface ExecKPIs {
   total_recuperados: number;
   total_sucata: number;
   economia_total: number;
+  custo_total_sem_ivani: number;
+  custo_total_com_ivani: number;
   taxa_circularidade: number;
   co2_evitado: number;
   madeira_reaproveitada: number;
@@ -71,6 +73,12 @@ const StatCard = ({ label, value, icon, color, delay }: any) => (
       <span className="text-2xl font-bold text-text-dark group-hover:text-brand-cyan transition-colors">{value}</span>
     </div>
   </motion.div>
+);
+
+const Card = ({ children, className = "" }: any) => (
+  <div className={`bg-white rounded-[2.5rem] border border-brand-pink/10 shadow-sm ${className}`}>
+    {children}
+  </div>
 );
 
 export default function RelatorioExecutivoPCE() {
@@ -243,6 +251,70 @@ export default function RelatorioExecutivoPCE() {
             delay={0.4}
           />
         </div>
+
+        {/* Cenários Comparativos */}
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-16"
+        >
+          <div className="flex items-center gap-3 mb-8">
+            <TrendingUp className="text-brand-cyan" size={24} />
+            <h3 className="text-xl font-bold">Análise de ROI: Cenários Comparativos</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+            {/* Cenário Sem Ivani */}
+            <Card className="p-8 border-gray-100 bg-white shadow-sm flex flex-col justify-between group hover:border-red-100 transition-all">
+              <div>
+                <div className="flex justify-between items-start mb-6">
+                  <div className="p-3 bg-red-50 text-red-500 rounded-2xl"><AlertCircle size={24} /></div>
+                  <span className="px-3 py-1 bg-red-50 text-red-500 rounded-full text-[10px] font-bold uppercase tracking-widest">Sem Recuperação</span>
+                </div>
+                <h4 className="text-lg font-bold mb-2">Cenário Convencional</h4>
+                <p className="text-text-dark/40 text-xs mb-8">Custo estimado para reposição total de {kpis.total_recuperados} pallets através da compra de material novo no mercado.</p>
+              </div>
+              <div className="mt-auto">
+                <div className="text-[10px] font-bold text-text-dark/20 uppercase tracking-widest mb-1">Custo Projetado</div>
+                <div className="text-3xl font-bold text-text-dark group-hover:text-red-500 transition-colors">
+                  {kpis.custo_total_sem_ivani.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </div>
+              </div>
+            </Card>
+
+            {/* Cenário Com Ivani */}
+            <Card className="p-8 border-brand-cyan/20 bg-brand-cyan/5 shadow-sm flex flex-col justify-between group hover:shadow-xl hover:shadow-brand-cyan/10 transition-all border-dashed border-2">
+              <div>
+                <div className="flex justify-between items-start mb-6">
+                  <div className="p-3 bg-brand-cyan text-white rounded-2xl shadow-lg shadow-brand-cyan/30"><Zap size={24} /></div>
+                  <span className="px-3 py-1 bg-brand-cyan text-white rounded-full text-[10px] font-bold uppercase tracking-widest">Com Ivani Pallets</span>
+                </div>
+                <h4 className="text-lg font-bold mb-2">Cenário Otimizado</h4>
+                <p className="text-text-dark/40 text-xs mb-8">Custo real da operação de triagem e manutenção Ivani, focada na circularidade e reaproveitamento de ativos.</p>
+              </div>
+              <div className="mt-auto">
+                <div className="text-[10px] font-bold text-brand-cyan uppercase tracking-widest mb-1">Custo Operacional</div>
+                <div className="text-3xl font-bold text-text-dark flex items-center gap-3">
+                  {kpis.custo_total_com_ivani.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  <div className="p-1.5 bg-green-500 text-white rounded-lg"><TrendingUp size={14} /></div>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Banner de Economia */}
+          <div className="mt-8 p-6 bg-emerald-500 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-6 text-white shadow-lg shadow-emerald-500/20">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center"><Wallet size={24} /></div>
+              <div>
+                <h4 className="text-sm font-bold">ROI do Período</h4>
+                <p className="text-white/70 text-xs">Total de economia direta gerada pela recuperação de ativos.</p>
+              </div>
+            </div>
+            <div className="text-4xl font-black">{kpis.economia_total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+          </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-16">
           {/* Resumo Operacional */}
