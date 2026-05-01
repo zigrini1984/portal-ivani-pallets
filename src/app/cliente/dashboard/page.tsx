@@ -189,6 +189,7 @@ export default function ClienteDashboardPCE() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("PCE Logística");
+  const [kpiView, setKpiView] = useState<any>(null);
 
   // --- BUSCA DE DADOS ---
 
@@ -237,6 +238,15 @@ export default function ClienteDashboardPCE() {
       setEstoqueSaldos(estoqueData || []);
 
       if (triagensData && triagensData.length > 0) setSelectedTriagemId(triagensData[0].id);
+      
+      // 4. Buscar KPIs Consolidados (View)
+      const { data: vData } = await supabase
+        .from("dashboard_kpis_pce")
+        .select("*")
+        .single();
+      
+      if (vData) setKpiView(vData);
+
       setError(null);
     } catch (err: any) {
       console.error("Dashboard: Erro no fetchData:", err);
@@ -254,18 +264,19 @@ export default function ClienteDashboardPCE() {
   // --- CÁLCULOS DE KPIS ---
 
   const kpis = useMemo(() => {
-    const totalPallets = triagens.reduce((acc, t) => acc + (t.quantidade_total || 0), 0);
+    // Usar dados da View se disponíveis, senão fallback (calculado ou zero)
+    const totalPallets = kpiView?.total_pallets_processados ?? triagens.reduce((acc, t) => acc + (t.quantidade_total || 0), 0);
     const emProcesso = triagens.filter(t => t.status !== "finalizada").length;
     
     // Recuperação
     const reforma = triagens.reduce((acc, t) => acc + (t.quantidade_manutencao || 0), 0);
     const remanufatura = triagens.reduce((acc, t) => acc + (t.quantidade_remanufatura || 0), 0);
     const compra = triagens.reduce((acc, t) => acc + (t.quantidade_compra_ivani || 0), 0);
-    const sucata = triagens.reduce((acc, t) => acc + (t.quantidade_sucata || 0), 0);
+    const sucata = kpiView?.total_sucata ?? triagens.reduce((acc, t) => acc + (t.quantidade_sucata || 0), 0);
     
-    const totalRecuperados = reforma + remanufatura;
-    const economia = totalRecuperados * 57; // R$ 57 média de economia
-    const circularidade = totalPallets > 0 ? (totalRecuperados / totalPallets) * 100 : 0;
+    const economiaVal = kpiView?.economia_total ?? 0;
+    const economia = economiaVal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    const circularidade = kpiView?.taxa_circularidade ?? 0;
 
     // Saldo Total em Estoque
     const saldoEstoque = estoqueSaldos.reduce((acc, e) => acc + e.quantidade_disponivel, 0);
@@ -273,9 +284,11 @@ export default function ClienteDashboardPCE() {
     return {
       totalPallets,
       emProcesso,
-      economia: economia.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
+      economia,
       circularidade: `${circularidade.toFixed(0)}%`,
       saldoEstoque,
+      co2: kpiView?.co2_evitado ?? 0,
+      madeira: kpiView?.madeira_reaproveitada ?? 0,
       distribuicao: [
         { label: "Manutenção", value: reforma, color: "bg-brand-yellow" },
         { label: "Remanufatura", value: remanufatura, color: "bg-brand-blue" },
@@ -283,7 +296,7 @@ export default function ClienteDashboardPCE() {
         { label: "Sucata", value: sucata, color: "bg-red-400" },
       ]
     };
-  }, [triagens, estoqueSaldos]);
+  }, [triagens, estoqueSaldos, kpiView]);
 
   const tabs = [
     { id: "overview", label: "Visão Geral", icon: <LayoutDashboard size={16} /> },
@@ -433,14 +446,14 @@ export default function ClienteDashboardPCE() {
                       <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-green-500 border border-green-50"><Trees size={20} /></div>
                       <div>
                         <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block">Madeira Salva</span>
-                        <div className="text-xl font-bold text-text-dark">{(kpis.totalPallets * 0.025).toFixed(1)} <span className="text-xs font-medium opacity-40">Ton</span></div>
+                        <div className="text-xl font-bold text-text-dark">{kpis.madeira.toFixed(1)} <span className="text-xs font-medium opacity-40">Ton</span></div>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-blue-400 border border-blue-50"><Wind size={20} /></div>
                       <div>
                         <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block">CO2 Evitado</span>
-                        <div className="text-xl font-bold text-text-dark">{(kpis.totalPallets * 0.015).toFixed(1)} <span className="text-xs font-medium opacity-40">Ton</span></div>
+                        <div className="text-xl font-bold text-text-dark">{kpis.co2.toFixed(1)} <span className="text-xs font-medium opacity-40">Ton</span></div>
                       </div>
                     </div>
                   </div>
