@@ -557,8 +557,8 @@ export default function ClienteDashboardPCE() {
           {activeTab === "operations" && (
             <motion.div key="operations" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
               <Card className="overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
+                <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                  <table className="w-full min-w-[750px] text-left">
                     <thead>
                       <tr className="bg-bg-primary/50 text-[10px] font-bold uppercase tracking-widest text-text-dark/40 border-b border-brand-pink/10">
                         <th className="px-6 py-4">NF / Carga</th>

@@ -362,9 +362,23 @@ export default function AdminTriagemPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-10">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight">Triagem Técnica (PCE)</h1>
-          <p className="text-text-dark/50 text-sm mt-1">Classifique a carga coletada por modelo de pallet e estado físico.</p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Triagem Técnica (PCE)</h1>
+            <p className="text-text-dark/50 text-sm mt-1">Classifique a carga coletada por modelo de pallet e estado físico.</p>
+          </div>
+          
+          <div className="flex items-center gap-2 bg-brand-cyan/5 px-4 py-3 rounded-2xl border border-brand-cyan/10">
+            <Info className="text-brand-cyan shrink-0" size={18} />
+            <div className="flex flex-col">
+              <p className="text-[10px] font-bold text-text-dark/60 leading-tight">
+                <span className="text-brand-cyan">Classificada:</span> Itens recebidos, edição permitida.
+              </p>
+              <p className="text-[10px] font-bold text-text-dark/60 leading-tight">
+                <span className="text-brand-cyan">Finalizada:</span> Encerrada e bloqueada para edição.
+              </p>
+            </div>
+          </div>
         </div>
 
 

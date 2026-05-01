@@ -319,8 +319,8 @@ export default function AdminFaturamentoPage() {
               </motion.div>
             ) : (
               <motion.div key="list" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="bg-white rounded-3xl border border-brand-pink/20 overflow-hidden card-shadow">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
+                <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                  <table className="w-full min-w-[700px] text-left">
                     <thead>
                       <tr className="bg-gray-50/50">
                         <th className="px-6 py-4 text-[10px] font-black text-text-dark/40 uppercase tracking-widest">Modelo / Data Saída</th>

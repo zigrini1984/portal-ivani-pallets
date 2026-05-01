@@ -31,6 +31,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { logout } from "@/app/actions/auth";
+import { LoadingPage } from "@/components/ui/loading-screen";
 import { AdminNav } from "@/components/admin/admin-nav";
 
 // --- TIPAGEM ---
@@ -191,14 +192,7 @@ export default function AdminRelatoriosPage() {
   }, [filteredTriagens]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="animate-spin text-brand-cyan" size={40} />
-          <p className="text-xs font-bold text-text-dark/40 uppercase tracking-widest">Processando Inteligência...</p>
-        </div>
-      </div>
-    );
+    return <LoadingPage />;
   }
 
   return (
