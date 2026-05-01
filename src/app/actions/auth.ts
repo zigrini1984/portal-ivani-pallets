@@ -28,7 +28,7 @@ export async function login(formData: FormData) {
   revalidatePath("/", "layout");
 
   if (perfil?.tipo === "admin") {
-    redirect("/admin/lotes");
+    redirect("/admin/coleta");
   } else {
     redirect("/cliente/dashboard");
   }

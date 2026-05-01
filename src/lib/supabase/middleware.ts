@@ -55,7 +55,7 @@ export async function updateSession(request: NextRequest) {
     if (isLoginPage) {
       const url = request.nextUrl.clone()
       if (perfil?.tipo === 'admin') {
-        url.pathname = '/admin/lotes'
+        url.pathname = '/admin/coleta'
       } else {
         url.pathname = '/cliente/dashboard'
       }
@@ -71,7 +71,7 @@ export async function updateSession(request: NextRequest) {
 
     if (request.nextUrl.pathname.startsWith('/cliente') && perfil?.tipo === 'admin') {
       const url = request.nextUrl.clone()
-      url.pathname = '/admin/lotes'
+      url.pathname = '/admin/coleta'
       return NextResponse.redirect(url)
     }
   }
