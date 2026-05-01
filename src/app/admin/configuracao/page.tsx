@@ -212,7 +212,7 @@ export default function AdminConfiguracaoPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-10">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight">Painel de Controle</h1>
+          <h1 className="text-2xl font-bold tracking-tight">PAINEL ADMIN - TESTE 🚀</h1>
           <p className="text-text-dark/50 text-sm mt-1">Gerencie modelos, preços e monitore a atividade do portal.</p>
         </div>
 
