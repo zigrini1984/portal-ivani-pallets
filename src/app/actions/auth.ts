@@ -5,33 +5,32 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 export async function login(formData: FormData) {
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
   const supabase = await createClient();
 
-  const { error, data } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  const email = formData.get("email")?.toString().trim();
+  const password = formData.get("password")?.toString().trim();
 
-  if (error) {
-    return { error: error.message };
+  if (!email || !password) {
+    return { error: "Preencha todos os campos" };
   }
 
-  // Buscar perfil para decidir redirecionamento
-  const { data: perfil } = await supabase
-    .from("perfis")
-    .select("tipo")
-    .eq("id", data.user.id)
-    .single();
+  const { data, error } = await supabase
+    .from("usuarios")
+    .select("*")
+    .ilike("email", email)
+    .eq("senha", password)
+    .eq("ativo", true)
+    .maybeSingle();
 
-  revalidatePath("/", "layout");
-
-  if (perfil?.tipo === "admin") {
-    redirect("/admin/coleta");
-  } else {
-    redirect("/cliente/dashboard");
+  if (error || !data) {
+    return { error: "Invalid login credentials" };
   }
+
+  // 🔥 opcional: salvar sessão simples
+  return {
+    success: true,
+    user: data,
+  };
 }
 
 export async function logout() {
