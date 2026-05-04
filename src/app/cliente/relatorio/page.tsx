@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+export const dynamic = "force-dynamic";
+
+import React, { useState, useEffect, useMemo } from "react";
 import { 
   FileText, 
   Download, 
+  Printer,
   Calendar, 
-  Filter, 
   TrendingUp, 
   Leaf, 
   Recycle, 
@@ -13,120 +15,59 @@ import {
   Trees, 
   Wallet, 
   ArrowLeft,
-  Loader2,
   AlertCircle,
   Package,
-  ChevronRight,
   Target,
   Award,
   Zap,
-  LogOut,
   Truck,
-  Clock
+  Clock,
+  ShieldCheck,
+  Activity,
+  Box,
+  MapPin,
+  Scale,
+  Info
 } from "lucide-react";
-import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { LoadingPage } from "@/components/ui/loading-screen";
-import { logout } from "@/app/actions/auth";
-import Link from "next/link";
+import { registrarAcesso } from "@/lib/utils/monitoramento";
+import { fetchDashboardKPIs, DashboardKPIs } from "@/lib/kpis";
+import { ClientNav } from "@/components/dashboard/client-nav";
 
-// --- TIPAGEM ---
-
-interface ExecKPIs {
-  total_pallets_processados: number;
-  total_recuperados: number;
-  total_sucata: number;
-  economia_total: number;
-  custo_total_sem_ivani: number;
-  custo_total_com_ivani: number;
-  taxa_circularidade: number;
-  co2_evitado: number;
-  madeira_reaproveitada: number;
-}
-
-interface EstoqueItem {
-  quantidade_disponivel: number;
-  modelo: {
-    nome: string;
-    codigo: string;
-  }
-}
-
-const supabase = createClient();
-
-// --- COMPONENTES ---
-
-const StatCard = ({ label, value, icon, color, delay }: any) => (
-  <motion.div 
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, delay }}
-    className="bg-white p-6 rounded-[2rem] border border-brand-pink/10 shadow-sm hover:shadow-md transition-all group"
-  >
-    <div className="flex justify-between items-start mb-4">
-      <div className={`p-3 rounded-2xl ${color} bg-opacity-10 text-opacity-100`}>
-        {React.cloneElement(icon, { size: 20, className: color.replace('bg-', 'text-') })}
-      </div>
-      <div className="text-[10px] font-bold text-text-dark/20 uppercase tracking-widest">Performance</div>
-    </div>
-    <div className="flex flex-col">
-      <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest mb-1">{label}</span>
-      <span className="text-2xl font-bold text-text-dark group-hover:text-brand-cyan transition-colors">{value}</span>
-    </div>
-  </motion.div>
+const PrintSectionTitle = ({ title, icon: Icon }: { title: string, icon: any }) => (
+  <div className="flex items-center gap-3 mb-6 border-b border-neutral-100 pb-2 print:border-neutral-300">
+    <Icon size={20} className="text-neutral-500 print:text-neutral-900" />
+    <h3 className="text-xl font-bold text-neutral-800 print:text-neutral-900 tracking-tight">{title}</h3>
+  </div>
 );
 
-const Card = ({ children, className = "" }: any) => (
-  <div className={`bg-white rounded-[2.5rem] border border-brand-pink/10 shadow-sm ${className}`}>
-    {children}
+const PrintStatRow = ({ label, value, icon: Icon, colorClass = "text-neutral-900" }: { label: string, value: string | number, icon?: any, colorClass?: string }) => (
+  <div className="flex justify-between items-center py-3 border-b border-neutral-50 last:border-0 print:border-neutral-100">
+    <div className="flex items-center gap-2.5">
+      {Icon && <Icon size={14} className="text-neutral-400 print:text-neutral-600" />}
+      <span className="text-sm text-neutral-500 print:text-neutral-700 font-medium">{label}</span>
+    </div>
+    <span className={`text-base font-bold tracking-tight ${colorClass} print:text-neutral-900`}>{value}</span>
   </div>
 );
 
 export default function RelatorioExecutivoPCE() {
-  const [kpis, setKpis] = useState<ExecKPIs | null>(null);
-  const [estoque, setEstoque] = useState<EstoqueItem[]>([]);
+  const [kpis, setKpis] = useState<DashboardKPIs | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [userName, setUserName] = useState("Executivo PCE");
+  const [mounted, setMounted] = useState(false);
+
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      
-      const { data: authData } = await supabase.auth.getUser();
-      if (authData?.user) {
-        const { data: perfil } = await supabase
-          .from("perfis")
-          .select("nome")
-          .eq("id", authData.user.id)
-          .single();
-        if (perfil?.nome) setUserName(perfil.nome);
-      }
-
-      // 1. Buscar KPIs da View
-      const { data: kpiData, error: kpiError } = await supabase
-        .from("dashboard_kpis_pce")
-        .select("*")
-        .single();
-
-      if (kpiError) throw kpiError;
-      setKpis(kpiData);
-
-      // 2. Buscar Estoque Consolidado
-      const { data: estoqueData } = await supabase
-        .from("estoque_pallets")
-        .select("quantidade_disponivel, modelo:modelos_pallets(nome, codigo)")
-        .eq("cliente_id", "pce")
-        .gt("quantidade_disponivel", 0);
-      
-      const formattedEstoque = (estoqueData || []).map((item: any) => ({
-        quantidade_disponivel: item.quantidade_disponivel,
-        modelo: Array.isArray(item.modelo) ? item.modelo[0] : item.modelo
-      }));
-      setEstoque(formattedEstoque);
-
+      setError(null);
+      const data = await fetchDashboardKPIs("pce", supabase);
+      if (data) setKpis(data);
     } catch (err: any) {
-      console.error("Relatório Executivo: Erro:", err);
+      console.error("Relatório: Erro no carregamento:", err);
       setError("Falha ao consolidar relatório estratégico.");
     } finally {
       setLoading(false);
@@ -134,294 +75,273 @@ export default function RelatorioExecutivoPCE() {
   };
 
   useEffect(() => {
+    setMounted(true);
     fetchData();
+    registrarAcesso("cliente/relatorio");
   }, []);
 
-  if (loading) {
-    return <LoadingPage />;
-  }
+  const handlePrint = () => {
+    window.print();
+  };
 
+  const formatCurrency = (val: number | undefined | null) => 
+    (val ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  
+  const formatPercent = (val: number | undefined | null) => 
+    `${(val ?? 0).toFixed(1)}%`;
+  
+  const formatNumber = (val: number | undefined | null) => 
+    (val ?? 0).toLocaleString("pt-BR");
+
+  const formatKgToTon = (val: number | undefined | null) => {
+    const kg = val ?? 0;
+    return (kg / 1000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  };
+
+  if (!mounted) return <div className="min-h-screen bg-[#FAFAFA]" />;
+  if (loading) return <LoadingPage />;
 
   if (error || !kpis) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-6">
-        <div className="max-w-md text-center">
-          <AlertCircle className="text-red-500 mx-auto mb-4" size={48} />
-          <h2 className="text-xl font-bold mb-2">Relatório Indisponível</h2>
-          <p className="text-text-dark/50 text-sm mb-6">{error || "Não foi possível gerar a visão executiva no momento."}</p>
-          <button onClick={() => fetchData()} className="px-8 py-3 bg-brand-cyan text-white rounded-2xl font-bold text-sm shadow-lg shadow-brand-cyan/20">Tentar Novamente</button>
+      <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-6 text-center no-print">
+        <div className="max-w-md w-full bg-white p-10 rounded-3xl border border-neutral-200 shadow-sm">
+          <AlertCircle className="text-rose-500 mx-auto mb-6" size={48} strokeWidth={1.5} />
+          <h2 className="text-2xl font-bold text-neutral-900 tracking-tight mb-3">Relatório Indisponível</h2>
+          <p className="text-sm text-neutral-500 leading-relaxed mb-8">{error || "Não foi possível gerar a visão executiva no momento."}</p>
+          <button onClick={() => fetchData()} className="w-full py-3.5 bg-neutral-900 text-white rounded-xl text-sm font-semibold hover:bg-neutral-800 transition-colors">
+            Tentar Novamente
+          </button>
         </div>
       </div>
     );
   }
 
+  const emissao = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const periodo = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-text-dark pb-20 overflow-x-hidden">
-      {/* Top Bar Navigation */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-brand-pink/10 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
-          <div className="flex items-center gap-6">
-            <Link href="/cliente/dashboard" className="p-2 hover:bg-gray-100 rounded-full transition-all group">
-              <ArrowLeft size={18} className="text-text-dark/40 group-hover:text-brand-cyan" />
-            </Link>
-            <div className="flex flex-col">
-              <h1 className="text-sm font-bold text-text-dark leading-none">Relatório Estratégico</h1>
-              <span className="text-[10px] font-bold text-brand-cyan uppercase tracking-widest mt-1">Status: Conectado</span>
-            </div>
-          </div>
-          
+    <div className="min-h-screen bg-[#FAFAFA] text-neutral-900 print:bg-white print:text-black">
+      
+      {/* 1. NAVEGAÇÃO & HEADER (OCULTO NA IMPRESSÃO) */}
+      <header className="bg-white border-b border-neutral-200 sticky top-0 z-40 shadow-sm no-print">
+        <div className="max-w-7xl mx-auto px-6 py-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-             <button className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white border border-brand-pink/20 rounded-xl text-[10px] font-bold uppercase tracking-widest text-text-dark/60 hover:border-brand-cyan transition-all">
-                <Filter size={14} /> Filtrar Período
-             </button>
-             <button onClick={() => logout()} className="p-2 text-text-dark/20 hover:text-red-500 transition-colors"><LogOut size={18} /></button>
+             <div className="flex flex-col">
+               <h1 className="text-lg font-bold tracking-tight">Relatório Estratégico</h1>
+               <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-0.5">Visão Executiva PCE</span>
+             </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={handlePrint}
+              className="flex items-center gap-2 px-6 py-3 bg-neutral-900 text-white rounded-2xl text-xs font-bold hover:bg-neutral-800 transition-all shadow-lg shadow-neutral-200"
+            >
+              <Printer size={16} /> Imprimir Relatório
+            </button>
+            <ClientNav />
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 pt-12">
-        {/* Presentation Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 mb-16">
-          <div className="max-w-2xl">
-            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-brand-cyan rounded-2xl flex items-center justify-center shadow-lg shadow-brand-cyan/20">
-                  <Award className="text-white" size={20} />
-                </div>
-                <div className="px-3 py-1 bg-brand-cyan/10 text-brand-cyan rounded-lg text-[10px] font-bold uppercase tracking-widest">Apresentação Operacional v4.0</div>
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-text-dark">Resumo de Performance Executiva</h2>
-              <p className="text-text-dark/50 mt-4 text-sm leading-relaxed">
-                Este relatório consolida o impacto econômico e ambiental da operação da Ivani Pallets para a <span className="text-brand-cyan font-bold">PCE Logística</span>. Dados atualizados em tempo real baseados em triagens e processos de manutenção.
-              </p>
-            </motion.div>
-          </div>
+      <main className="max-w-4xl mx-auto px-6 pt-12 pb-24 print:p-0 print:max-w-full">
+        
+        {/* ÁREA DO RELATÓRIO (FORMATO A4) */}
+        <div className="bg-white rounded-[2rem] border border-neutral-200 shadow-[0_4px_24px_rgba(0,0,0,0.02)] p-10 md:p-16 print:border-0 print:shadow-none print:p-0">
           
-          <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="w-full md:w-auto px-8 py-4 bg-brand-cyan text-white rounded-2xl text-xs font-bold shadow-xl shadow-brand-cyan/20 flex items-center justify-center gap-3"
-          >
-            <Download size={16} /> Exportar Apresentação (PDF)
-          </motion.button>
-        </div>
-
-        {/* HERO KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-          <StatCard 
-            label="Economia Direta" 
-            value={kpis.economia_total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} 
-            icon={<Wallet />} 
-            color="bg-emerald-500"
-            delay={0.1}
-          />
-          <StatCard 
-            label="Taxa Circularidade" 
-            value={`${kpis.taxa_circularidade.toFixed(1)}%`} 
-            icon={<Recycle />} 
-            color="bg-brand-cyan"
-            delay={0.2}
-          />
-          <StatCard 
-            label="Madeira Salva" 
-            value={`${kpis.madeira_reaproveitada.toFixed(1)} Ton`} 
-            icon={<Trees />} 
-            color="bg-green-500"
-            delay={0.3}
-          />
-          <StatCard 
-            label="CO2 Evitado" 
-            value={`${kpis.co2_evitado.toFixed(1)} Ton`} 
-            icon={<Wind />} 
-            color="bg-blue-400"
-            delay={0.4}
-          />
-        </div>
-
-        {/* Cenários Comparativos */}
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mb-16"
-        >
-          <div className="flex items-center gap-3 mb-8">
-            <TrendingUp className="text-brand-cyan" size={24} />
-            <h3 className="text-xl font-bold">Análise de ROI: Cenários Comparativos</h3>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
-            {/* Cenário Sem Ivani */}
-            <Card className="p-8 border-gray-100 bg-white shadow-sm flex flex-col justify-between group hover:border-red-100 transition-all">
-              <div>
-                <div className="flex justify-between items-start mb-6">
-                  <div className="p-3 bg-red-50 text-red-500 rounded-2xl"><AlertCircle size={24} /></div>
-                  <span className="px-3 py-1 bg-red-50 text-red-500 rounded-full text-[10px] font-bold uppercase tracking-widest">Sem Recuperação</span>
+          {/* CABEÇALHO DO DOCUMENTO */}
+          <div className="flex flex-col md:flex-row justify-between items-start border-b-2 border-neutral-900 pb-10 mb-12 print:mb-10">
+            <div>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-white">
+                  <Package size={24} strokeWidth={2.5} />
                 </div>
-                <h4 className="text-lg font-bold mb-2">Cenário Convencional</h4>
-                <p className="text-text-dark/40 text-xs mb-8">Custo estimado para reposição total de {kpis.total_recuperados} pallets através da compra de material novo no mercado.</p>
-              </div>
-              <div className="mt-auto">
-                <div className="text-[10px] font-bold text-text-dark/20 uppercase tracking-widest mb-1">Custo Projetado</div>
-                <div className="text-3xl font-bold text-text-dark group-hover:text-red-500 transition-colors">
-                  {kpis.custo_total_sem_ivani.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                <div className="flex flex-col">
+                  <span className="text-2xl font-black tracking-tighter">Ivani Pallets</span>
+                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em] -mt-1">Intelligence Suite</span>
                 </div>
               </div>
-            </Card>
-
-            {/* Cenário Com Ivani */}
-            <Card className="p-8 border-brand-cyan/20 bg-brand-cyan/5 shadow-sm flex flex-col justify-between group hover:shadow-xl hover:shadow-brand-cyan/10 transition-all border-dashed border-2">
-              <div>
-                <div className="flex justify-between items-start mb-6">
-                  <div className="p-3 bg-brand-cyan text-white rounded-2xl shadow-lg shadow-brand-cyan/30"><Zap size={24} /></div>
-                  <span className="px-3 py-1 bg-brand-cyan text-white rounded-full text-[10px] font-bold uppercase tracking-widest">Com Ivani Pallets</span>
-                </div>
-                <h4 className="text-lg font-bold mb-2">Cenário Otimizado</h4>
-                <p className="text-text-dark/40 text-xs mb-8">Custo real da operação de triagem e manutenção Ivani, focada na circularidade e reaproveitamento de ativos.</p>
-              </div>
-              <div className="mt-auto">
-                <div className="text-[10px] font-bold text-brand-cyan uppercase tracking-widest mb-1">Custo Operacional</div>
-                <div className="text-3xl font-bold text-text-dark flex items-center gap-3">
-                  {kpis.custo_total_com_ivani.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  <div className="p-1.5 bg-green-500 text-white rounded-lg"><TrendingUp size={14} /></div>
+              <h2 className="text-4xl font-bold tracking-tight text-neutral-900">Relatório Executivo PCE</h2>
+              <div className="flex items-center gap-2 mt-4">
+                <div className="px-2.5 py-0.5 bg-neutral-100 border border-neutral-200 rounded text-[10px] font-bold uppercase tracking-widest text-neutral-600">
+                  Operação de pallets usados
                 </div>
               </div>
-            </Card>
-          </div>
-
-          {/* Banner de Economia */}
-          <div className="mt-8 p-6 bg-emerald-500 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-6 text-white shadow-lg shadow-emerald-500/20">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center"><Wallet size={24} /></div>
-              <div>
-                <h4 className="text-sm font-bold">ROI do Período</h4>
-                <p className="text-white/70 text-xs">Total de economia direta gerada pela recuperação de ativos.</p>
-              </div>
-            </div>
-            <div className="text-4xl font-black">{kpis.economia_total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
-          </div>
-        </motion.div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-16">
-          {/* Resumo Operacional */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.5 }}
-            className="lg:col-span-3 bg-white p-10 rounded-[2.5rem] border border-brand-pink/10 shadow-sm relative overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 p-8 opacity-5">
-              <TrendingUp size={120} />
             </div>
             
-            <div className="relative z-10">
-              <h3 className="text-xl font-bold mb-8 flex items-center gap-2">
-                <Target className="text-brand-cyan" size={20} />
-                Objetivos Atingidos
-              </h3>
-              
-              <div className="space-y-8">
-                <div className="flex flex-col gap-2">
-                  <div className="flex justify-between items-center text-xs font-bold uppercase tracking-widest">
-                    <span className="text-text-dark/40">Pallets Recuperados</span>
-                    <span className="text-brand-cyan">{kpis.total_recuperados} / {kpis.total_pallets_processados}</span>
-                  </div>
-                  <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(kpis.total_recuperados / kpis.total_pallets_processados) * 100}%` }}
-                      transition={{ duration: 1, delay: 0.8 }}
-                      className="h-full bg-brand-cyan rounded-full"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-8">
-                   <div className="p-6 bg-gray-50 rounded-3xl border border-gray-100">
-                      <span className="text-[10px] font-bold text-text-dark/30 uppercase tracking-widest block mb-2">Volume Bruto</span>
-                      <div className="text-2xl font-bold text-text-dark">{kpis.total_pallets_processados} <span className="text-[10px] font-medium opacity-40">unidades</span></div>
-                   </div>
-                   <div className="p-6 bg-red-50/50 rounded-3xl border border-red-100/50">
-                      <span className="text-[10px] font-bold text-red-400/50 uppercase tracking-widest block mb-2">Perda / Sucata</span>
-                      <div className="text-2xl font-bold text-red-500">{kpis.total_sucata} <span className="text-[10px] font-medium opacity-40">unidades</span></div>
-                   </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Estoque Disponível */}
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.6 }}
-            className="lg:col-span-2 space-y-6"
-          >
-            <div className="bg-white p-8 rounded-[2rem] border border-brand-pink/10 shadow-sm h-full flex flex-col">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold">Estoque Pronto</h3>
-                <Package className="text-brand-cyan/20" size={24} />
-              </div>
-              
-              <div className="flex-1 space-y-4">
-                {estoque.length > 0 ? estoque.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-brand-cyan/30 transition-all">
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-text-dark">{item.modelo.nome}</span>
-                      <span className="text-[9px] font-bold text-brand-cyan/60 uppercase">{item.modelo.codigo}</span>
-                    </div>
-                    <div className="text-xl font-bold text-text-dark group-hover:scale-110 transition-transform">{item.quantidade_disponivel}</div>
-                  </div>
-                )) : (
-                  <div className="py-10 text-center">
-                    <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                      <Clock className="text-text-dark/10" size={24} />
-                    </div>
-                    <p className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest leading-relaxed">Nenhum pallet disponível<br/>no estoque de retorno.</p>
-                  </div>
-                )}
-              </div>
-
-              <button className="w-full mt-8 py-4 bg-white border border-brand-pink/30 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-brand-cyan hover:text-white hover:border-brand-cyan transition-all">
-                Solicitar Carregamento
-              </button>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Closing Section */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="bg-brand-cyan p-10 sm:p-16 rounded-[3rem] text-center relative overflow-hidden shadow-2xl shadow-brand-cyan/30"
-        >
-          {/* Decorative elements */}
-          <div className="absolute -top-10 -left-10 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
-          
-          <div className="relative z-10 max-w-2xl mx-auto">
-            <Zap className="text-white/40 mx-auto mb-6" size={40} />
-            <h3 className="text-2xl sm:text-3xl font-bold text-white mb-6">Próximo Nível: Otimização de Retorno</h3>
-            <p className="text-white/80 text-sm leading-relaxed mb-10">
-              Com base nos dados deste período, sua operação evitou a emissão de mais de <span className="text-white font-bold">{kpis.co2_evitado.toFixed(0)} toneladas de CO2</span>. 
-              Estamos prontos para escalar a coleta reversa e aumentar seu ROI em logística.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-               <button className="w-full sm:w-auto px-10 py-4 bg-white text-brand-cyan rounded-2xl text-xs font-bold hover:scale-105 transition-all active:scale-95 shadow-lg">Agendar Reunião Técnica</button>
-               <button className="w-full sm:w-auto px-10 py-4 bg-white/10 text-white border border-white/20 rounded-2xl text-xs font-bold hover:bg-white/20 transition-all">Ver Detalhes Técnicos</button>
+            <div className="mt-8 md:mt-0 text-left md:text-right space-y-1">
+              <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Período de Referência</p>
+              <p className="text-sm font-bold text-neutral-900 uppercase">{periodo}</p>
+              <div className="h-4" />
+              <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Data de Emissão</p>
+              <p className="text-sm font-bold text-neutral-700">{emissao}</p>
             </div>
           </div>
-        </motion.div>
+
+          <div className="space-y-12">
+            
+            {/* 2. RESUMO EXECUTIVO (KPIs de destaque) */}
+            <section className="break-inside-avoid">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-neutral-50 border border-neutral-100 p-6 rounded-3xl print:border-neutral-200">
+                  <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-2">Economia Total</p>
+                  <p className="text-3xl font-black text-neutral-900 tracking-tighter">{formatCurrency(kpis.financeiro.economia_total)}</p>
+                  <p className="text-[10px] font-bold text-emerald-600 uppercase mt-2">Retorno Direto</p>
+                </div>
+                <div className="bg-neutral-50 border border-neutral-100 p-6 rounded-3xl print:border-neutral-200">
+                  <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-2">Volume Processado</p>
+                  <p className="text-3xl font-black text-neutral-900 tracking-tighter">{formatNumber(kpis.operacao.total_processado)}</p>
+                  <p className="text-[10px] font-bold text-neutral-500 uppercase mt-2">Unidades</p>
+                </div>
+                <div className="bg-neutral-50 border border-neutral-100 p-6 rounded-3xl print:border-neutral-200">
+                  <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-2">Circularidade</p>
+                  <p className="text-3xl font-black text-neutral-900 tracking-tighter">{formatPercent(kpis.eficiencia.taxa_reaproveitamento)}</p>
+                  <p className="text-[10px] font-bold text-brand-cyan uppercase mt-2">Taxa de Reuso</p>
+                </div>
+              </div>
+            </section>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+              
+              {/* 3. SEÇÃO OPERACIONAL */}
+              <section className="break-inside-avoid">
+                <PrintSectionTitle title="Indicadores Operacionais" icon={Truck} />
+                <div className="flex flex-col">
+                  <PrintStatRow label="Total de Cargas Coletadas" value={kpis.operacao.numero_coletas} icon={Package} />
+                  <PrintStatRow label="Volume Bruto Coletado" value={formatNumber(kpis.operacao.total_coletado)} icon={Box} />
+                  <PrintStatRow label="Volume Triado / Classificado" value={formatNumber(kpis.operacao.total_processado)} icon={Recycle} />
+                  <PrintStatRow label="Volume Entregue (Reuso)" value={formatNumber(kpis.operacao.total_entregue)} icon={TrendingUp} />
+                  <PrintStatRow label="Saldo Atual em Estoque" value={formatNumber(kpis.operacao.total_estoque)} icon={Activity} />
+                  <PrintStatRow label="Tempo Médio de Ciclo" value={kpis.operacao.tempo_medio_ciclo} icon={Clock} />
+                </div>
+              </section>
+
+              {/* 4. SEÇÃO FINANCEIRA OPERACIONAL */}
+              <section className="break-inside-avoid">
+                <PrintSectionTitle title="Performance Financeira" icon={Wallet} />
+                <div className="flex flex-col">
+                  <PrintStatRow label="Economia Direta Acumulada" value={formatCurrency(kpis.financeiro.economia_total)} icon={Target} colorClass="text-emerald-600" />
+                  <PrintStatRow label="Custo Evitado (Material Novo)" value={formatCurrency(kpis.financeiro.custo_evitar_novo)} icon={Zap} />
+                  <PrintStatRow label="Investimento em Manutenção" value={formatCurrency(kpis.financeiro.valor_recuperado)} icon={Clock} />
+                  <PrintStatRow label="Economia Média por Pallet" value={formatCurrency(kpis.financeiro.economia_por_pallet)} icon={Scale} />
+                  <PrintStatRow label="Custo Médio de Recuperação" value={formatCurrency(kpis.financeiro.custo_medio_pallet)} icon={TrendingUp} />
+                  <PrintStatRow label="ROI Operacional Bruto" value={formatPercent(kpis.financeiro.roi_operacao)} icon={BarChart3} colorClass="text-brand-cyan" />
+                </div>
+              </section>
+
+            </div>
+
+            {/* 5. SEÇÃO ESG */}
+            <section className="break-inside-avoid">
+              <PrintSectionTitle title="Impacto Ambiental (ESG)" icon={Leaf} />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="p-5 border border-neutral-100 rounded-2xl print:border-neutral-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Wind size={16} className="text-blue-500" />
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">CO₂ Evitado</span>
+                  </div>
+                  <p className="text-xl font-bold">{formatKgToTon(kpis.esg.co2_evitado)} <span className="text-xs text-neutral-400">ton</span></p>
+                </div>
+                <div className="p-5 border border-neutral-100 rounded-2xl print:border-neutral-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Trees size={16} className="text-emerald-500" />
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Árvores Preservadas</span>
+                  </div>
+                  <p className="text-xl font-bold">{formatNumber(kpis.esg.arvores_preservadas)} <span className="text-xs text-neutral-400">un</span></p>
+                </div>
+                <div className="p-5 border border-neutral-100 rounded-2xl print:border-neutral-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Recycle size={16} className="text-brand-cyan" />
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Madeira Reutilizada</span>
+                  </div>
+                  <p className="text-xl font-bold">{formatKgToTon(kpis.esg.madeira_reutilizada)} <span className="text-xs text-neutral-400">ton</span></p>
+                </div>
+                <div className="p-5 border border-neutral-100 rounded-2xl print:border-neutral-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ShieldCheck size={16} className="text-amber-500" />
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Resíduos Desviados</span>
+                  </div>
+                  <p className="text-xl font-bold">{formatKgToTon(kpis.esg.residuos_evitar)} <span className="text-xs text-neutral-400">ton</span></p>
+                </div>
+              </div>
+            </section>
+
+            {/* 6. OBSERVAÇÃO INSTITUCIONAL */}
+            <section className="bg-neutral-50 p-8 rounded-3xl border border-neutral-100 break-inside-avoid print:bg-white print:border-neutral-300">
+              <div className="flex items-center gap-3 mb-4">
+                <Info size={20} className="text-neutral-400" />
+                <h4 className="text-sm font-bold text-neutral-900 uppercase tracking-widest">Notas Técnicas</h4>
+              </div>
+              <p className="text-sm text-neutral-600 leading-relaxed font-medium">
+                Este relatório consolida os indicadores operacionais da gestão de pallets da PCE, demonstrando economia, reaproveitamento de ativos e impacto ambiental positivo através da logística reversa. Os dados são processados em tempo real pela plataforma Ivani Intelligence Suite.
+              </p>
+            </section>
+
+            {/* 7. ASSINATURA & RODAPÉ */}
+            <footer className="pt-12 border-t-2 border-neutral-100 mt-12 flex flex-col md:flex-row justify-between items-end gap-8 print:border-neutral-300 print:mt-10">
+              <div className="space-y-1">
+                <p className="text-lg font-black text-neutral-900 tracking-tight">Ivani Pallets</p>
+                <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest">Gestão inteligente de pallets usados</p>
+                <p className="text-xs text-neutral-500 font-medium">www.ivanipallets.com.br</p>
+              </div>
+              <div className="text-right">
+                <div className="w-48 h-px bg-neutral-900 mb-2" />
+                <p className="text-[10px] font-bold text-neutral-900 uppercase tracking-[0.2em]">Selo de Autenticidade Digital</p>
+                <p className="text-[9px] text-neutral-400 font-medium mt-1">ID do Relatório: {Math.random().toString(36).substring(7).toUpperCase()}</p>
+              </div>
+            </footer>
+
+          </div>
+        </div>
       </main>
 
-      <footer className="mt-20 py-12 border-t border-brand-pink/10 text-center">
-         <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="w-2 h-2 bg-brand-cyan rounded-full animate-ping" />
-            <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-[0.3em]">Ivani Pallets — Intelligence Suite</span>
-         </div>
-         <p className="text-[9px] text-text-dark/20 font-medium">Relatório gerado automaticamente em {new Date().toLocaleDateString('pt-BR')} para PCE Logística.</p>
-      </footer>
+      {/* ESTILOS DE IMPRESSÃO */}
+      <style jsx global>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 20mm;
+          }
+          
+          body {
+            background-color: white !important;
+            color: black !important;
+          }
+
+          .no-print {
+            display: none !important;
+          }
+
+          main {
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+          }
+
+          .print-section {
+            break-inside: avoid;
+          }
+        }
+      `}</style>
+
     </div>
   );
 }
+
+const BarChart3 = ({ size, className }: { size?: number, className?: string }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M3 3v18h18" />
+    <path d="M18 17V9" />
+    <path d="M13 17V5" />
+    <path d="M8 17v-3" />
+  </svg>
+);
