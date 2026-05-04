@@ -14,6 +14,7 @@ export async function login(formData: FormData) {
     return { error: "Preencha todos os campos" };
   }
 
+  // Buscar usuário na tabela public.usuarios
   const { data, error } = await supabase
     .from("usuarios")
     .select("*")
@@ -23,13 +24,24 @@ export async function login(formData: FormData) {
     .maybeSingle();
 
   if (error || !data) {
-    return { error: "Invalid login credentials" };
+    return { error: "E-mail ou senha incorretos ou conta inativa." };
   }
 
-  // 🔥 opcional: salvar sessão simples
+  // Definir rota de redirecionamento conforme perfil
+  let redirectTo = "/cliente/dashboard";
+  if (data.perfil === "admin") {
+    redirectTo = "/admin/configuracao";
+  }
+
   return {
     success: true,
-    user: data,
+    redirectTo,
+    user: {
+      id: data.id,
+      email: data.email,
+      perfil: data.perfil,
+      nome: data.nome
+    }
   };
 }
 

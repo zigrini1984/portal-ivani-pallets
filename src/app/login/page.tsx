@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { motion } from "framer-motion";
 import { Package, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
@@ -27,6 +27,8 @@ export default function LoginPage() {
       if (result?.error) {
         setError(result.error);
         setLoading(false);
+      } else if (result?.success && result?.redirectTo) {
+        window.location.href = result.redirectTo;
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível entrar. Tente novamente.");

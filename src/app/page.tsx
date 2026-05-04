@@ -44,6 +44,8 @@ export default function Home() {
       if (result?.error) {
         setPortalError(result.error);
         setPortalLoading(false);
+      } else if (result?.success && result?.redirectTo) {
+        window.location.href = result.redirectTo;
       }
     } catch (err) {
       setPortalError(err instanceof Error ? err.message : "Nao foi possivel entrar. Tente novamente.");
