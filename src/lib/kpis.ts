@@ -1,6 +1,9 @@
-import { createClient } from "@/lib/supabase/client";
+import { createClient as createBrowserClient } from "@/lib/supabase/client";
 
-const supabase = createClient();
+// Função interna para obter o client correto dependendo do ambiente
+async function getSupabase() {
+  return createBrowserClient();
+}
 
 export interface DashboardKPIs {
   operacao: {
@@ -41,8 +44,10 @@ export interface DashboardKPIs {
   };
 }
 
-export async function fetchDashboardKPIs(clienteId: string = "pce"): Promise<DashboardKPIs> {
+export async function fetchDashboardKPIs(clienteId: string = "pce", supabaseParam?: any): Promise<DashboardKPIs> {
   try {
+    const supabase = supabaseParam || await getSupabase();
+
     // 1. Fetch data from Supabase
     const [
       { data: coletas },
@@ -65,43 +70,43 @@ export async function fetchDashboardKPIs(clienteId: string = "pce"): Promise<Das
     const modelosArr = modelos || [];
 
     // --- CÁLCULOS BASE ---
-    const total_coletado = coletasArr.reduce((acc, c) => acc + (c.quantidade_material_bruto || 0), 0);
-    const total_processado = triagensArr.reduce((acc, t) => acc + (t.quantidade_total || 0), 0);
-    const total_estoque = estoqueArr.reduce((acc, e) => acc + (e.quantidade_disponivel || 0), 0);
+    const total_coletado = coletasArr.reduce((acc: number, c: any) => acc + (c.quantidade_material_bruto || 0), 0);
+    const total_processado = triagensArr.reduce((acc: number, t: any) => acc + (t.quantidade_total || 0), 0);
+    const total_estoque = estoqueArr.reduce((acc: number, e: any) => acc + (e.quantidade_disponivel || 0), 0);
     const total_entregue = movimentacoesArr
-      .filter(m => m.tipo === "saida")
-      .reduce((acc, m) => acc + (m.quantidade || 0), 0);
+      .filter((m: any) => m.tipo === "saida")
+      .reduce((acc: number, m: any) => acc + (m.quantidade || 0), 0);
 
     const hoje = new Date();
     const mesAtual = hoje.getMonth();
     const anoAtual = hoje.getFullYear();
     
-    const triagensMesAtual = triagensArr.filter(t => {
+    const triagensMesAtual = triagensArr.filter((t: any) => {
       const d = new Date(t.created_at);
       return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
     });
     
-    const volume_mensal = triagensMesAtual.reduce((acc, t) => acc + (t.quantidade_total || 0), 0);
+    const volume_mensal = triagensMesAtual.reduce((acc: number, t: any) => acc + (t.quantidade_total || 0), 0);
     const numero_coletas = coletasArr.length;
 
     // Tempo médio de ciclo (coleta -> triagem)
     const temposCiclo = triagensArr
-      .map(t => {
-        const coleta = coletasArr.find(c => c.id === t.coleta_id);
+      .map((t: any) => {
+        const coleta = coletasArr.find((c: any) => c.id === t.coleta_id);
         if (!coleta) return null;
         return new Date(t.created_at).getTime() - new Date(coleta.data_coleta).getTime();
       })
-      .filter((t): t is number => t !== null);
+      .filter((t: any): t is number => t !== null);
     
     const tempo_medio_ciclo_ms = temposCiclo.length > 0 
-      ? temposCiclo.reduce((acc, t) => acc + t, 0) / temposCiclo.length 
+      ? temposCiclo.reduce((acc: number, t: number) => acc + t, 0) / temposCiclo.length 
       : 0;
     const tempo_medio_ciclo = `${Math.round(tempo_medio_ciclo_ms / (1000 * 60 * 60 * 24))} dias`;
 
     // --- EFICIÊNCIA ---
-    const reforma = triagensArr.reduce((acc, t) => acc + (t.quantidade_manutencao || 0), 0);
-    const remanufatura = triagensArr.reduce((acc, t) => acc + (t.quantidade_remanufatura || 0), 0);
-    const compra = triagensArr.reduce((acc, t) => acc + (t.quantidade_compra_ivani || 0), 0);
+    const reforma = triagensArr.reduce((acc: number, t: any) => acc + (t.quantidade_manutencao || 0), 0);
+    const remanufatura = triagensArr.reduce((acc: number, t: any) => acc + (t.quantidade_remanufatura || 0), 0);
+    const compra = triagensArr.reduce((acc: number, t: any) => acc + (t.quantidade_compra_ivani || 0), 0);
     const total_recuperado = reforma + remanufatura + compra;
     
     const sucata = total_processado - total_recuperado;
@@ -118,8 +123,8 @@ export async function fetchDashboardKPIs(clienteId: string = "pce"): Promise<Das
     let investimento_reparos = 0;
     let custo_evitar_novo = 0;
 
-    triagensArr.forEach(t => {
-      const modelo = modelosArr.find(m => m.id === t.modelo_pallet_id);
+    triagensArr.forEach((t: any) => {
+      const modelo = modelosArr.find((m: any) => m.id === t.modelo_pallet_id);
       if (modelo) {
         const pNovo = modelo.preco_pallet_novo || 80;
         const pRef = modelo.preco_reforma || 20;
@@ -152,12 +157,12 @@ export async function fetchDashboardKPIs(clienteId: string = "pce"): Promise<Das
     const mesAnterior = mesAtual === 0 ? 11 : mesAtual - 1;
     const anoAnterior = mesAtual === 0 ? anoAtual - 1 : anoAtual;
     
-    const triagensMesAnterior = triagensArr.filter(t => {
+    const triagensMesAnterior = triagensArr.filter((t: any) => {
       const d = new Date(t.created_at);
       return d.getMonth() === mesAnterior && d.getFullYear() === anoAnterior;
     });
     
-    const volumeMesAnterior = triagensMesAnterior.reduce((acc, t) => acc + (t.quantidade_total || 0), 0);
+    const volumeMesAnterior = triagensMesAnterior.reduce((acc: number, t: any) => acc + (t.quantidade_total || 0), 0);
     const crescimento_mensal = volumeMesAnterior > 0 
       ? ((volume_mensal - volumeMesAnterior) / volumeMesAnterior) * 100 
       : 0;
@@ -174,7 +179,6 @@ export async function fetchDashboardKPIs(clienteId: string = "pce"): Promise<Das
     };
   } catch (error) {
     console.error("fetchDashboardKPIs Error:", error);
-    // Return safe default object
     return {
       operacao: { total_coletado: 0, total_processado: 0, total_estoque: 0, total_entregue: 0, volume_mensal: 0, numero_coletas: 0, tempo_medio_ciclo: "---" },
       eficiencia: { taxa_reaproveitamento: 0, taxa_sucata: 0, taxa_reforma: 0, taxa_remanufatura: 0, eficiencia_recuperacao: 0, perda_operacional: 0 },

@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import React, { useState, useEffect, useMemo } from "react";
 import { 
   LayoutDashboard,
@@ -55,7 +57,7 @@ const Badge = ({ children, variant = "default" }: { children: React.ReactNode, v
     info: "bg-brand-cyan/5 text-brand-cyan border-brand-cyan/10",
   };
   return (
-    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${styles[variant]}`}>
+    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${styles[variant] || styles.default}`}>
       {children}
     </span>
   );
@@ -71,7 +73,7 @@ const ExecutiveCard = ({
   variant = "cyan" 
 }: { 
   title: string, 
-  value: string | number, 
+  value: string | number | null | undefined, 
   description: string, 
   icon: any,
   trend?: "up" | "down" | "stable",
@@ -132,8 +134,6 @@ const SectionHeader = ({ icon: Icon, title, color = "brand-cyan" }: { icon: any,
   </div>
 );
 
-const supabase = createClient();
-
 export default function ClienteDashboardPCE() {
   const [activeTab, setActiveTab] = useState("overview");
   const [kpis, setKpis] = useState<DashboardKPIs | null>(null);
@@ -144,6 +144,9 @@ export default function ClienteDashboardPCE() {
   const [userName, setUserName] = useState<string>("PCE Logística");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  // Inicializar Supabase apenas quando necessário
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     setMounted(true);
@@ -165,7 +168,7 @@ export default function ClienteDashboardPCE() {
       }
 
       const [kpiData, triagensRes, estoqueRes] = await Promise.all([
-        fetchDashboardKPIs("pce"),
+        fetchDashboardKPIs("pce", supabase),
         supabase.from("triagens").select("*").eq("cliente_id", "pce").order("data_coleta", { ascending: false }),
         supabase.from("estoque_pallets").select("*, modelo:modelos_pallets(nome, codigo)").eq("cliente_id", "pce")
       ]);
@@ -175,7 +178,7 @@ export default function ClienteDashboardPCE() {
       setEstoqueSaldos(estoqueRes.data || []);
     } catch (err: any) {
       console.error("Dashboard Error:", err);
-      setError("Erro ao carregar dados. Por favor, tente novamente.");
+      setError("Não foi possível carregar os dados. Verifique sua conexão.");
     } finally {
       setLoading(false);
     }
@@ -188,13 +191,13 @@ export default function ClienteDashboardPCE() {
   ], []);
 
   const formatCurrency = (val: number | undefined | null) => 
-    (val || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    (val ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   
   const formatPercent = (val: number | undefined | null) => 
-    `${(val || 0).toFixed(1)}%`;
+    `${(val ?? 0).toFixed(1)}%`;
   
   const formatNumber = (val: number | undefined | null) => 
-    (val || 0).toLocaleString("pt-BR");
+    (val ?? 0).toLocaleString("pt-BR");
 
   // --- LÓGICA DE INSIGHTS ---
   const insight = useMemo(() => {
@@ -233,16 +236,19 @@ export default function ClienteDashboardPCE() {
     };
   }, [kpis]);
 
-  if (!mounted || loading) return <LoadingPage />;
+  // Bloquear renderização no servidor para evitar hydration mismatch e erros de runtime em ambiente estático
+  if (!mounted) return <div className="min-h-screen bg-white" />;
+
+  if (loading) return <LoadingPage />;
 
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6 text-center">
         <div className="max-w-md bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-xl">
           <AlertCircle size={48} className="text-red-500 mx-auto mb-6" />
-          <h2 className="text-2xl font-black text-text-dark mb-4">Ops! Algo deu errado.</h2>
+          <h2 className="text-2xl font-black text-text-dark mb-4">Falha no Carregamento</h2>
           <p className="text-text-dark/50 font-bold mb-8">{error}</p>
-          <button onClick={() => fetchData()} className="w-full py-4 bg-brand-cyan text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-brand-cyan/20">Tentar Novamente</button>
+          <button onClick={() => fetchData()} className="w-full py-4 bg-brand-cyan text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-brand-cyan/20 transition-all active:scale-95">Tentar Novamente</button>
         </div>
       </div>
     );
