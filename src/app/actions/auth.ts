@@ -1,37 +1,82 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-export async function login(formData: FormData) {
-  const supabase = await createClient();
+type UsuarioPerfil = "admin" | "cliente";
 
-  const email = formData.get("email")?.toString().trim();
-  const password = formData.get("password")?.toString().trim();
+type UsuarioLogin = {
+  id: string;
+  email: string;
+  nome: string | null;
+  perfil: UsuarioPerfil;
+};
+
+const SESSION_COOKIE = "ivani_portal_usuario";
+
+function getRedirectByPerfil(perfil: UsuarioPerfil) {
+  return perfil === "admin" ? "/admin/configuracao" : "/cliente/dashboard";
+}
+
+export async function login(formData: FormData) {
+  const rawEmail = formData.get("email")?.toString() ?? "";
+  const rawPassword = formData.get("password")?.toString() ?? "";
+
+  const email = rawEmail.trim().toLowerCase();
+  const password = rawPassword.trim();
+
+  console.log("[login] email recebido:", email);
 
   if (!email || !password) {
-    return { error: "Preencha todos os campos" };
+    return { error: "Preencha e-mail e senha." };
   }
 
-  // Buscar usuário na tabela public.usuarios
+  const supabase = await createClient();
+
   const { data, error } = await supabase
     .from("usuarios")
-    .select("*")
-    .ilike("email", email)
+    .select("id,email,nome,perfil")
+    .eq("email", email)
     .eq("senha", password)
     .eq("ativo", true)
-    .maybeSingle();
+    .maybeSingle<UsuarioLogin>();
 
-  if (error || !data) {
-    return { error: "E-mail ou senha incorretos ou conta inativa." };
+  if (error) {
+    console.error("[login] erro supabase:", error);
+    return { error: "Não foi possível validar o login. Tente novamente." };
   }
 
-  // Definir rota de redirecionamento conforme perfil
-  let redirectTo = "/cliente/dashboard";
-  if (data.perfil === "admin") {
-    redirectTo = "/admin/configuracao";
+  console.log("[login] usuario encontrado:", Boolean(data));
+
+  if (!data) {
+    return { error: "E-mail ou senha incorretos, ou usuário inativo." };
   }
+
+  if (data.perfil !== "admin" && data.perfil !== "cliente") {
+    return { error: "Perfil de usuário inválido." };
+  }
+
+  const redirectTo = getRedirectByPerfil(data.perfil);
+  const cookieStore = await cookies();
+
+  cookieStore.set(
+    SESSION_COOKIE,
+    JSON.stringify({
+      id: data.id,
+      email: data.email,
+      nome: data.nome,
+      perfil: data.perfil,
+    }),
+    {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 8,
+    }
+  );
 
   return {
     success: true,
@@ -39,15 +84,17 @@ export async function login(formData: FormData) {
     user: {
       id: data.id,
       email: data.email,
+      nome: data.nome,
       perfil: data.perfil,
-      nome: data.nome
-    }
+    },
   };
 }
 
 export async function logout() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
+  const cookieStore = await cookies();
+
+  cookieStore.delete(SESSION_COOKIE);
+
   revalidatePath("/", "layout");
   redirect("/login");
 }
