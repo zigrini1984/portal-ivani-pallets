@@ -14,6 +14,7 @@ import { registrarAcesso } from "@/lib/utils/monitoramento";
 import { LoadingPage } from "@/components/ui/loading-screen";
 import { fetchDashboardKPIs, DashboardKPIs } from "@/lib/kpis";
 import { KpiCard } from "@/components/dashboard/KpiCard";
+import { ClientNav } from "@/components/dashboard/client-nav";
 
 const SimpleKpiRow = ({ label, value, icon: Icon, isWarning = false, isSuccess = false }: { label: string, value: string | number, icon: any, isWarning?: boolean, isSuccess?: boolean }) => (
   <div className="group flex justify-between items-center py-4 border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50 px-2 -mx-2 rounded-xl transition-colors cursor-default">
@@ -163,6 +164,7 @@ export default function ClienteDashboardPCE() {
               <h1 className="text-3xl md:text-4xl font-bold text-neutral-900 tracking-tight">Painel Executivo PCE</h1>
               <p className="text-sm md:text-base text-neutral-500 mt-1.5 font-medium">Acompanhamento estratégico: economia, eficiência e impacto sustentável.</p>
             </div>
+            <ClientNav />
           </div>
         </div>
       </header>
