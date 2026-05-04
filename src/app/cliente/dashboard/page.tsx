@@ -91,14 +91,14 @@ const ExecutiveCard = ({
       whileHover={{ y: -5, transition: { duration: 0.2 } }}
       className="bg-white rounded-[2rem] border border-gray-100 p-8 shadow-xl shadow-gray-200/20 relative overflow-hidden group"
     >
-      <div className={`absolute top-[-20px] right-[-20px] opacity-[0.03] group-hover:opacity-[0.08] transition-all duration-700 pointer-events-none rotate-12 group-hover:rotate-0 ${variants[variant]}`}>
-        <Icon size={140} />
+      <div className={`absolute top-[-20px] right-[-20px] opacity-[0.03] group-hover:opacity-[0.08] transition-all duration-700 pointer-events-none rotate-12 group-hover:rotate-0 ${variants[variant] || variants.cyan}`}>
+        {Icon && <Icon size={140} />}
       </div>
 
       <div className="relative z-10">
         <div className="flex justify-between items-start mb-6">
-          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 ${variants[variant]}`}>
-            <Icon size={28} />
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 ${variants[variant] || variants.cyan}`}>
+            {Icon && <Icon size={28} />}
           </div>
           {trend && (
             <div className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${
@@ -112,7 +112,7 @@ const ExecutiveCard = ({
 
         <div>
           <span className="text-[10px] font-black text-text-dark/30 uppercase tracking-[0.2em] block mb-2">{title}</span>
-          <div className="text-3xl sm:text-4xl font-black text-text-dark tracking-tighter leading-none mb-4">{value}</div>
+          <div className="text-3xl sm:text-4xl font-black text-text-dark tracking-tighter leading-none mb-4">{value ?? "---"}</div>
           <p className="text-xs text-text-dark/40 font-bold leading-relaxed border-t border-gray-50 pt-5">{description}</p>
         </div>
       </div>
@@ -122,12 +122,12 @@ const ExecutiveCard = ({
 
 const SectionHeader = ({ icon: Icon, title, color = "brand-cyan" }: { icon: any, title: string, color?: string }) => (
   <div className="flex items-center gap-4 mb-10">
-    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg`} style={{ backgroundColor: `var(--${color})` || color }}>
-      <Icon size={24} />
+    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg`} style={{ backgroundColor: color.startsWith('brand') ? `var(--${color})` : color }}>
+      {Icon && <Icon size={24} />}
     </div>
     <div className="flex flex-col">
       <h2 className="text-xl font-black text-text-dark uppercase tracking-tight">{title}</h2>
-      <div className="w-12 h-1 bg-current opacity-20 rounded-full mt-1" style={{ color: `var(--${color})` || color }} />
+      <div className="w-12 h-1 bg-current opacity-20 rounded-full mt-1" style={{ color: color.startsWith('brand') ? `var(--${color})` : color }} />
     </div>
   </div>
 );
@@ -140,13 +140,25 @@ export default function ClienteDashboardPCE() {
   const [triagens, setTriagens] = useState<any[]>([]);
   const [estoqueSaldos, setEstoqueSaldos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("PCE Logística");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    fetchData();
+    registrarAcesso("cliente/dashboard");
+  }, []);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
+      setError(null);
+      
+      const sessionResponse = await supabase.auth.getSession();
+      const session = sessionResponse?.data?.session;
+
       if (session?.user) {
         const { data: perfil } = await supabase.from("usuarios").select("nome").eq("id", session.user.id).single();
         if (perfil?.nome) setUserName(perfil.nome);
@@ -158,39 +170,38 @@ export default function ClienteDashboardPCE() {
         supabase.from("estoque_pallets").select("*, modelo:modelos_pallets(nome, codigo)").eq("cliente_id", "pce")
       ]);
 
-      setKpis(kpiData);
+      if (kpiData) setKpis(kpiData);
       setTriagens(triagensRes.data || []);
       setEstoqueSaldos(estoqueRes.data || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Dashboard Error:", err);
+      setError("Erro ao carregar dados. Por favor, tente novamente.");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-    registrarAcesso("cliente/dashboard");
-  }, []);
-
-  const tabs = [
+  const tabs = useMemo(() => [
     { id: "overview", label: "Dashboard Executivo", icon: <LayoutDashboard size={16} /> },
     { id: "operations", label: "Gestão Operacional", icon: <ArrowRightLeft size={16} /> },
     { id: "stock", label: "Inventário & Saldo", icon: <Package size={16} /> },
-  ];
+  ], []);
 
-  if (loading) return <LoadingPage />;
-
-  const formatCurrency = (val: number) => val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  const formatPercent = (val: number) => `${val.toFixed(1)}%`;
-  const formatNumber = (val: number) => val.toLocaleString("pt-BR");
+  const formatCurrency = (val: number | undefined | null) => 
+    (val || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  
+  const formatPercent = (val: number | undefined | null) => 
+    `${(val || 0).toFixed(1)}%`;
+  
+  const formatNumber = (val: number | undefined | null) => 
+    (val || 0).toLocaleString("pt-BR");
 
   // --- LÓGICA DE INSIGHTS ---
   const insight = useMemo(() => {
     if (!kpis) return null;
     const { eficiencia, financeiro } = kpis;
     
-    if (eficiencia.taxa_reaproveitamento > 85) {
+    if ((eficiencia?.taxa_reaproveitamento || 0) > 85) {
       return {
         type: "success",
         title: "Excelência em Circularidade",
@@ -198,7 +209,7 @@ export default function ClienteDashboardPCE() {
         icon: ShieldCheck
       };
     }
-    if (eficiencia.taxa_sucata > 15) {
+    if ((eficiencia?.taxa_sucata || 0) > 15) {
       return {
         type: "warning",
         title: "Oportunidade de Melhoria",
@@ -206,7 +217,7 @@ export default function ClienteDashboardPCE() {
         icon: AlertCircle
       };
     }
-    if (financeiro.roi_operacao > 150) {
+    if ((financeiro?.roi_operacao || 0) > 150) {
       return {
         type: "info",
         title: "Alto Retorno sobre Reparo",
@@ -221,6 +232,21 @@ export default function ClienteDashboardPCE() {
       icon: Activity
     };
   }, [kpis]);
+
+  if (!mounted || loading) return <LoadingPage />;
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6 text-center">
+        <div className="max-w-md bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-xl">
+          <AlertCircle size={48} className="text-red-500 mx-auto mb-6" />
+          <h2 className="text-2xl font-black text-text-dark mb-4">Ops! Algo deu errado.</h2>
+          <p className="text-text-dark/50 font-bold mb-8">{error}</p>
+          <button onClick={() => fetchData()} className="w-full py-4 bg-brand-cyan text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-brand-cyan/20">Tentar Novamente</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white text-text-dark font-sans selection:bg-brand-cyan/20">
@@ -330,7 +356,7 @@ export default function ClienteDashboardPCE() {
 
                   <div className="bg-brand-cyan/[0.03] border border-brand-cyan/10 rounded-[2.5rem] p-10 flex flex-col items-center justify-center min-w-[300px] shadow-2xl shadow-brand-cyan/5">
                     <span className="text-[10px] font-black text-brand-cyan uppercase tracking-[0.3em] mb-4">Economia Total Gerada</span>
-                    <div className="text-4xl lg:text-5xl font-black text-text-dark tracking-tighter mb-2">{formatCurrency(kpis.financeiro.economia_total)}</div>
+                    <div className="text-4xl lg:text-5xl font-black text-text-dark tracking-tighter mb-2">{formatCurrency(kpis?.financeiro?.economia_total)}</div>
                     <div className="flex items-center gap-2 text-green-600 text-[10px] font-black uppercase tracking-widest">
                       <TrendingUp size={14} />
                       Performance Elevada
@@ -341,10 +367,10 @@ export default function ClienteDashboardPCE() {
 
               {/* 2. QUATRO CARDS PRINCIPAIS */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                <ExecutiveCard title="Economia Direta" value={formatCurrency(kpis.financeiro.economia_total)} description="Capital preservado através da recuperação estratégica de pallets." icon={DollarSign} variant="green" trend="up" trendValue="+12% vs m.a" />
-                <ExecutiveCard title="Pallets Processados" value={formatNumber(kpis.operacao.total_processado)} description="Volume total triado e classificado com rigor técnico." icon={Activity} variant="cyan" trend="stable" trendValue="Constante" />
-                <ExecutiveCard title="Taxa de Circularidade" value={formatPercent(kpis.eficiencia.taxa_reaproveitamento)} description="Eficiência de reincorporação de ativos na cadeia produtiva." icon={Recycle} variant="purple" trend="up" trendValue="Meta Atingida" />
-                <ExecutiveCard title="Impacto CO₂" value={`${(kpis.esg.co2_evitado / 1000).toFixed(1)} t`} description="Redução direta da pegada de carbono da operação PCE." icon={Wind} variant="cyan" />
+                <ExecutiveCard title="Economia Direta" value={formatCurrency(kpis?.financeiro?.economia_total)} description="Capital preservado através da recuperação estratégica de pallets." icon={DollarSign} variant="green" trend="up" trendValue="+12% vs m.a" />
+                <ExecutiveCard title="Pallets Processados" value={formatNumber(kpis?.operacao?.total_processado)} description="Volume total triado e classificado com rigor técnico." icon={Activity} variant="cyan" trend="stable" trendValue="Constante" />
+                <ExecutiveCard title="Taxa de Circularidade" value={formatPercent(kpis?.eficiencia?.taxa_reaproveitamento)} description="Eficiência de reincorporação de ativos na cadeia produtiva." icon={Recycle} variant="purple" trend="up" trendValue="Meta Atingida" />
+                <ExecutiveCard title="Impacto CO₂" value={`${((kpis?.esg?.co2_evitado || 0) / 1000).toFixed(1)} t`} description="Redução direta da pegada de carbono da operação PCE." icon={Wind} variant="cyan" />
               </div>
 
               {/* 3. RESUMO COMERCIAL & 5. INSIGHT */}
@@ -356,13 +382,13 @@ export default function ClienteDashboardPCE() {
                   </div>
                   <div className="space-y-6">
                     <p className="text-xl lg:text-2xl font-bold text-text-dark leading-snug">
-                      A operação recuperou <span className="text-brand-cyan">{formatNumber(kpis.operacao.total_processado - (kpis.operacao.total_processado * (kpis.eficiencia.taxa_sucata / 100)))}</span> pallets que poderiam gerar custo de aquisição adicional.
+                      A operação recuperou <span className="text-brand-cyan">{formatNumber((kpis?.operacao?.total_processado || 0) - ((kpis?.operacao?.total_processado || 0) * ((kpis?.eficiencia?.taxa_sucata || 0) / 100)))}</span> pallets que poderiam gerar custo de aquisição adicional.
                     </p>
                     <p className="text-xl lg:text-2xl font-bold text-text-dark leading-snug">
-                      A PCE evitou aproximadamente <span className="text-green-600">{formatCurrency(kpis.financeiro.custo_evitar_novo)}</span> em despesas operacionais através do modelo circular.
+                      A PCE evitou aproximadamente <span className="text-green-600">{formatCurrency(kpis?.financeiro?.custo_evitar_novo)}</span> em despesas operacionais através do modelo circular.
                     </p>
                     <p className="text-xl lg:text-2xl font-bold text-text-dark leading-snug">
-                      O reaproveitamento alcançou <span className="text-purple-500">{formatPercent(kpis.eficiencia.taxa_reaproveitamento)}</span>, reforçando o compromisso com metas ESG globais.
+                      O reaproveitamento alcançou <span className="text-purple-500">{formatPercent(kpis?.eficiencia?.taxa_reaproveitamento)}</span>, reforçando o compromisso com metas ESG globais.
                     </p>
                   </div>
                 </Card>
@@ -393,10 +419,10 @@ export default function ClienteDashboardPCE() {
                 <section>
                   <SectionHeader icon={Truck} title="Performance Operacional" color="brand-cyan" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                    <ExecutiveCard title="Total Coletado" value={formatNumber(kpis.operacao.total_coletado)} description="Volume bruto retirado da planta PCE." icon={Truck} variant="cyan" />
-                    <ExecutiveCard title="Saldo Ativo" value={formatNumber(kpis.operacao.total_estoque)} description="Patrimônio disponível para retorno imediato." icon={Package} variant="cyan" />
-                    <ExecutiveCard title="Total Entregue" value={formatNumber(kpis.operacao.total_entregue)} description="Volume reintroduzido na cadeia produtiva." icon={RotateCw} variant="cyan" />
-                    <ExecutiveCard title="Lead Time" value={kpis.operacao.tempo_medio_ciclo} description="Tempo médio entre coleta e triagem técnica." icon={Clock} variant="cyan" />
+                    <ExecutiveCard title="Total Coletado" value={formatNumber(kpis?.operacao?.total_coletado)} description="Volume bruto retirado da planta PCE." icon={Truck} variant="cyan" />
+                    <ExecutiveCard title="Saldo Ativo" value={formatNumber(kpis?.operacao?.total_estoque)} description="Patrimônio disponível para retorno imediato." icon={Package} variant="cyan" />
+                    <ExecutiveCard title="Total Entregue" value={formatNumber(kpis?.operacao?.total_entregue)} description="Volume reintroduzido na cadeia produtiva." icon={RotateCw} variant="cyan" />
+                    <ExecutiveCard title="Lead Time" value={kpis?.operacao?.tempo_medio_ciclo} description="Tempo médio entre coleta e triagem técnica." icon={Clock} variant="cyan" />
                   </div>
                 </section>
 
@@ -404,10 +430,10 @@ export default function ClienteDashboardPCE() {
                 <section>
                   <SectionHeader icon={Recycle} title="Índices de Eficiência" color="brand-pink" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                    <ExecutiveCard title="Taxa de Reforma" value={formatPercent(kpis.eficiencia.taxa_reforma)} description="Recuperação técnica de pallets padrão." icon={Hammer} variant="pink" />
-                    <ExecutiveCard title="Taxa de Remanuf." value={formatPercent(kpis.eficiencia.taxa_remanufatura)} description="Reforma estrutural de alta complexidade." icon={Wrench} variant="pink" />
-                    <ExecutiveCard title="Taxa de Sucata" value={formatPercent(kpis.eficiencia.taxa_sucata)} description="Material sem viabilidade técnica de reparo." icon={Trash2} variant="yellow" />
-                    <ExecutiveCard title="Perda Total" value={formatPercent(kpis.eficiencia.perda_operacional)} description="Impacto da sucata no volume coletado." icon={AlertCircle} variant="yellow" />
+                    <ExecutiveCard title="Taxa de Reforma" value={formatPercent(kpis?.eficiencia?.taxa_reforma)} description="Recuperação técnica de pallets padrão." icon={Hammer} variant="pink" />
+                    <ExecutiveCard title="Taxa de Remanuf." value={formatPercent(kpis?.eficiencia?.taxa_remanufatura)} description="Reforma estrutural de alta complexidade." icon={Wrench} variant="pink" />
+                    <ExecutiveCard title="Taxa de Sucata" value={formatPercent(kpis?.eficiencia?.taxa_sucata)} description="Material sem viabilidade técnica de reparo." icon={Trash2} variant="yellow" />
+                    <ExecutiveCard title="Perda Total" value={formatPercent(kpis?.eficiencia?.perda_operacional)} description="Impacto da sucata no volume coletado." icon={AlertCircle} variant="yellow" />
                   </div>
                 </section>
 
@@ -415,10 +441,10 @@ export default function ClienteDashboardPCE() {
                 <section>
                   <SectionHeader icon={DollarSign} title="Gestão Financeira" color="green-500" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                    <ExecutiveCard title="Custo Evitado" value={formatCurrency(kpis.financeiro.custo_evitar_novo)} description="Economia em evitar aquisição de novos ativos." icon={Banknote} variant="green" />
-                    <ExecutiveCard title="Economia/Un" value={formatCurrency(kpis.financeiro.economia_por_pallet)} description="Redução média de custo por unidade." icon={Target} variant="green" />
-                    <ExecutiveCard title="ROI Estratégico" value={formatPercent(kpis.financeiro.roi_operacao)} description="Retorno sobre investimento em manutenção." icon={TrendingUp} variant="green" />
-                    <ExecutiveCard title="Custo Unitário" value={formatCurrency(kpis.financeiro.custo_medio_pallet)} description="Custo médio fixo de reparo por unidade." icon={Scale} variant="green" />
+                    <ExecutiveCard title="Custo Evitado" value={formatCurrency(kpis?.financeiro?.custo_evitar_novo)} description="Economia em evitar aquisição de novos ativos." icon={Banknote} variant="green" />
+                    <ExecutiveCard title="Economia/Un" value={formatCurrency(kpis?.financeiro?.economia_por_pallet)} description="Redução média de custo por unidade." icon={Target} variant="green" />
+                    <ExecutiveCard title="ROI Estratégico" value={formatPercent(kpis?.financeiro?.roi_operacao)} description="Retorno sobre investimento em manutenção." icon={TrendingUp} variant="green" />
+                    <ExecutiveCard title="Custo Unitário" value={formatCurrency(kpis?.financeiro?.custo_medio_pallet)} description="Custo médio fixo de reparo por unidade." icon={Scale} variant="green" />
                   </div>
                 </section>
 
@@ -426,9 +452,9 @@ export default function ClienteDashboardPCE() {
                 <section>
                   <SectionHeader icon={Leaf} title="Impacto ESG & Sustentabilidade" color="purple-500" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                    <ExecutiveCard title="Árvores Preservadas" value={kpis.esg.arvores_preservadas.toFixed(0)} description="Estimativa de preservação florestal." icon={Trees} variant="purple" />
-                    <ExecutiveCard title="Madeira Reaprov." value={`${kpis.esg.madeira_reutilizada.toFixed(1)} t`} description="Volume de matéria-prima reincorporada." icon={Leaf} variant="purple" />
-                    <ExecutiveCard title="Resíduos Evitados" value={`${(kpis.esg.residuos_evitar / 1000).toFixed(1)} t`} description="Desvio de resíduos sólidos de aterros." icon={Zap} variant="purple" />
+                    <ExecutiveCard title="Árvores Preservadas" value={(kpis?.esg?.arvores_preservadas || 0).toFixed(0)} description="Estimativa de preservação florestal." icon={Trees} variant="purple" />
+                    <ExecutiveCard title="Madeira Reaprov." value={`${(kpis?.esg?.madeira_reutilizada || 0).toFixed(1)} t`} description="Volume de matéria-prima reincorporada." icon={Leaf} variant="purple" />
+                    <ExecutiveCard title="Resíduos Evitados" value={`${((kpis?.esg?.residuos_evitar || 0) / 1000).toFixed(1)} t`} description="Desvio de resíduos sólidos de aterros." icon={Zap} variant="purple" />
                     <ExecutiveCard title="Compromisso Global" value="Rating AAA" description="Nível de aderência à economia circular." icon={Globe} variant="purple" />
                   </div>
                 </section>
@@ -437,8 +463,8 @@ export default function ClienteDashboardPCE() {
                 <section>
                   <SectionHeader icon={Activity} title="Análise de Performance" color="amber-500" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <ExecutiveCard title="Crescimento" value={formatPercent(kpis.performance.crescimento_mensal)} description="Variação de volume vs período anterior." icon={TrendingUp} variant="yellow" />
-                    <ExecutiveCard title="Score Ivani" value={kpis.performance.indice_performance.toFixed(1)} description="Métrica proprietária de eficiência global." icon={Zap} variant="yellow" />
+                    <ExecutiveCard title="Crescimento" value={formatPercent(kpis?.performance?.crescimento_mensal)} description="Variação de volume vs período anterior." icon={TrendingUp} variant="yellow" />
+                    <ExecutiveCard title="Score Ivani" value={(kpis?.performance?.indice_performance || 0).toFixed(1)} description="Métrica proprietária de eficiência global." icon={Zap} variant="yellow" />
                     <ExecutiveCard title="SLA Operacional" value="98.5%" description="Conformidade com níveis de serviço." icon={ShieldCheck} variant="yellow" />
                   </div>
                 </section>
@@ -466,8 +492,8 @@ export default function ClienteDashboardPCE() {
                       {triagens.map((t) => (
                         <tr key={t.id} className="hover:bg-brand-cyan/[0.01] transition-all group">
                           <td className="px-10 py-6 font-black text-sm text-text-dark">{t.nf_saida_pce || "S/ NF"}</td>
-                          <td className="px-8 py-6 text-[11px] font-bold text-text-dark/40">{new Date(t.data_coleta).toLocaleDateString('pt-BR')}</td>
-                          <td className="px-8 py-6 text-center font-black text-text-dark text-sm">{t.quantidade_total}</td>
+                          <td className="px-8 py-6 text-[11px] font-bold text-text-dark/40">{t.data_coleta ? new Date(t.data_coleta).toLocaleDateString('pt-BR') : "---"}</td>
+                          <td className="px-8 py-6 text-center font-black text-text-dark text-sm">{t.quantidade_total || 0}</td>
                           <td className="px-8 py-6 text-center">
                             <span className="font-black text-brand-cyan text-sm">
                               {(t.quantidade_manutencao || 0) + (t.quantidade_remanufatura || 0) + (t.quantidade_compra_ivani || 0)}
@@ -478,7 +504,7 @@ export default function ClienteDashboardPCE() {
                           </td>
                           <td className="px-10 py-6">
                             <Badge variant={t.status === "finalizada" ? "success" : "warning"}>
-                              {t.status.replace('_', ' ')}
+                              {(t.status || "Pendente").replace('_', ' ')}
                             </Badge>
                           </td>
                         </tr>
@@ -497,7 +523,7 @@ export default function ClienteDashboardPCE() {
                   <div className="flex justify-between items-start mb-10">
                     <div className="flex flex-col">
                       <h4 className="font-black text-lg text-text-dark tracking-tight mb-1">{s.modelo?.nome || "Modelo Indefinido"}</h4>
-                      <p className="text-[11px] font-black text-brand-cyan uppercase tracking-[0.2em]">{s.modelo?.codigo}</p>
+                      <p className="text-[11px] font-black text-brand-cyan uppercase tracking-[0.2em]">{s.modelo?.codigo || "---"}</p>
                     </div>
                     <div className="w-14 h-14 bg-brand-cyan/5 text-brand-cyan rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110">
                       <Package size={28} />
@@ -506,7 +532,7 @@ export default function ClienteDashboardPCE() {
                   <div>
                     <span className="text-[10px] font-black text-text-dark/20 uppercase tracking-[0.2em] block mb-2">Saldo em Inventário</span>
                     <div className="text-5xl font-black text-text-dark tracking-tighter">
-                      {s.quantidade_disponivel} 
+                      {s.quantidade_disponivel || 0} 
                       <span className="text-base font-bold text-text-dark/20 ml-3 uppercase tracking-widest">un</span>
                     </div>
                   </div>

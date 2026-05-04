@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { motion } from "framer-motion";
 import { LucideIcon } from "lucide-react";
@@ -32,29 +34,19 @@ export const KpiCard: React.FC<KpiCardProps> = ({
     purple: "text-purple-500 bg-purple-50 border-purple-100",
   };
 
-  const iconColorMap = {
-    cyan: "text-brand-cyan",
-    pink: "text-brand-pink",
-    yellow: "text-brand-yellow",
-    blue: "text-brand-blue",
-    green: "text-green-500",
-    red: "text-red-500",
-    purple: "text-purple-500",
-  };
-
   return (
     <motion.div
       whileHover={{ y: -4 }}
       className="bg-white rounded-3xl border border-brand-pink/10 p-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-xl transition-all group relative overflow-hidden"
     >
       <div className="absolute top-[-20px] right-[-20px] opacity-[0.03] group-hover:opacity-[0.08] transition-all duration-500 pointer-events-none rotate-12 group-hover:rotate-0">
-        <Icone size={120} />
+        {Icone && <Icone size={120} />}
       </div>
 
       <div className="relative z-10">
         <div className="flex justify-between items-start mb-4">
           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${colorMap[cor]}`}>
-            <Icone size={24} />
+            {Icone && <Icone size={24} />}
           </div>
           {tendencia && (
             <div
@@ -72,7 +64,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
             {titulo}
           </span>
           <div className="text-2xl sm:text-3xl font-black text-text-dark tracking-tight truncate">
-            {valor}
+            {valor ?? "---"}
           </div>
         </div>
 
