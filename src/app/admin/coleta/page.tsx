@@ -29,6 +29,7 @@ import { createClient } from "@/lib/supabase/client";
 import { logout } from "@/app/actions/auth";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { LoadingScreen } from "@/components/ui/loading-screen";
+import { salvarColeta, excluirColeta, enviarParaTriagem } from "@/app/actions/coletas";
 
 // --- TIPAGEM ---
 
@@ -103,23 +104,11 @@ export default function AdminColetaPage() {
     try {
       setIsSubmitting(true);
       
-      if (editingColeta) {
-        const { error: updateError } = await supabase
-          .from("coletas")
-          .update(coletaData)
-          .eq("id", editingColeta.id);
+      const result = await salvarColeta(coletaData, editingColeta?.id);
 
-        if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase
-          .from("coletas")
-          .insert({
-            ...coletaData,
-            status: 'coletado',
-            enviado_triagem: false
-          });
-
-        if (insertError) throw insertError;
+      if (result.error) {
+        alert(result.error);
+        return;
       }
 
       setIsModalOpen(false);
@@ -142,51 +131,12 @@ export default function AdminColetaPage() {
     try {
       setTransferringId(coleta.id);
 
-      // 1. Verificar se já existe em triagens
-      const { data: existingTriagem } = await supabase
-        .from("triagens")
-        .select("id")
-        .eq("coleta_id", coleta.id)
-        .single();
+      const result = await enviarParaTriagem(coleta);
 
-      if (existingTriagem) {
-        alert("Esta coleta já foi enviada para triagem.");
-        await supabase.from("coletas").update({ enviado_triagem: true, status: 'enviado_triagem' }).eq("id", coleta.id);
-        fetchColetas();
+      if (result.error) {
+        alert(result.error);
         return;
       }
-
-      // 2. Criar registro em Triagens (Ajustado para V2)
-      const { error: insertError } = await supabase
-        .from("triagens")
-        .insert({
-          coleta_id: coleta.id,
-          cliente_id: "pce",
-          nf_saida_pce: coleta.nf_saida_pce,
-          motorista: coleta.motorista,
-          caminhao: coleta.caminhao,
-          data_coleta: coleta.data_coleta,
-          quantidade_total: coleta.quantidade_material_bruto,
-          quantidade_sucata: 0,
-          quantidade_manutencao: 0,
-          quantidade_remanufatura: 0,
-          quantidade_compra_ivani: 0,
-          status: "em_triagem"
-        });
-
-      if (insertError) throw insertError;
-
-      // 3. Atualizar status na tabela Coletas
-      const { error: updateError } = await supabase
-        .from("coletas")
-        .update({
-          enviado_triagem: true,
-          status: "enviado_triagem",
-          data_envio_triagem: new Date().toISOString()
-        })
-        .eq("id", coleta.id);
-
-      if (updateError) throw updateError;
 
       fetchColetas();
     } catch (err: any) {
@@ -199,11 +149,13 @@ export default function AdminColetaPage() {
   const handleDeleteColeta = async (id: string) => {
     if (!confirm("Tem certeza que deseja excluir esta coleta?")) return;
     try {
-      const { error: deleteError } = await supabase
-        .from("coletas")
-        .delete()
-        .eq("id", id);
-      if (deleteError) throw deleteError;
+      const result = await excluirColeta(id);
+      
+      if (result.error) {
+        alert(result.error);
+        return;
+      }
+
       fetchColetas();
     } catch (err: any) {
       alert("Erro ao excluir: " + err.message);
