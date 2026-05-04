@@ -1,52 +1,40 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { 
-  Package, 
-  Truck, 
-  ClipboardCheck, 
-  Hammer, 
-  Trash2, 
-  DollarSign, 
-  CheckCircle2,
-  Clock,
-  ArrowRight,
-  Filter,
-  Search,
   LayoutDashboard,
-  LogOut,
-  ChevronRight,
-  CircleDot,
-  TrendingUp,
-  TrendingDown,
-  Target,
-  Activity,
-  Wallet,
-  ShieldCheck,
-  Banknote,
-  Leaf,
+  BarChart3,
+  Truck,
+  Package,
   Recycle,
-  Wind,
-  Trees,
-  RotateCw,
-  Settings,
-  List,
-  Calendar,
-  Info,
-  ExternalLink,
-  MoreHorizontal,
-  Loader2,
-  AlertCircle,
-  Wrench,
-  Layers,
+  DollarSign,
+  TrendingUp,
+  Leaf,
   ArrowRightLeft,
+  ChevronRight,
+  LogOut,
   Menu,
   X,
   FileText,
-  BarChart3,
-  Scale,
+  Activity,
   Zap,
-  Globe
+  Globe,
+  Trees,
+  Wind,
+  Hammer,
+  Wrench,
+  Trash2,
+  AlertCircle,
+  Banknote,
+  Target,
+  Scale,
+  Clock,
+  RotateCw,
+  ShieldCheck,
+  Calendar,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
@@ -54,51 +42,93 @@ import Link from "next/link";
 import { logout } from "@/app/actions/auth";
 import { registrarAcesso } from "@/lib/utils/monitoramento";
 import { LoadingPage } from "@/components/ui/loading-screen";
-import { KpiCard } from "@/components/dashboard/KpiCard";
 import { fetchDashboardKPIs, DashboardKPIs } from "@/lib/kpis";
 
-// --- TIPAGEM ---
-
-interface Triagem {
-  id: string;
-  nf_saida_pce: string;
-  data_coleta: string;
-  quantidade_total: number;
-  quantidade_manutencao: number;
-  quantidade_remanufatura: number;
-  quantidade_compra_ivani: number;
-  quantidade_sucata: number;
-  status: 'em_triagem' | 'classificada' | 'finalizada';
-  created_at: string;
-}
-
-interface EstoqueSaldo {
-  modelo_pallet_id: string;
-  quantidade_disponivel: number;
-  modelo?: {
-    nome: string;
-    codigo: string;
-  }
-}
+// --- COMPONENTES AUXILIARES ---
 
 const Badge = ({ children, variant = "default" }: { children: React.ReactNode, variant?: "default" | "success" | "warning" | "error" | "info" }) => {
   const styles = {
-    default: "bg-gray-100 text-gray-600 border-gray-200",
+    default: "bg-gray-100 text-gray-500 border-gray-200",
     success: "bg-green-50 text-green-600 border-green-100",
     warning: "bg-amber-50 text-amber-600 border-amber-100",
     error: "bg-red-50 text-red-600 border-red-100",
     info: "bg-brand-cyan/5 text-brand-cyan border-brand-cyan/10",
   };
   return (
-    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${styles[variant]}`}>
+    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${styles[variant]}`}>
       {children}
     </span>
   );
 };
 
-const Card = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-  <div className={`bg-white rounded-3xl border border-brand-pink/10 shadow-[0_4px_20px_rgb(0,0,0,0.03)] ${className}`}>
-    {children}
+const ExecutiveCard = ({ 
+  title, 
+  value, 
+  description, 
+  icon: Icon, 
+  trend, 
+  trendValue,
+  variant = "cyan" 
+}: { 
+  title: string, 
+  value: string | number, 
+  description: string, 
+  icon: any,
+  trend?: "up" | "down" | "stable",
+  trendValue?: string,
+  variant?: "cyan" | "pink" | "green" | "purple" | "yellow"
+}) => {
+  const variants = {
+    cyan: "text-brand-cyan bg-brand-cyan/5 border-brand-cyan/10 shadow-brand-cyan/5",
+    pink: "text-brand-pink bg-brand-pink/5 border-brand-pink/10 shadow-brand-pink/5",
+    green: "text-green-500 bg-green-50 border-green-100 shadow-green-500/5",
+    purple: "text-purple-500 bg-purple-50 border-purple-100 shadow-purple-500/5",
+    yellow: "text-amber-500 bg-amber-50 border-amber-100 shadow-amber-500/5",
+  };
+
+  return (
+    <motion.div
+      whileHover={{ y: -5, transition: { duration: 0.2 } }}
+      className="bg-white rounded-[2rem] border border-gray-100 p-8 shadow-xl shadow-gray-200/20 relative overflow-hidden group"
+    >
+      <div className={`absolute top-[-20px] right-[-20px] opacity-[0.03] group-hover:opacity-[0.08] transition-all duration-700 pointer-events-none rotate-12 group-hover:rotate-0 ${variants[variant]}`}>
+        <Icon size={140} />
+      </div>
+
+      <div className="relative z-10">
+        <div className="flex justify-between items-start mb-6">
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 ${variants[variant]}`}>
+            <Icon size={28} />
+          </div>
+          {trend && (
+            <div className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${
+              trend === "up" ? "bg-green-50 text-green-600" : trend === "down" ? "bg-red-50 text-red-500" : "bg-gray-50 text-gray-400"
+            }`}>
+              {trend === "up" ? <ArrowUpRight size={14} /> : trend === "down" ? <ArrowDownRight size={14} /> : <Minus size={14} />}
+              {trendValue}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <span className="text-[10px] font-black text-text-dark/30 uppercase tracking-[0.2em] block mb-2">{title}</span>
+          <div className="text-3xl sm:text-4xl font-black text-text-dark tracking-tighter leading-none mb-4">{value}</div>
+          <p className="text-xs text-text-dark/40 font-bold leading-relaxed border-t border-gray-50 pt-5">{description}</p>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const SectionHeader = ({ icon: Icon, title, color = "brand-cyan" }: { icon: any, title: string, color?: string }) => (
+  <div className="flex items-center gap-4 mb-10">
+    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg`} style={{ backgroundColor: `var(--${color})` || color }}>
+      <Icon size={24} />
+    </div>
+    <div className="flex flex-col">
+      <h2 className="text-xl font-black text-text-dark uppercase tracking-tight">{title}</h2>
+      <div className="w-12 h-1 bg-current opacity-20 rounded-full mt-1" style={{ color: `var(--${color})` || color }} />
+    </div>
   </div>
 );
 
@@ -107,48 +137,32 @@ const supabase = createClient();
 export default function ClienteDashboardPCE() {
   const [activeTab, setActiveTab] = useState("overview");
   const [kpis, setKpis] = useState<DashboardKPIs | null>(null);
-  const [triagens, setTriagens] = useState<Triagem[]>([]);
-  const [estoqueSaldos, setEstoqueSaldos] = useState<EstoqueSaldo[]>([]);
+  const [triagens, setTriagens] = useState<any[]>([]);
+  const [estoqueSaldos, setEstoqueSaldos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("PCE Logística");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      
-      // 1. Buscar Dados do Usuário
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        const { data: perfil } = await supabase
-          .from("usuarios")
-          .select("nome")
-          .eq("id", session.user.id)
-          .single();
+        const { data: perfil } = await supabase.from("usuarios").select("nome").eq("id", session.user.id).single();
         if (perfil?.nome) setUserName(perfil.nome);
       }
 
-      // 2. Buscar KPIs Reais
-      const kpiData = await fetchDashboardKPIs("pce");
-      setKpis(kpiData);
-
-      // 3. Buscar Dados Operacionais para as outras abas
-      const [
-        { data: triagensData },
-        { data: estoqueData }
-      ] = await Promise.all([
+      const [kpiData, triagensRes, estoqueRes] = await Promise.all([
+        fetchDashboardKPIs("pce"),
         supabase.from("triagens").select("*").eq("cliente_id", "pce").order("data_coleta", { ascending: false }),
         supabase.from("estoque_pallets").select("*, modelo:modelos_pallets(nome, codigo)").eq("cliente_id", "pce")
       ]);
 
-      setTriagens(triagensData || []);
-      setEstoqueSaldos(estoqueData || []);
-
-      setError(null);
-    } catch (err: any) {
-      console.error("Dashboard: Erro no fetchData:", err);
-      setError(`Erro ao carregar dados operacionais: ${err.message}`);
+      setKpis(kpiData);
+      setTriagens(triagensRes.data || []);
+      setEstoqueSaldos(estoqueRes.data || []);
+    } catch (err) {
+      console.error("Dashboard Error:", err);
     } finally {
       setLoading(false);
     }
@@ -160,44 +174,79 @@ export default function ClienteDashboardPCE() {
   }, []);
 
   const tabs = [
-    { id: "overview", label: "Visão Executiva", icon: <BarChart3 size={16} /> },
-    { id: "operations", label: "Operações", icon: <ArrowRightLeft size={16} /> },
-    { id: "stock", label: "Estoque Disponível", icon: <Package size={16} /> },
+    { id: "overview", label: "Dashboard Executivo", icon: <LayoutDashboard size={16} /> },
+    { id: "operations", label: "Gestão Operacional", icon: <ArrowRightLeft size={16} /> },
+    { id: "stock", label: "Inventário & Saldo", icon: <Package size={16} /> },
   ];
 
   if (loading) return <LoadingPage />;
 
-  const formatCurrency = (val: number) => 
-    val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  
-  const formatPercent = (val: number) => 
-    `${val.toFixed(1)}%`;
+  const formatCurrency = (val: number) => val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const formatPercent = (val: number) => `${val.toFixed(1)}%`;
+  const formatNumber = (val: number) => val.toLocaleString("pt-BR");
+
+  // --- LÓGICA DE INSIGHTS ---
+  const insight = useMemo(() => {
+    if (!kpis) return null;
+    const { eficiencia, financeiro } = kpis;
+    
+    if (eficiencia.taxa_reaproveitamento > 85) {
+      return {
+        type: "success",
+        title: "Excelência em Circularidade",
+        message: "Sua operação apresenta um nível de reaproveitamento excepcional, superando as metas de sustentabilidade do setor B2B.",
+        icon: ShieldCheck
+      };
+    }
+    if (eficiencia.taxa_sucata > 15) {
+      return {
+        type: "warning",
+        title: "Oportunidade de Melhoria",
+        message: "Detectamos um aumento na geração de sucata. Recomendamos uma revisão nos processos de manuseio interno para reduzir perdas.",
+        icon: AlertCircle
+      };
+    }
+    if (financeiro.roi_operacao > 150) {
+      return {
+        type: "info",
+        title: "Alto Retorno sobre Reparo",
+        message: "A economia gerada pela recuperação de pallets estruturais está otimizando significativamente o orçamento operacional da PCE.",
+        icon: TrendingUp
+      };
+    }
+    return {
+      type: "neutral",
+      title: "Operação Estabilizada",
+      message: "O fluxo de logística reversa mantém constância. Continue monitorando os volumes semanais para identificar tendências de pico.",
+      icon: Activity
+    };
+  }, [kpis]);
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-text-dark font-sans pb-20">
+    <div className="min-h-screen bg-white text-text-dark font-sans selection:bg-brand-cyan/20">
       {/* Header Premium PCE */}
-      <header className="bg-white border-b border-brand-pink/10 sticky top-0 z-50 backdrop-blur-md bg-white/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex justify-between items-center h-16 sm:h-20">
-            <div className="flex items-center gap-4 sm:gap-10">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-brand-cyan rounded-xl flex items-center justify-center shadow-lg shadow-brand-cyan/20">
-                  <BarChart3 className="text-white" size={18} />
+      <header className="bg-white/80 backdrop-blur-xl border-b border-gray-100 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex justify-between items-center h-20 sm:h-24">
+            <div className="flex items-center gap-12">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-brand-cyan rounded-2xl flex items-center justify-center shadow-xl shadow-brand-cyan/20">
+                  <BarChart3 className="text-white" size={24} />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-display font-black text-base sm:text-lg leading-none text-brand-cyan uppercase tracking-tighter">Portal PCE</span>
-                  <span className="text-[9px] font-black text-text-dark/30 uppercase tracking-[0.2em] mt-0.5">Business Intelligence</span>
+                  <span className="font-display font-black text-xl leading-none text-brand-cyan tracking-tighter">IVANI HUB</span>
+                  <span className="text-[10px] font-black text-text-dark/30 uppercase tracking-[0.2em] mt-1">Strategic Intelligence</span>
                 </div>
               </div>
               
-              <nav className="hidden lg:flex items-center gap-1">
+              <nav className="hidden lg:flex items-center gap-2">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                    className={`flex items-center gap-3 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${
                       activeTab === tab.id 
-                      ? "bg-brand-cyan text-white shadow-lg shadow-brand-cyan/20" 
+                      ? "bg-text-dark text-white shadow-2xl shadow-text-dark/20" 
                       : "text-text-dark/40 hover:text-text-dark/60 hover:bg-gray-50"
                     }`}
                   >
@@ -208,29 +257,25 @@ export default function ClienteDashboardPCE() {
               </nav>
             </div>
 
-            <div className="flex items-center gap-3 sm:gap-4">
-              <Link
-                href="/cliente/relatorio"
-                className="hidden md:flex items-center gap-2 px-5 py-2.5 bg-brand-pink/5 text-brand-pink rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-pink/10 transition-all border border-brand-pink/10"
-              >
-                <FileText size={16} />
-                Relatório Full
-              </Link>
+            <div className="flex items-center gap-6">
+              <div className="hidden md:flex flex-col text-right">
+                <span className="text-[10px] font-black text-text-dark/30 uppercase tracking-widest leading-none mb-1">Bem-vindo, Executivo</span>
+                <span className="text-sm font-black text-text-dark">{userName}</span>
+              </div>
 
               <button 
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="lg:hidden p-2.5 text-text-dark/60 hover:bg-gray-100 rounded-xl"
+                className="lg:hidden p-3 text-text-dark/60 hover:bg-gray-100 rounded-2xl transition-all"
               >
                 <Menu size={24} />
               </button>
 
               <button 
                 onClick={() => logout()}
-                className="hidden sm:flex items-center gap-2 p-2.5 text-text-dark/30 hover:text-red-500 transition-colors hover:bg-red-50 rounded-xl"
+                className="hidden sm:flex items-center gap-3 p-3 text-text-dark/30 hover:text-red-500 transition-all hover:bg-red-50 rounded-2xl"
                 title="Sair"
               >
-                <LogOut size={18} />
-                <span className="text-[10px] font-black uppercase tracking-widest">Sair</span>
+                <LogOut size={20} />
               </button>
             </div>
           </div>
@@ -241,279 +286,249 @@ export default function ClienteDashboardPCE() {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <>
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] lg:hidden"
-            />
-            <motion.div 
-              initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 bottom-0 w-[300px] bg-white z-[70] lg:hidden shadow-2xl border-l border-brand-pink/10 flex flex-col p-8"
-            >
-              <div className="flex justify-between items-center mb-10">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-cyan">BI Navigation</span>
-                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-text-dark/30 hover:text-text-dark">
-                  <X size={24} />
-                </button>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsMobileMenuOpen(false)} className="fixed inset-0 bg-text-dark/40 backdrop-blur-md z-[60] lg:hidden" />
+            <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 30, stiffness: 300 }} className="fixed top-0 right-0 bottom-0 w-[320px] bg-white z-[70] lg:hidden shadow-[0_0_50px_rgba(0,0,0,0.1)] flex flex-col p-10" >
+              <div className="flex justify-between items-center mb-12">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-cyan">Menu Hub</span>
+                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-text-dark/30"><X size={28} /></button>
               </div>
-
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-4">
                 {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => {
-                      setActiveTab(tab.id);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`flex items-center justify-between px-6 py-5 rounded-2xl text-[11px] font-black uppercase tracking-[0.1em] transition-all ${
-                      activeTab === tab.id 
-                      ? "bg-brand-cyan text-white shadow-xl shadow-brand-cyan/20" 
-                      : "text-text-dark/60 hover:bg-gray-50 border border-transparent"
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      {tab.icon}
-                      {tab.label}
-                    </div>
+                  <button key={tab.id} onClick={() => { setActiveTab(tab.id); setIsMobileMenuOpen(false); }} className={`flex items-center justify-between px-8 py-6 rounded-[1.5rem] text-xs font-black uppercase tracking-[0.1em] transition-all ${ activeTab === tab.id ? "bg-brand-cyan text-white shadow-2xl shadow-brand-cyan/20" : "text-text-dark/60 hover:bg-gray-50" }`} >
+                    <div className="flex items-center gap-4">{tab.icon}{tab.label}</div>
                   </button>
                 ))}
-
-                <div className="my-6 border-t border-brand-pink/5" />
-                
-                <Link
-                  href="/cliente/relatorio"
-                  className="flex items-center gap-4 px-6 py-5 rounded-2xl text-[11px] font-black uppercase tracking-[0.1em] text-brand-pink bg-brand-pink/5 border border-brand-pink/10"
-                >
-                  <FileText size={18} />
-                  Relatório Executivo
-                </Link>
-
-                <button
-                  onClick={() => logout()}
-                  className="flex items-center gap-4 px-6 py-5 rounded-2xl text-[11px] font-black uppercase tracking-[0.1em] text-red-500 hover:bg-red-50 mt-6"
-                >
-                  <LogOut size={18} />
-                  Encerrar Sessão
-                </button>
               </div>
-
-              <div className="mt-auto pt-8 border-t border-brand-pink/5 flex flex-col items-center">
-                <div className="w-12 h-1 bg-brand-cyan/20 rounded-full mb-4" />
-                <div className="text-[9px] font-black text-text-dark/20 uppercase tracking-[0.2em] italic">Ivani Pallets Intelligence</div>
+              <div className="mt-auto flex flex-col items-center">
+                <div className="text-[9px] font-black text-text-dark/20 uppercase tracking-[0.3em] italic">Ivani Pallets Ecosystem</div>
               </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-10">
+      <main className="max-w-7xl mx-auto px-6 py-12 lg:py-20">
         <AnimatePresence mode="wait">
           {activeTab === "overview" && kpis && (
-            <motion.div key="overview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-16">
+            <motion.div key="overview" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-24">
               
-              {/* TOPO: CARDS GRANDES */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <KpiCard 
-                  titulo="Economia Acumulada"
-                  valor={formatCurrency(kpis.financeiro.economia_total)}
-                  descricao="Total economizado com recuperação de pallets"
-                  icone={DollarSign}
-                  cor="green"
-                  tendencia={{ valor: "R$ 15k/mês", subindo: true }}
-                />
-                <KpiCard 
-                  titulo="Volume Processado"
-                  valor={kpis.operacao.total_processado.toLocaleString()}
-                  descricao="Total de pallets triados e classificados"
-                  icone={Activity}
-                  cor="cyan"
-                  tendencia={{ valor: `${kpis.performance.crescimento_mensal.toFixed(0)}%`, subindo: kpis.performance.crescimento_mensal > 0 }}
-                />
-                <KpiCard 
-                  titulo="Taxa de Circularidade"
-                  valor={formatPercent(kpis.eficiencia.taxa_reaproveitamento)}
-                  descricao="Eficiência de recuperação do material"
-                  icone={Recycle}
-                  cor="blue"
-                  tendencia={{ valor: "Excelente", subindo: true }}
-                />
-                <KpiCard 
-                  titulo="Carbono Evitado"
-                  valor={`${(kpis.esg.co2_evitado / 1000).toFixed(1)} t`}
-                  descricao="Redução de emissões de CO2 na atmosfera"
-                  icone={Wind}
-                  cor="purple"
-                />
+              {/* 1. HERO EXECUTIVO */}
+              <section className="relative">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-10">
+                  <div className="max-w-2xl">
+                    <div className="flex items-center gap-3 mb-6">
+                      <Badge variant="success">Operação Circular Ativa</Badge>
+                      <div className="w-1.5 h-1.5 bg-gray-200 rounded-full" />
+                      <div className="flex items-center gap-2 text-[10px] font-black text-text-dark/40 uppercase tracking-widest">
+                        <Calendar size={12} className="text-brand-cyan" />
+                        {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                      </div>
+                    </div>
+                    <h1 className="text-4xl lg:text-6xl font-black tracking-tight text-text-dark mb-4">Painel Executivo <span className="text-brand-cyan">PCE</span></h1>
+                    <p className="text-lg lg:text-xl text-text-dark/50 font-medium leading-relaxed">Gestão estratégica e inteligência aplicada em logística reversa de ativos. Acompanhe em tempo real o ROI e o impacto sustentável de sua operação.</p>
+                  </div>
+
+                  <div className="bg-brand-cyan/[0.03] border border-brand-cyan/10 rounded-[2.5rem] p-10 flex flex-col items-center justify-center min-w-[300px] shadow-2xl shadow-brand-cyan/5">
+                    <span className="text-[10px] font-black text-brand-cyan uppercase tracking-[0.3em] mb-4">Economia Total Gerada</span>
+                    <div className="text-4xl lg:text-5xl font-black text-text-dark tracking-tighter mb-2">{formatCurrency(kpis.financeiro.economia_total)}</div>
+                    <div className="flex items-center gap-2 text-green-600 text-[10px] font-black uppercase tracking-widest">
+                      <TrendingUp size={14} />
+                      Performance Elevada
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* 2. QUATRO CARDS PRINCIPAIS */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <ExecutiveCard title="Economia Direta" value={formatCurrency(kpis.financeiro.economia_total)} description="Capital preservado através da recuperação estratégica de pallets." icon={DollarSign} variant="green" trend="up" trendValue="+12% vs m.a" />
+                <ExecutiveCard title="Pallets Processados" value={formatNumber(kpis.operacao.total_processado)} description="Volume total triado e classificado com rigor técnico." icon={Activity} variant="cyan" trend="stable" trendValue="Constante" />
+                <ExecutiveCard title="Taxa de Circularidade" value={formatPercent(kpis.eficiencia.taxa_reaproveitamento)} description="Eficiência de reincorporação de ativos na cadeia produtiva." icon={Recycle} variant="purple" trend="up" trendValue="Meta Atingida" />
+                <ExecutiveCard title="Impacto CO₂" value={`${(kpis.esg.co2_evitado / 1000).toFixed(1)} t`} description="Redução direta da pegada de carbono da operação PCE." icon={Wind} variant="cyan" />
               </div>
 
-              {/* SEÇÃO 1: OPERAÇÃO */}
-              <section>
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="w-1.5 h-6 bg-brand-cyan rounded-full" />
-                  <h2 className="text-xl font-black text-text-dark uppercase tracking-tight">Fluxo Operacional</h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <KpiCard titulo="Total Coletado" valor={kpis.operacao.total_coletado} descricao="Pallets retirados da PCE" icone={Truck} cor="cyan" />
-                  <KpiCard titulo="Saldo em Estoque" valor={kpis.operacao.total_estoque} descricao="Pallets prontos para retorno" icone={Package} cor="cyan" />
-                  <KpiCard titulo="Total Entregue" valor={kpis.operacao.total_entregue} descricao="Pallets retornados à PCE" icone={RotateCw} cor="cyan" />
-                  <KpiCard titulo="Ciclo Médio" valor={kpis.operacao.tempo_medio_ciclo} descricao="Tempo médio Coleta -> Triagem" icone={Clock} cor="cyan" />
-                </div>
-              </section>
+              {/* 3. RESUMO COMERCIAL & 5. INSIGHT */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <Card className="lg:col-span-2 p-10 bg-gray-50/50 border-gray-100 flex flex-col justify-center">
+                  <div className="flex items-center gap-3 mb-8">
+                    <Zap size={20} className="text-brand-cyan" />
+                    <span className="text-[10px] font-black text-text-dark/30 uppercase tracking-[0.3em]">Resumo Comercial Estratégico</span>
+                  </div>
+                  <div className="space-y-6">
+                    <p className="text-xl lg:text-2xl font-bold text-text-dark leading-snug">
+                      A operação recuperou <span className="text-brand-cyan">{formatNumber(kpis.operacao.total_processado - (kpis.operacao.total_processado * (kpis.eficiencia.taxa_sucata / 100)))}</span> pallets que poderiam gerar custo de aquisição adicional.
+                    </p>
+                    <p className="text-xl lg:text-2xl font-bold text-text-dark leading-snug">
+                      A PCE evitou aproximadamente <span className="text-green-600">{formatCurrency(kpis.financeiro.custo_evitar_novo)}</span> em despesas operacionais através do modelo circular.
+                    </p>
+                    <p className="text-xl lg:text-2xl font-bold text-text-dark leading-snug">
+                      O reaproveitamento alcançou <span className="text-purple-500">{formatPercent(kpis.eficiencia.taxa_reaproveitamento)}</span>, reforçando o compromisso com metas ESG globais.
+                    </p>
+                  </div>
+                </Card>
 
-              {/* SEÇÃO 2: EFICIÊNCIA */}
-              <section>
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="w-1.5 h-6 bg-brand-pink rounded-full" />
-                  <h2 className="text-xl font-black text-text-dark uppercase tracking-tight">Índices de Eficiência</h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <KpiCard titulo="Taxa de Reforma" valor={formatPercent(kpis.eficiencia.taxa_reforma)} descricao="Pallets recuperados via reforma" icone={Hammer} cor="pink" />
-                  <KpiCard titulo="Taxa de Remanuf." valor={formatPercent(kpis.eficiencia.taxa_remanufatura)} descricao="Recuperação estrutural profunda" icone={Wrench} cor="pink" />
-                  <KpiCard titulo="Taxa de Sucata" valor={formatPercent(kpis.eficiencia.taxa_sucata)} descricao="Perda inevitável de material" icone={Trash2} cor="red" />
-                  <KpiCard titulo="Perda Operacional" valor={formatPercent(kpis.eficiencia.perda_operacional)} descricao="Impacto da sucata na coleta bruta" icone={AlertCircle} cor="red" />
-                </div>
-              </section>
+                {insight && (
+                  <motion.div whileHover={{ scale: 1.02 }} className={`p-10 rounded-[2.5rem] border flex flex-col ${
+                    insight.type === "success" ? "bg-green-500 text-white border-green-600 shadow-2xl shadow-green-500/20" :
+                    insight.type === "warning" ? "bg-amber-500 text-white border-amber-600 shadow-2xl shadow-amber-500/20" :
+                    insight.type === "info" ? "bg-brand-cyan text-white border-brand-cyan/20 shadow-2xl shadow-brand-cyan/20" :
+                    "bg-text-dark text-white border-gray-800 shadow-2xl shadow-text-dark/20"
+                  }`}>
+                    <div className="flex items-center gap-4 mb-8">
+                      <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                        <insight.icon size={24} />
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80">Insight Ivani</span>
+                    </div>
+                    <h3 className="text-2xl font-black mb-4 leading-tight">{insight.title}</h3>
+                    <p className="text-sm font-bold opacity-80 leading-relaxed mb-8">{insight.message}</p>
+                    <button className="mt-auto w-full py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border border-white/20">Aprofundar Análise</button>
+                  </motion.div>
+                )}
+              </div>
 
-              {/* SEÇÃO 3: FINANCEIRO */}
-              <section>
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="w-1.5 h-6 bg-green-500 rounded-full" />
-                  <h2 className="text-xl font-black text-text-dark uppercase tracking-tight">Análise Financeira</h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <KpiCard titulo="Custo Evitado" valor={formatCurrency(kpis.financeiro.custo_evitar_novo)} descricao="Valor se todos fossem comprados novos" icone={Banknote} cor="green" />
-                  <KpiCard titulo="Economia/Pallet" valor={formatCurrency(kpis.financeiro.economia_por_pallet)} descricao="Economia média por unidade recuperada" icone={Target} cor="green" />
-                  <KpiCard titulo="ROI Operação" valor={formatPercent(kpis.financeiro.roi_operacao)} descricao="Retorno sobre investimento em reparos" icone={TrendingUp} cor="green" />
-                  <KpiCard titulo="Custo Médio" valor={formatCurrency(kpis.financeiro.custo_medio_pallet)} descricao="Custo médio de manutenção/unidade" icone={Scale} cor="green" />
-                </div>
-              </section>
+              {/* 4. SEÇÕES POR PILAR */}
+              <div className="space-y-32">
+                {/* PILAR OPERAÇÃO */}
+                <section>
+                  <SectionHeader icon={Truck} title="Performance Operacional" color="brand-cyan" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <ExecutiveCard title="Total Coletado" value={formatNumber(kpis.operacao.total_coletado)} description="Volume bruto retirado da planta PCE." icon={Truck} variant="cyan" />
+                    <ExecutiveCard title="Saldo Ativo" value={formatNumber(kpis.operacao.total_estoque)} description="Patrimônio disponível para retorno imediato." icon={Package} variant="cyan" />
+                    <ExecutiveCard title="Total Entregue" value={formatNumber(kpis.operacao.total_entregue)} description="Volume reintroduzido na cadeia produtiva." icon={RotateCw} variant="cyan" />
+                    <ExecutiveCard title="Lead Time" value={kpis.operacao.tempo_medio_ciclo} description="Tempo médio entre coleta e triagem técnica." icon={Clock} variant="cyan" />
+                  </div>
+                </section>
 
-              {/* SEÇÃO 4: SUSTENTABILIDADE */}
-              <section>
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="w-1.5 h-6 bg-purple-500 rounded-full" />
-                  <h2 className="text-xl font-black text-text-dark uppercase tracking-tight">Impacto Ambiental (ESG)</h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <KpiCard titulo="Árvores Preservadas" valor={kpis.esg.arvores_preservadas.toFixed(0)} descricao="Estimativa baseada no volume recuperado" icone={Trees} cor="purple" />
-                  <KpiCard titulo="Madeira Reutilizada" valor={`${kpis.esg.madeira_reutilizada.toFixed(1)} t`} descricao="Volume de madeira que não foi descartada" icone={Leaf} cor="purple" />
-                  <KpiCard titulo="Resíduos Evitados" valor={`${(kpis.esg.residuos_evitar / 1000).toFixed(1)} t`} descricao="Massa de resíduos sólidos desviada" icone={Zap} cor="purple" />
-                  <KpiCard titulo="Circularidade Global" valor="Tier 1" descricao="Nível de maturidade em economia circular" icone={Globe} cor="purple" />
-                </div>
-              </section>
+                {/* PILAR EFICIÊNCIA */}
+                <section>
+                  <SectionHeader icon={Recycle} title="Índices de Eficiência" color="brand-pink" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <ExecutiveCard title="Taxa de Reforma" value={formatPercent(kpis.eficiencia.taxa_reforma)} description="Recuperação técnica de pallets padrão." icon={Hammer} variant="pink" />
+                    <ExecutiveCard title="Taxa de Remanuf." value={formatPercent(kpis.eficiencia.taxa_remanufatura)} description="Reforma estrutural de alta complexidade." icon={Wrench} variant="pink" />
+                    <ExecutiveCard title="Taxa de Sucata" value={formatPercent(kpis.eficiencia.taxa_sucata)} description="Material sem viabilidade técnica de reparo." icon={Trash2} variant="yellow" />
+                    <ExecutiveCard title="Perda Total" value={formatPercent(kpis.eficiencia.perda_operacional)} description="Impacto da sucata no volume coletado." icon={AlertCircle} variant="yellow" />
+                  </div>
+                </section>
 
-              {/* SEÇÃO 5: PERFORMANCE */}
-              <section>
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="w-1.5 h-6 bg-yellow-500 rounded-full" />
-                  <h2 className="text-xl font-black text-text-dark uppercase tracking-tight">Score de Performance</h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <KpiCard titulo="Crescimento Mensal" valor={formatPercent(kpis.performance.crescimento_mensal)} descricao="Variação de volume vs mês anterior" icone={TrendingUp} cor="yellow" />
-                  <KpiCard titulo="Índice Performance" valor={kpis.performance.indice_performance.toFixed(1)} descricao="Score consolidado (0-100)" icone={Zap} cor="yellow" />
-                  <KpiCard titulo="Status Contratual" valor="SLA 98%" descricao="Nível de serviço operacional" icone={ShieldCheck} cor="yellow" />
-                </div>
-              </section>
+                {/* PILAR FINANCEIRO */}
+                <section>
+                  <SectionHeader icon={DollarSign} title="Gestão Financeira" color="green-500" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <ExecutiveCard title="Custo Evitado" value={formatCurrency(kpis.financeiro.custo_evitar_novo)} description="Economia em evitar aquisição de novos ativos." icon={Banknote} variant="green" />
+                    <ExecutiveCard title="Economia/Un" value={formatCurrency(kpis.financeiro.economia_por_pallet)} description="Redução média de custo por unidade." icon={Target} variant="green" />
+                    <ExecutiveCard title="ROI Estratégico" value={formatPercent(kpis.financeiro.roi_operacao)} description="Retorno sobre investimento em manutenção." icon={TrendingUp} variant="green" />
+                    <ExecutiveCard title="Custo Unitário" value={formatCurrency(kpis.financeiro.custo_medio_pallet)} description="Custo médio fixo de reparo por unidade." icon={Scale} variant="green" />
+                  </div>
+                </section>
+
+                {/* PILAR ESG */}
+                <section>
+                  <SectionHeader icon={Leaf} title="Impacto ESG & Sustentabilidade" color="purple-500" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <ExecutiveCard title="Árvores Preservadas" value={kpis.esg.arvores_preservadas.toFixed(0)} description="Estimativa de preservação florestal." icon={Trees} variant="purple" />
+                    <ExecutiveCard title="Madeira Reaprov." value={`${kpis.esg.madeira_reutilizada.toFixed(1)} t`} description="Volume de matéria-prima reincorporada." icon={Leaf} variant="purple" />
+                    <ExecutiveCard title="Resíduos Evitados" value={`${(kpis.esg.residuos_evitar / 1000).toFixed(1)} t`} description="Desvio de resíduos sólidos de aterros." icon={Zap} variant="purple" />
+                    <ExecutiveCard title="Compromisso Global" value="Rating AAA" description="Nível de aderência à economia circular." icon={Globe} variant="purple" />
+                  </div>
+                </section>
+
+                {/* PILAR PERFORMANCE */}
+                <section>
+                  <SectionHeader icon={Activity} title="Análise de Performance" color="amber-500" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <ExecutiveCard title="Crescimento" value={formatPercent(kpis.performance.crescimento_mensal)} description="Variação de volume vs período anterior." icon={TrendingUp} variant="yellow" />
+                    <ExecutiveCard title="Score Ivani" value={kpis.performance.indice_performance.toFixed(1)} description="Métrica proprietária de eficiência global." icon={Zap} variant="yellow" />
+                    <ExecutiveCard title="SLA Operacional" value="98.5%" description="Conformidade com níveis de serviço." icon={ShieldCheck} variant="yellow" />
+                  </div>
+                </section>
+              </div>
 
             </motion.div>
           )}
 
           {activeTab === "operations" && (
-            <motion.div key="operations" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-              <Card className="overflow-hidden border-brand-pink/10 shadow-xl">
-                <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-                  <table className="w-full min-w-[850px] text-left border-collapse">
+            <motion.div key="operations" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-10">
+               <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl shadow-gray-200/20 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[900px] text-left border-collapse">
                     <thead>
-                      <tr className="bg-bg-primary text-[10px] font-black uppercase tracking-[0.2em] text-text-dark/40 border-b border-brand-pink/5">
-                        <th className="px-8 py-6">NF / Carga</th>
-                        <th className="px-6 py-6">Data Coleta</th>
-                        <th className="px-6 py-6 text-center">Bruto</th>
-                        <th className="px-6 py-6 text-center">Recuperado</th>
-                        <th className="px-6 py-6 text-center">Sucata</th>
-                        <th className="px-6 py-6">Status</th>
-                        <th className="px-8 py-6 text-right">Ação</th>
+                      <tr className="bg-gray-50/50 text-[10px] font-black uppercase tracking-[0.3em] text-text-dark/40 border-b border-gray-100">
+                        <th className="px-10 py-8">NF / Registro</th>
+                        <th className="px-8 py-8">Data Coleta</th>
+                        <th className="px-8 py-8 text-center">Volume Bruto</th>
+                        <th className="px-8 py-8 text-center">Recuperado</th>
+                        <th className="px-8 py-8 text-center">Sucata</th>
+                        <th className="px-10 py-8">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-brand-pink/5">
+                    <tbody className="divide-y divide-gray-50">
                       {triagens.map((t) => (
-                        <tr key={t.id} className="hover:bg-brand-cyan/[0.02] transition-all group">
-                          <td className="px-8 py-5 font-black text-xs text-text-dark">{t.nf_saida_pce || "S/ NF"}</td>
-                          <td className="px-6 py-5 text-[11px] font-bold text-text-dark/40">{new Date(t.data_coleta).toLocaleDateString('pt-BR')}</td>
-                          <td className="px-6 py-5 text-center font-black text-text-dark text-xs">{t.quantidade_total}</td>
-                          <td className="px-6 py-5 text-center">
-                            <span className="font-black text-brand-cyan text-xs">
+                        <tr key={t.id} className="hover:bg-brand-cyan/[0.01] transition-all group">
+                          <td className="px-10 py-6 font-black text-sm text-text-dark">{t.nf_saida_pce || "S/ NF"}</td>
+                          <td className="px-8 py-6 text-[11px] font-bold text-text-dark/40">{new Date(t.data_coleta).toLocaleDateString('pt-BR')}</td>
+                          <td className="px-8 py-6 text-center font-black text-text-dark text-sm">{t.quantidade_total}</td>
+                          <td className="px-8 py-6 text-center">
+                            <span className="font-black text-brand-cyan text-sm">
                               {(t.quantidade_manutencao || 0) + (t.quantidade_remanufatura || 0) + (t.quantidade_compra_ivani || 0)}
                             </span>
                           </td>
-                          <td className="px-6 py-5 text-center">
-                            <span className="font-black text-red-400 text-xs">{t.quantidade_sucata || 0}</span>
+                          <td className="px-8 py-6 text-center">
+                            <span className="font-black text-red-400 text-sm">{t.quantidade_sucata || 0}</span>
                           </td>
-                          <td className="px-6 py-5">
+                          <td className="px-10 py-6">
                             <Badge variant={t.status === "finalizada" ? "success" : "warning"}>
                               {t.status.replace('_', ' ')}
                             </Badge>
-                          </td>
-                          <td className="px-8 py-5 text-right">
-                            <button className="text-brand-cyan hover:text-[#1a6e74] text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ml-auto group/btn">
-                              Detalhes 
-                              <ChevronRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
-                            </button>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-              </Card>
+              </div>
             </motion.div>
           )}
 
           {activeTab === "stock" && (
-            <motion.div key="stock" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <motion.div key="stock" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
               {estoqueSaldos.map((s, i) => (
-                <Card key={i} className="p-8 border-brand-pink/10 hover:border-brand-cyan/30 transition-all group">
-                  <div className="flex justify-between items-start mb-8">
-                    <div className="flex flex-col gap-1">
-                      <h4 className="font-black text-base text-text-dark tracking-tight">{s.modelo?.nome || "Modelo Indefinido"}</h4>
-                      <p className="text-[10px] font-black text-brand-cyan uppercase tracking-[0.2em]">{s.modelo?.codigo}</p>
-                      <div className="w-8 h-1 bg-brand-cyan/20 rounded-full mt-1" />
+                <div key={i} className="bg-white rounded-[2.5rem] border border-gray-100 p-10 shadow-2xl shadow-gray-200/20 hover:border-brand-cyan/30 transition-all group">
+                  <div className="flex justify-between items-start mb-10">
+                    <div className="flex flex-col">
+                      <h4 className="font-black text-lg text-text-dark tracking-tight mb-1">{s.modelo?.nome || "Modelo Indefinido"}</h4>
+                      <p className="text-[11px] font-black text-brand-cyan uppercase tracking-[0.2em]">{s.modelo?.codigo}</p>
                     </div>
-                    <div className="w-12 h-12 bg-brand-cyan/5 text-brand-cyan rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Package size={24} />
+                    <div className="w-14 h-14 bg-brand-cyan/5 text-brand-cyan rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110">
+                      <Package size={28} />
                     </div>
                   </div>
-                  <div className="mt-8">
-                    <span className="text-[10px] font-black text-text-dark/30 uppercase tracking-[0.15em] block mb-2">Saldo em Estoque</span>
-                    <div className="text-4xl font-black text-text-dark tracking-tighter">
+                  <div>
+                    <span className="text-[10px] font-black text-text-dark/20 uppercase tracking-[0.2em] block mb-2">Saldo em Inventário</span>
+                    <div className="text-5xl font-black text-text-dark tracking-tighter">
                       {s.quantidade_disponivel} 
-                      <span className="text-sm font-bold text-text-dark/20 ml-2 uppercase tracking-widest">un</span>
+                      <span className="text-base font-bold text-text-dark/20 ml-3 uppercase tracking-widest">un</span>
                     </div>
                   </div>
-                  <button className="w-full mt-10 py-4 bg-bg-primary hover:bg-brand-cyan hover:text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 shadow-sm border border-brand-pink/5">
-                    Solicitar Entrega
-                  </button>
-                </Card>
-              ))}
-              {estoqueSaldos.length === 0 && (
-                <div className="col-span-full py-32 text-center bg-white rounded-3xl border border-dashed border-brand-pink/20">
-                  <Package size={64} className="mx-auto text-text-dark/5 mb-6" />
-                  <p className="text-xs font-black text-text-dark/30 uppercase tracking-widest">Nenhum saldo em estoque disponível</p>
+                  <button className="w-full mt-10 py-5 bg-text-dark text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 shadow-xl shadow-text-dark/20">Solicitar Entrega</button>
                 </div>
-              )}
+              ))}
             </motion.div>
           )}
         </AnimatePresence>
       </main>
 
-      <footer className="mt-32 py-12 border-t border-brand-pink/10 px-6 text-center">
-        <div className="max-w-xs mx-auto mb-6 opacity-20">
-           <div className="w-full h-px bg-gradient-to-r from-transparent via-text-dark to-transparent" />
-        </div>
-        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-text-dark/20">
-          Ivani Pallets — Intelligence & Circular Economy
+      <footer className="py-20 border-t border-gray-100 px-6 text-center">
+        <p className="text-[10px] font-black uppercase tracking-[0.5em] text-text-dark/20">
+          IVANI HUB — THE ART OF LOGISTICS CIRCULARITY
         </p>
       </footer>
     </div>
   );
 }
+
+const Card = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
+  <div className={`bg-white rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-200/20 ${className}`}>
+    {children}
+  </div>
+);
