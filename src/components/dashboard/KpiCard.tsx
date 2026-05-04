@@ -31,24 +31,24 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   };
 
   const bgStyles = {
-    neutral: "bg-neutral-100",
-    success: "bg-emerald-50",
-    warning: "bg-amber-50",
-    brand: "bg-brand-cyan/10",
+    neutral: "bg-neutral-50 border-neutral-100",
+    success: "bg-emerald-50/50 border-emerald-100",
+    warning: "bg-amber-50/50 border-amber-100",
+    brand: "bg-brand-cyan/5 border-brand-cyan/20",
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col h-full">
-      <div className="flex justify-between items-start mb-4">
+    <div className="bg-white rounded-3xl border border-neutral-200 p-6 sm:p-8 shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col h-full group">
+      <div className="flex justify-between items-start mb-6">
         <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${bgStyles[cor]}`}>
+          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border transition-transform duration-300 group-hover:scale-110 ${bgStyles[cor]}`}>
             {Icone && <Icone size={18} className={colorStyles[cor]} strokeWidth={2.5} />}
           </div>
-          <span className="text-sm font-medium text-neutral-500">{titulo}</span>
+          <span className="text-sm font-semibold text-neutral-500 tracking-wide">{titulo}</span>
         </div>
         {tendencia && (
           <div
-            className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider ${
               tendencia.subindo ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
             }`}
           >
@@ -58,11 +58,11 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       </div>
 
       <div className="mt-auto">
-        <div className="text-3xl font-semibold text-neutral-900 tracking-tight">
+        <div className="text-3xl sm:text-4xl font-bold text-neutral-900 tracking-tighter mb-1">
           {valor ?? "---"}
         </div>
         {descricao && (
-          <p className="mt-2 text-xs text-neutral-400 font-medium">
+          <p className="mt-3 text-xs text-neutral-400 font-medium leading-relaxed">
             {descricao}
           </p>
         )}
