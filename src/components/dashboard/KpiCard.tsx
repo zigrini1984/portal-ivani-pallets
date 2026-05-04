@@ -1,15 +1,14 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
 import { LucideIcon } from "lucide-react";
 
 interface KpiCardProps {
   titulo: string;
-  valor: string | number;
-  descricao: string;
+  valor: string | number | null | undefined;
+  descricao?: string;
   icone: LucideIcon;
-  cor?: "cyan" | "pink" | "yellow" | "blue" | "green" | "red" | "purple";
+  cor?: "neutral" | "success" | "warning" | "brand";
   tendencia?: {
     valor: string;
     subindo: boolean;
@@ -21,57 +20,53 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   valor,
   descricao,
   icone: Icone,
-  cor = "cyan",
+  cor = "neutral",
   tendencia,
 }) => {
-  const colorMap = {
-    cyan: "text-brand-cyan bg-brand-cyan/5 border-brand-cyan/10",
-    pink: "text-brand-pink bg-brand-pink/5 border-brand-pink/10",
-    yellow: "text-brand-yellow bg-brand-yellow/5 border-brand-yellow/10",
-    blue: "text-brand-blue bg-brand-blue/5 border-brand-blue/10",
-    green: "text-green-500 bg-green-50 border-green-100",
-    red: "text-red-500 bg-red-50 border-red-100",
-    purple: "text-purple-500 bg-purple-50 border-purple-100",
+  const colorStyles = {
+    neutral: "text-neutral-500",
+    success: "text-emerald-600",
+    warning: "text-amber-600",
+    brand: "text-brand-cyan",
+  };
+
+  const bgStyles = {
+    neutral: "bg-neutral-100",
+    success: "bg-emerald-50",
+    warning: "bg-amber-50",
+    brand: "bg-brand-cyan/10",
   };
 
   return (
-    <motion.div
-      whileHover={{ y: -4 }}
-      className="bg-white rounded-3xl border border-brand-pink/10 p-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-xl transition-all group relative overflow-hidden"
-    >
-      <div className="absolute top-[-20px] right-[-20px] opacity-[0.03] group-hover:opacity-[0.08] transition-all duration-500 pointer-events-none rotate-12 group-hover:rotate-0">
-        {Icone && <Icone size={120} />}
+    <div className="bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col h-full">
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg ${bgStyles[cor]}`}>
+            {Icone && <Icone size={18} className={colorStyles[cor]} strokeWidth={2.5} />}
+          </div>
+          <span className="text-sm font-medium text-neutral-500">{titulo}</span>
+        </div>
+        {tendencia && (
+          <div
+            className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${
+              tendencia.subindo ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
+            }`}
+          >
+            {tendencia.subindo ? "↑" : "↓"} {tendencia.valor}
+          </div>
+        )}
       </div>
 
-      <div className="relative z-10">
-        <div className="flex justify-between items-start mb-4">
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${colorMap[cor]}`}>
-            {Icone && <Icone size={24} />}
-          </div>
-          {tendencia && (
-            <div
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tight ${
-                tendencia.subindo ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"
-              }`}
-            >
-              {tendencia.valor}
-            </div>
-          )}
+      <div className="mt-auto">
+        <div className="text-3xl font-semibold text-neutral-900 tracking-tight">
+          {valor ?? "---"}
         </div>
-
-        <div>
-          <span className="text-[10px] font-black text-text-dark/30 uppercase tracking-[0.15em] block mb-1">
-            {titulo}
-          </span>
-          <div className="text-2xl sm:text-3xl font-black text-text-dark tracking-tight truncate">
-            {valor ?? "---"}
-          </div>
-        </div>
-
-        <p className="mt-4 text-[11px] text-text-dark/40 font-bold uppercase tracking-tight leading-relaxed border-t border-brand-pink/5 pt-4">
-          {descricao}
-        </p>
+        {descricao && (
+          <p className="mt-2 text-xs text-neutral-400 font-medium">
+            {descricao}
+          </p>
+        )}
       </div>
-    </motion.div>
+    </div>
   );
 };
