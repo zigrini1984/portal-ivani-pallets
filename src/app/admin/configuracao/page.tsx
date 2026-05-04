@@ -25,7 +25,15 @@ import {
   History,
   ShieldCheck,
   Smartphone,
-  Globe
+  Globe,
+  UserPlus,
+  UserCheck,
+  UserX,
+  Shield,
+  Mail,
+  Lock,
+  Check,
+  Calendar
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -59,18 +67,37 @@ interface LogAcesso {
   created_at: string;
 }
 
+interface Usuario {
+  id: string;
+  nome: string;
+  email: string;
+  senha?: string;
+  perfil: 'admin' | 'cliente';
+  ativo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 const supabase = createClient();
 
 export default function AdminConfiguracaoPage() {
-  const [activeTab, setActiveTab] = useState<'modelos' | 'acessos'>('modelos');
+  const [activeTab, setActiveTab] = useState<'modelos' | 'acessos' | 'usuarios'>('modelos');
   const [modelos, setModelos] = useState<ModeloPallet[]>([]);
   const [logs, setLogs] = useState<LogAcesso[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Modais Modelos
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingModelo, setEditingModelo] = useState<ModeloPallet | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Modais Usuários
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [isUserSubmitting, setIsUserSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
@@ -84,9 +111,6 @@ export default function AdminConfiguracaoPage() {
         .eq("cliente_id", "pce")
         .order("codigo", { ascending: true });
       
-      console.log("MODEL DATA:", mData);
-      console.log("MODEL ERROR:", mError);
-
       if (mError) {
         console.error("Erro Modelos:", mError);
         setError("Erro ao carregar modelos");
@@ -94,7 +118,19 @@ export default function AdminConfiguracaoPage() {
         setModelos(mData || []);
       }
 
-      // 2. Buscar Logs de Acesso (Opcional, não deve travar o painel se falhar)
+      // 2. Buscar Usuários
+      const { data: uData, error: uError } = await supabase
+        .from("usuarios")
+        .select("*")
+        .order("nome", { ascending: true });
+      
+      if (uError) {
+        console.warn("Aviso: Falha ao carregar usuários:", uError);
+      } else {
+        setUsuarios(uData || []);
+      }
+
+      // 3. Buscar Logs de Acesso
       try {
         const { data: lData, error: lError } = await supabase
           .from("portal_acessos")
@@ -123,10 +159,19 @@ export default function AdminConfiguracaoPage() {
     fetchData();
   }, []);
 
+  // --- FILTROS ---
+
   const filteredModelos = modelos.filter(m => 
     m.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     m.codigo?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const filteredUsuarios = usuarios.filter(u => 
+    u.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // --- AÇÕES MODELOS ---
 
   const handleSubmitModelo = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -182,6 +227,70 @@ export default function AdminConfiguracaoPage() {
     }
   };
 
+  // --- AÇÕES USUÁRIOS ---
+
+  const handleSubmitUsuario = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    
+    const userData = {
+      nome: formData.get("nome") as string,
+      email: (formData.get("email") as string).toLowerCase().trim(),
+      senha: formData.get("senha") as string,
+      perfil: formData.get("perfil") as 'admin' | 'cliente',
+      ativo: true
+    };
+
+    // Validações Básicas
+    if (!userData.nome || !userData.email || !userData.senha || !userData.perfil) {
+      alert("Todos os campos são obrigatórios.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userData.email)) {
+      alert("Formato de e-mail inválido.");
+      return;
+    }
+
+    try {
+      setIsUserSubmitting(true);
+      const { error: insertError } = await supabase
+        .from("usuarios")
+        .insert([userData]);
+      
+      if (insertError) throw insertError;
+
+      setSuccessMessage("Usuário criado com sucesso!");
+      setTimeout(() => setSuccessMessage(null), 3000);
+      
+      form.reset();
+      setIsUserModalOpen(false);
+      fetchData();
+    } catch (err: any) {
+      console.error("Erro ao criar usuário:", err);
+      alert("Erro ao criar usuário: " + (err.message || "Erro desconhecido"));
+    } finally {
+      setIsUserSubmitting(false);
+    }
+  };
+
+  const toggleUserStatus = async (usuario: Usuario) => {
+    try {
+      const { error: updateError } = await supabase
+        .from("usuarios")
+        .update({ ativo: !usuario.ativo })
+        .eq("id", usuario.id);
+      
+      if (updateError) throw updateError;
+      
+      fetchData();
+    } catch (err: any) {
+      alert("Erro ao alterar status: " + err.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-text-dark pb-20">
       <header className="bg-white border-b border-brand-pink/20 sticky top-0 z-50">
@@ -213,16 +322,22 @@ export default function AdminConfiguracaoPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-10">
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight">Painel de Controle</h1>
-          <p className="text-text-dark/50 text-sm mt-1">Gerencie modelos, preços e monitore a atividade do portal.</p>
+          <p className="text-text-dark/50 text-sm mt-1">Gerencie modelos, usuários e monitore a atividade do portal.</p>
         </div>
 
         {/* Abas */}
-        <div className="flex gap-2 mb-8 bg-white p-1 rounded-2xl border border-brand-pink/10 w-fit shadow-sm">
+        <div className="flex flex-wrap gap-2 mb-8 bg-white p-1 rounded-2xl border border-brand-pink/10 w-fit shadow-sm">
           <button 
             onClick={() => setActiveTab('modelos')}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'modelos' ? 'bg-brand-cyan text-white shadow-lg shadow-brand-cyan/20' : 'text-text-dark/40 hover:bg-gray-50'}`}
           >
             <Box size={16} /> Modelos & Preços
+          </button>
+          <button 
+            onClick={() => setActiveTab('usuarios')}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'usuarios' ? 'bg-brand-cyan text-white shadow-lg shadow-brand-cyan/20' : 'text-text-dark/40 hover:bg-gray-50'}`}
+          >
+            <Users size={16} /> Gestão de Usuários
           </button>
           <button 
             onClick={() => setActiveTab('acessos')}
@@ -244,7 +359,7 @@ export default function AdminConfiguracaoPage() {
           </div>
         ) : (
           <AnimatePresence mode="wait">
-            {activeTab === 'modelos' ? (
+            {activeTab === 'modelos' && (
               <motion.div 
                 key="modelos"
                 initial={{ opacity: 0, y: 10 }}
@@ -312,7 +427,103 @@ export default function AdminConfiguracaoPage() {
                   ))}
                 </div>
               </motion.div>
-            ) : (
+            )}
+
+            {activeTab === 'usuarios' && (
+              <motion.div 
+                key="usuarios"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-6"
+              >
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div className="relative w-full md:w-80">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dark/30" size={16} />
+                    <input 
+                      type="text" 
+                      placeholder="Buscar usuário por nome ou email..." 
+                      className="pl-10 pr-4 py-3 bg-white border border-brand-pink/20 rounded-xl text-xs font-medium w-full outline-none focus:ring-2 focus:ring-brand-cyan/10 transition-all"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <button 
+                    onClick={() => setIsUserModalOpen(true)}
+                    className="px-6 py-3 bg-brand-cyan text-white rounded-xl text-xs font-bold shadow-lg shadow-brand-cyan/20 hover:bg-[#1a6e74] transition-all flex items-center gap-2"
+                  >
+                    <UserPlus size={18} /> Novo Usuário
+                  </button>
+                </div>
+
+                <div className="bg-white rounded-3xl border border-brand-pink/20 overflow-hidden shadow-sm">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse min-w-[800px]">
+                      <thead>
+                        <tr className="bg-bg-primary">
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40">Usuário</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40">E-mail</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40">Perfil</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40">Status</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40">Criado em</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40 text-center">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-brand-pink/5">
+                        {filteredUsuarios.map((u) => (
+                          <tr key={u.id} className="hover:bg-bg-primary/30 transition-colors">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 bg-brand-cyan/5 text-brand-cyan rounded-xl flex items-center justify-center font-bold text-xs uppercase">
+                                  {u.nome.charAt(0)}
+                                </div>
+                                <div className="text-xs font-bold text-text-dark">{u.nome}</div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-xs text-text-dark/60 font-medium">{u.email}</td>
+                            <td className="px-6 py-4">
+                              <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border ${u.perfil === 'admin' ? 'bg-brand-cyan/5 text-brand-cyan border-brand-cyan/10' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                                {u.perfil}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-1.5">
+                                <div className={`w-1.5 h-1.5 rounded-full ${u.ativo ? 'bg-green-500 animate-pulse' : 'bg-red-400'}`} />
+                                <span className={`text-[10px] font-bold uppercase tracking-tight ${u.ativo ? 'text-green-600' : 'text-red-400'}`}>
+                                  {u.ativo ? 'Ativo' : 'Inativo'}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-[10px] text-text-dark/40 font-bold uppercase">
+                              {new Date(u.created_at).toLocaleDateString('pt-BR')}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex justify-center">
+                                <button 
+                                  onClick={() => toggleUserStatus(u)}
+                                  className={`p-2 rounded-xl transition-all ${u.ativo ? 'text-red-400 hover:bg-red-50' : 'text-green-500 hover:bg-green-50'}`}
+                                  title={u.ativo ? "Desativar" : "Ativar"}
+                                >
+                                  {u.ativo ? <UserX size={18} /> : <UserCheck size={18} />}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {filteredUsuarios.length === 0 && (
+                    <div className="py-20 text-center">
+                      <Users className="mx-auto text-text-dark/10 mb-4" size={48} />
+                      <p className="text-text-dark/50 text-sm font-medium">Nenhum usuário encontrado.</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'acessos' && (
               <motion.div 
                 key="acessos"
                 initial={{ opacity: 0, y: 10 }}
@@ -373,7 +584,7 @@ export default function AdminConfiguracaoPage() {
         )}
       </main>
 
-      {/* Modal Modelos (Reaproveitado do anterior) */}
+      {/* Modal Modelos */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
@@ -406,6 +617,85 @@ export default function AdminConfiguracaoPage() {
               </form>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Usuários */}
+      <AnimatePresence>
+        {isUserModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsUserModalOpen(false)} className="absolute inset-0 bg-text-dark/20 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl border border-brand-pink/20 overflow-hidden" >
+              <div className="px-8 py-6 border-b border-brand-pink/10 flex justify-between items-center bg-white sticky top-0 z-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-brand-cyan/10 rounded-xl flex items-center justify-center text-brand-cyan"><UserPlus size={20} /></div>
+                  <h3 className="font-bold text-lg">Novo Usuário</h3>
+                </div>
+                <button onClick={() => setIsUserModalOpen(false)} className="text-text-dark/30 hover:text-text-dark transition-colors"><X size={20} /></button>
+              </div>
+              <form onSubmit={handleSubmitUsuario} className="p-8 space-y-5">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">Nome Completo</label>
+                  <div className="relative">
+                    <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dark/20" size={16} />
+                    <input name="nome" type="text" required placeholder="Ex: João Silva" className="w-full pl-10 pr-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-brand-cyan/10 transition-all" />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">E-mail de Acesso</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dark/20" size={16} />
+                    <input name="email" type="email" required placeholder="usuario@email.com" className="w-full pl-10 pr-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-brand-cyan/10 transition-all" />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">Senha Provisória</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dark/20" size={16} />
+                    <input name="senha" type="password" required placeholder="••••••••" className="w-full pl-10 pr-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-brand-cyan/10 transition-all" />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">Perfil de Acesso</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="cursor-pointer">
+                      <input type="radio" name="perfil" value="admin" defaultChecked className="peer hidden" />
+                      <div className="flex items-center justify-center gap-2 px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-xs font-bold text-text-dark/40 peer-checked:bg-brand-cyan peer-checked:text-white peer-checked:border-brand-cyan transition-all">
+                        <Shield size={14} /> Admin
+                      </div>
+                    </label>
+                    <label className="cursor-pointer">
+                      <input type="radio" name="perfil" value="cliente" className="peer hidden" />
+                      <div className="flex items-center justify-center gap-2 px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-xs font-bold text-text-dark/40 peer-checked:bg-brand-cyan peer-checked:text-white peer-checked:border-brand-cyan transition-all">
+                        <Users size={14} /> Cliente
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button type="button" onClick={() => setIsUserModalOpen(false)} className="flex-1 px-6 py-3 border border-gray-200 rounded-xl text-xs font-bold text-text-dark/60 hover:bg-gray-50 transition-colors">Cancelar</button>
+                  <button type="submit" disabled={isUserSubmitting} className="flex-1 px-6 py-3 bg-brand-cyan text-white rounded-xl text-xs font-bold shadow-lg hover:bg-[#1a6e74] disabled:opacity-50 flex items-center justify-center gap-2 transition-all">
+                    {isUserSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />} 
+                    Criar Usuário
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Feedback Toast */}
+      <AnimatePresence>
+        {successMessage && (
+          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[110] bg-green-500 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 font-bold text-sm">
+            <CheckCircle2 size={20} />
+            {successMessage}
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
