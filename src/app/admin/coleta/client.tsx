@@ -6,17 +6,24 @@ import {
   Search,
   AlertCircle,
   CheckCircle2,
-  Clock,
   Package,
-  Hash,
   Calendar,
   User,
   MessageSquare,
   ChevronDown,
   ChevronUp,
+  Plus,
+  X,
+  Loader2,
+  MoreVertical,
+  ArrowRight,
+  Wrench,
+  Archive
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -29,6 +36,7 @@ interface Coleta {
   status?: string;
   observacao?: string;
   created_at: string;
+  nf_saida_pce?: string;
 }
 
 interface AdminColetaClientProps {
@@ -40,7 +48,10 @@ interface AdminColetaClientProps {
 
 function formatDate(value: string) {
   try {
-    return new Intl.DateTimeFormat("pt-BR").format(new Date(value));
+    return new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short"
+    }).format(new Date(value));
   } catch {
     return value;
   }
@@ -50,34 +61,34 @@ const STATUS_MAP: Record<
   string,
   { label: string; color: string; icon: React.ReactNode }
 > = {
-  registrado: {
-    label: "Registrado",
-    color: "bg-blue-50 text-blue-600 border-blue-100",
-    icon: <Clock size={11} />,
+  coletado: {
+    label: "Coletado",
+    color: "bg-gray-100 text-gray-700 border-gray-200",
+    icon: <Truck size={11} />,
   },
-  aguardando_triagem: {
-    label: "Aguardando Triagem",
-    color: "bg-amber-50 text-amber-600 border-amber-100",
-    icon: <Clock size={11} />,
+  enviado_triagem: {
+    label: "Triagem",
+    color: "bg-blue-50 text-blue-600 border-blue-200",
+    icon: <ArrowRight size={11} />,
   },
-  em_triagem: {
-    label: "Em Triagem",
-    color: "bg-brand-cyan/5 text-brand-cyan border-brand-cyan/20",
-    icon: <Package size={11} />,
+  manutencao: {
+    label: "Manutenção",
+    color: "bg-orange-50 text-orange-600 border-orange-200",
+    icon: <Wrench size={11} />,
   },
-  finalizado: {
-    label: "Finalizado",
-    color: "bg-green-50 text-green-600 border-green-100",
-    icon: <CheckCircle2 size={11} />,
+  estoque: {
+    label: "Estoque",
+    color: "bg-green-50 text-green-600 border-green-200",
+    icon: <Archive size={11} />,
   },
 };
 
 function StatusBadge({ status }: { status?: string }) {
-  const key = status?.toLowerCase() ?? "registrado";
-  const cfg = STATUS_MAP[key] ?? STATUS_MAP["registrado"];
+  const key = status?.toLowerCase() ?? "coletado";
+  const cfg = STATUS_MAP[key] ?? STATUS_MAP["coletado"];
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border ${cfg.color}`}
+      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${cfg.color}`}
     >
       {cfg.icon}
       {cfg.label}
@@ -91,8 +102,28 @@ export function AdminColetaClient({
   initialColetas,
   error,
 }: AdminColetaClientProps) {
+  const router = useRouter();
+  const supabase = createClient();
+
   const [search, setSearch] = useState("");
   const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
+  
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Form State
+  const [formData, setFormData] = useState({
+    data_coleta: new Date().toISOString().slice(0, 16),
+    quantidade_material_bruto: "",
+    nf_saida_pce: "",
+    motorista: "",
+    caminhao: "",
+    observacao: ""
+  });
+
+  // Action Menu State
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -118,11 +149,73 @@ export function AdminColetaClient({
     0
   );
 
+  // ─── Handlers ──────────────────────────────────────────────────────────────
+
+  const handleCreateColeta = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+      const { error: insertError } = await supabase.from("coletas").insert({
+        cliente_id: "pce", // Regra de negócio: coletas para PCE
+        data_coleta: new Date(formData.data_coleta).toISOString(),
+        quantidade_material_bruto: parseInt(formData.quantidade_material_bruto, 10),
+        nf_saida_pce: formData.nf_saida_pce,
+        motorista: formData.motorista,
+        caminhao: formData.caminhao,
+        observacao: formData.observacao,
+        status: "coletado"
+      });
+
+      if (insertError) throw insertError;
+
+      setIsModalOpen(false);
+      setFormData({
+        data_coleta: new Date().toISOString().slice(0, 16),
+        quantidade_material_bruto: "",
+        nf_saida_pce: "",
+        motorista: "",
+        caminhao: "",
+        observacao: ""
+      });
+      router.refresh();
+    } catch (err) {
+      console.error("Erro ao criar coleta:", err);
+      alert("Erro ao criar coleta. Verifique o console.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateStatus = async (id: string, newStatus: string) => {
+    setOpenMenuId(null);
+    try {
+      const updatePayload: any = { status: newStatus };
+      
+      if (newStatus === "enviado_triagem") {
+        updatePayload.enviado_triagem = true;
+        updatePayload.data_envio_triagem = new Date().toISOString();
+      }
+
+      const { error: updateError } = await supabase
+        .from("coletas")
+        .update(updatePayload)
+        .eq("id", id);
+
+      if (updateError) throw updateError;
+      
+      router.refresh();
+    } catch (err) {
+      console.error("Erro ao atualizar status:", err);
+      alert("Erro ao atualizar status.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-text-dark pb-20">
       {/* ── Header ── */}
       <AdminPageHeader
-        title="Registro de Coletas"
+        title="Operações de Coleta"
         subtitle="Ivani Pallets — Admin"
         icon={<Truck size={18} />}
       />
@@ -132,14 +225,14 @@ export function AdminColetaClient({
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
-              Coletas Registradas
+              Painel de Coletas
             </h1>
             <p className="text-text-dark/50 text-sm mt-1">
-              Histórico de todas as coletas recebidas da PCE.
+              Gerencie e encaminhe coletas recebidas da PCE.
             </p>
           </div>
 
-          <div className="flex gap-4 flex-wrap">
+          <div className="flex gap-4 flex-wrap items-center">
             <div className="bg-white rounded-2xl border border-brand-pink/20 px-5 py-3 shadow-sm flex items-center gap-3">
               <div className="w-8 h-8 bg-brand-cyan/10 rounded-xl flex items-center justify-center text-brand-cyan">
                 <Truck size={16} />
@@ -166,6 +259,14 @@ export function AdminColetaClient({
                 </p>
               </div>
             </div>
+            
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-brand-cyan text-white px-5 py-3 rounded-2xl font-bold text-sm shadow-sm shadow-brand-cyan/20 hover:bg-brand-cyan/90 transition-colors flex items-center gap-2"
+            >
+              <Plus size={16} />
+              Nova Coleta
+            </button>
           </div>
         </div>
 
@@ -189,12 +290,12 @@ export function AdminColetaClient({
               placeholder="Buscar por data, motorista, caminhão…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-brand-pink/20 rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-brand-cyan/20 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-brand-pink/20 rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-brand-cyan/20 transition-all shadow-sm"
             />
           </div>
           <button
             onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-brand-pink/20 rounded-xl text-xs font-bold text-text-dark/50 hover:border-brand-cyan/30 transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-brand-pink/20 rounded-xl text-xs font-bold text-text-dark/50 hover:border-brand-cyan/30 transition-all shadow-sm"
           >
             {sortDir === "desc" ? (
               <ChevronDown size={14} />
@@ -225,44 +326,35 @@ export function AdminColetaClient({
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-3xl border border-brand-pink/20 overflow-hidden shadow-sm"
+            className="bg-white rounded-3xl border border-brand-pink/20 overflow-visible shadow-sm"
           >
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[700px]">
+            <div className="overflow-x-auto min-h-[300px]">
+              <table className="w-full text-left border-collapse min-w-[900px]">
                 <thead>
                   <tr className="bg-bg-primary">
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40">
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40 rounded-tl-3xl">
                       <div className="flex items-center gap-1.5">
                         <Calendar size={12} />
-                        Data
+                        Data / NF
                       </div>
                     </th>
                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40">
                       <div className="flex items-center gap-1.5">
                         <Package size={12} />
-                        Quantidade
+                        Qtd. Bruta
                       </div>
                     </th>
                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40">
-                      <div className="flex items-center gap-1.5">
-                        <User size={12} />
-                        Motorista
-                      </div>
-                    </th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40">
-                      <div className="flex items-center gap-1.5">
-                        <Truck size={12} />
-                        Caminhão
-                      </div>
+                      Transporte
                     </th>
                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40">
                       Status
                     </th>
                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40">
-                      <div className="flex items-center gap-1.5">
-                        <MessageSquare size={12} />
-                        Observação
-                      </div>
+                      Observação
+                    </th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40 rounded-tr-3xl text-right">
+                      Ações
                     </th>
                   </tr>
                 </thead>
@@ -275,12 +367,19 @@ export function AdminColetaClient({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: i * 0.03 }}
-                        className="hover:bg-bg-primary/40 transition-colors"
+                        className="hover:bg-bg-primary/40 transition-colors group"
                       >
                         <td className="px-6 py-4">
-                          <span className="text-xs font-bold text-text-dark">
-                            {formatDate(c.data_coleta)}
-                          </span>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-text-dark">
+                              {formatDate(c.data_coleta)}
+                            </span>
+                            {c.nf_saida_pce && (
+                              <span className="text-[10px] text-text-dark/50 mt-0.5">
+                                NF: {c.nf_saida_pce}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <span className="text-sm font-black text-text-dark">
@@ -290,22 +389,64 @@ export function AdminColetaClient({
                             un
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-xs font-medium text-text-dark/60">
-                          {c.motorista ?? (
-                            <span className="text-text-dark/20 italic">—</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-xs font-medium text-text-dark/60">
-                          {c.caminhao ?? (
-                            <span className="text-text-dark/20 italic">—</span>
-                          )}
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="text-xs font-medium text-text-dark/70">
+                              {c.motorista ?? "—"}
+                            </span>
+                            <span className="text-[10px] text-text-dark/40 mt-0.5">
+                              {c.caminhao ?? "—"}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-6 py-4">
-                          <StatusBadge status={c.status ?? "registrado"} />
+                          <StatusBadge status={c.status ?? "coletado"} />
                         </td>
-                        <td className="px-6 py-4 text-xs text-text-dark/40 max-w-[200px] truncate">
+                        <td className="px-6 py-4 text-xs text-text-dark/40 max-w-[150px] truncate">
                           {c.observacao ?? (
                             <span className="italic">—</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-right relative">
+                          <button
+                            onClick={() => setOpenMenuId(openMenuId === c.id ? null : c.id)}
+                            className="p-1.5 text-text-dark/30 hover:bg-brand-pink/10 hover:text-text-dark rounded-lg transition-colors"
+                          >
+                            <MoreVertical size={16} />
+                          </button>
+                          
+                          {/* Dropdown Actions */}
+                          {openMenuId === c.id && (
+                            <>
+                              <div 
+                                className="fixed inset-0 z-10" 
+                                onClick={() => setOpenMenuId(null)}
+                              />
+                              <motion.div 
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="absolute right-6 top-10 w-48 bg-white rounded-xl shadow-lg border border-brand-pink/10 py-1.5 z-20 flex flex-col"
+                              >
+                                <button
+                                  onClick={() => handleUpdateStatus(c.id, "enviado_triagem")}
+                                  className="px-4 py-2 text-left text-[11px] font-bold text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                                >
+                                  <ArrowRight size={14} /> Enviar para Triagem
+                                </button>
+                                <button
+                                  onClick={() => handleUpdateStatus(c.id, "manutencao")}
+                                  className="px-4 py-2 text-left text-[11px] font-bold text-orange-600 hover:bg-orange-50 flex items-center gap-2"
+                                >
+                                  <Wrench size={14} /> Enviar para Manutenção
+                                </button>
+                                <button
+                                  onClick={() => handleUpdateStatus(c.id, "estoque")}
+                                  className="px-4 py-2 text-left text-[11px] font-bold text-green-600 hover:bg-green-50 flex items-center gap-2"
+                                >
+                                  <Archive size={14} /> Enviar para Estoque
+                                </button>
+                              </motion.div>
+                            </>
                           )}
                         </td>
                       </motion.tr>
@@ -316,7 +457,7 @@ export function AdminColetaClient({
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-brand-pink/10 bg-bg-primary/30 flex items-center justify-between">
+            <div className="px-6 py-4 border-t border-brand-pink/10 bg-bg-primary/30 flex items-center justify-between rounded-b-3xl">
               <p className="text-[10px] font-bold text-text-dark/30 uppercase tracking-widest">
                 {filtered.length} de {initialColetas.length} registros
               </p>
@@ -324,6 +465,149 @@ export function AdminColetaClient({
           </motion.div>
         )}
       </main>
+
+      {/* ── Modal Nova Coleta ── */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-text-dark/20 backdrop-blur-sm z-40"
+              onClick={() => !isSubmitting && setIsModalOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-md bg-white rounded-3xl shadow-2xl z-50 overflow-hidden"
+            >
+              <div className="p-6 border-b border-brand-pink/10 flex justify-between items-center bg-bg-primary/30">
+                <h2 className="text-lg font-bold text-text-dark flex items-center gap-2">
+                  <Plus size={18} className="text-brand-cyan" />
+                  Registrar Nova Coleta
+                </h2>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  disabled={isSubmitting}
+                  className="p-1.5 text-text-dark/40 hover:bg-white rounded-full transition-colors disabled:opacity-50"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateColeta} className="p-6 flex flex-col gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/50">
+                      Data da Coleta
+                    </label>
+                    <input
+                      type="datetime-local"
+                      required
+                      value={formData.data_coleta}
+                      onChange={(e) => setFormData({ ...formData, data_coleta: e.target.value })}
+                      className="px-3 py-2 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none focus:border-brand-cyan/50 focus:ring-1 focus:ring-brand-cyan/50"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/50">
+                      Qtd. Bruta
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      placeholder="Ex: 100"
+                      value={formData.quantidade_material_bruto}
+                      onChange={(e) => setFormData({ ...formData, quantidade_material_bruto: e.target.value })}
+                      className="px-3 py-2 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none focus:border-brand-cyan/50 focus:ring-1 focus:ring-brand-cyan/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/50">
+                    NF Saída PCE
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Número da Nota Fiscal"
+                    value={formData.nf_saida_pce}
+                    onChange={(e) => setFormData({ ...formData, nf_saida_pce: e.target.value })}
+                    className="px-3 py-2 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none focus:border-brand-cyan/50 focus:ring-1 focus:ring-brand-cyan/50"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/50">
+                      Motorista
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Nome do motorista"
+                      value={formData.motorista}
+                      onChange={(e) => setFormData({ ...formData, motorista: e.target.value })}
+                      className="px-3 py-2 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none focus:border-brand-cyan/50 focus:ring-1 focus:ring-brand-cyan/50"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/50">
+                      Placa / Caminhão
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Placa do veículo"
+                      value={formData.caminhao}
+                      onChange={(e) => setFormData({ ...formData, caminhao: e.target.value })}
+                      className="px-3 py-2 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none focus:border-brand-cyan/50 focus:ring-1 focus:ring-brand-cyan/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/50">
+                    Observação
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Detalhes adicionais..."
+                    value={formData.observacao}
+                    onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
+                    className="px-3 py-2 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none focus:border-brand-cyan/50 focus:ring-1 focus:ring-brand-cyan/50 resize-none"
+                  />
+                </div>
+
+                <div className="mt-4 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    disabled={isSubmitting}
+                    className="flex-1 py-2.5 rounded-xl font-bold text-sm text-text-dark/60 hover:bg-bg-primary transition-colors disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 py-2.5 rounded-xl font-bold text-sm bg-brand-cyan text-white shadow-sm shadow-brand-cyan/20 hover:bg-brand-cyan/90 transition-colors flex justify-center items-center gap-2 disabled:opacity-70"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" /> Salvando...
+                      </>
+                    ) : (
+                      "Salvar Coleta"
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
