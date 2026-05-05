@@ -30,6 +30,7 @@ import { useRouter } from "next/navigation";
 
 interface Coleta {
   id: string;
+  cliente_id?: string;
   data_coleta: string;
   quantidade_material_bruto: number;
   motorista?: string;
@@ -192,25 +193,65 @@ export function AdminColetaClient({
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     setOpenMenuId(null);
     setLoadingRowId(id);
+    
     try {
-      const updatePayload: any = { status: newStatus };
-      
+      // 1. Localizar os dados da coleta atual na lista
+      const coleta = initialColetas.find(c => c.id === id);
+      if (!coleta) throw new Error("Coleta não encontrada na lista local.");
+
+      // 2. Se for envio para triagem, realizar verificações e insert extra
       if (newStatus === "enviado_triagem") {
-        updatePayload.enviado_triagem = true;
-        updatePayload.data_envio_triagem = new Date().toISOString();
+        // Verificar duplicidade na tabela triagens
+        const { data: existingTriagem } = await supabase
+          .from("triagens")
+          .select("id")
+          .eq("coleta_id", id)
+          .maybeSingle();
+
+        if (existingTriagem) {
+          alert("Atenção: Já existe uma triagem vinculada a esta coleta.");
+          setLoadingRowId(null);
+          return;
+        }
+
+        // A. Atualizar Coleta
+        const { error: updateError } = await supabase
+          .from("coletas")
+          .update({
+            status: "enviado_triagem",
+            enviado_triagem: true,
+            data_envio_triagem: new Date().toISOString()
+          })
+          .eq("id", id);
+
+        if (updateError) throw updateError;
+
+        // B. Criar Registro na Triagem
+        const { error: triagemError } = await supabase
+          .from("triagens")
+          .insert({
+            coleta_id: id,
+            cliente_id: coleta.cliente_id || "pce",
+            quantidade_total: coleta.quantidade_material_bruto,
+            status: "pendente",
+            created_at: new Date().toISOString()
+          });
+
+        if (triagemError) throw triagemError;
+      } else {
+        // Atualização simples para outros status (manutenção/estoque)
+        const { error: updateError } = await supabase
+          .from("coletas")
+          .update({ status: newStatus })
+          .eq("id", id);
+
+        if (updateError) throw updateError;
       }
-
-      const { error: updateError } = await supabase
-        .from("coletas")
-        .update(updatePayload)
-        .eq("id", id);
-
-      if (updateError) throw updateError;
       
       router.refresh();
-    } catch (err) {
-      console.error("Erro ao atualizar status:", err);
-      alert("Erro ao atualizar status.");
+    } catch (err: any) {
+      console.error("Erro operacional:", err);
+      alert(`Erro ao processar: ${err.message || "Falha na comunicação"}`);
     } finally {
       setLoadingRowId(null);
     }
