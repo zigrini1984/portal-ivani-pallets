@@ -1,53 +1,72 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Package, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { Package, ArrowLeft, ArrowRight, Loader2, AlertCircle } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { login } from "@/app/actions/auth";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  // Form states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setLoading(true);
+    
+    // Clear previous errors and start transition
     setError(null);
 
     const formData = new FormData();
     formData.set("email", email);
     formData.set("password", password);
 
-    try {
-      const result = await login(formData);
+    startTransition(async () => {
+      try {
+        const result = await login(formData);
 
-      if (result?.error) {
-        setError(result.error);
-        setLoading(false);
-      } else if (result?.success && result?.redirectTo) {
-        window.location.href = result.redirectTo;
+        if (result?.error) {
+          setError(result.error);
+          return;
+        }
+
+        if (result?.success && result?.redirectTo) {
+          // Usamos window.location.href para garantir um refresh completo 
+          // e que os cookies de sessão sejam lidos corretamente pelo middleware e layout
+          window.location.href = result.redirectTo;
+        } else {
+          setError("Ocorreu um erro inesperado. Tente novamente.");
+        }
+      } catch (err) {
+        console.error("Erro ao processar login:", err);
+        setError("Não foi possível conectar ao servidor. Verifique sua internet.");
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível entrar. Tente novamente.");
-      setLoading(false);
-    }
+    });
   }
 
   return (
-    <main className="min-h-screen bg-bg-primary text-text-dark font-sans flex items-center justify-center px-6 py-12">
+    <main className="min-h-screen bg-[#FAFAFA] text-[#1A1A1A] font-sans flex items-center justify-center px-6 py-12 relative overflow-hidden">
+      {/* Background Decorative Elements */}
+      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-cyan/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-pink/10 rounded-full blur-[120px] pointer-events-none" />
+
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative z-10 w-full max-w-md pointer-events-auto"
+        transition={{ duration: 0.5 }}
+        className="relative z-10 w-full max-w-md"
       >
-        <Link href="/" className="inline-flex items-center gap-2 text-brand-cyan font-bold mb-8 hover:gap-3 transition-all">
-          <ArrowLeft size={20} /> Voltar para o início
+        <Link href="/" className="inline-flex items-center gap-2 text-brand-cyan font-bold mb-8 group hover:gap-3 transition-all">
+          <ArrowLeft size={20} className="transition-transform group-hover:-translate-x-1" /> 
+          <span className="text-sm">Voltar para o início</span>
         </Link>
 
-        <div className="relative z-10 bg-white p-10 rounded-[3rem] card-shadow border border-brand-pink pointer-events-auto">
+        <div className="bg-white p-10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-brand-pink/20">
           <div className="flex justify-center mb-8">
             <div className="w-16 h-16 bg-brand-cyan rounded-2xl flex items-center justify-center shadow-lg shadow-brand-cyan/20">
               <Package className="text-white" size={32} />
@@ -55,72 +74,79 @@ export default function LoginPage() {
           </div>
 
           <div className="text-center mb-10">
-            <h1 className="font-display text-3xl font-bold mb-2">Portal do Cliente</h1>
-            <p className="text-sm text-text-dark/50">Entre com suas credenciais para acessar sua área</p>
+            <h1 className="text-3xl font-bold mb-2 tracking-tight">Portal do Cliente</h1>
+            <p className="text-sm text-text-dark/50">Acesse sua área exclusiva Ivani Pallets</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="relative z-20 space-y-6 pointer-events-auto">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-text-dark/40 mb-2 ml-1">E-mail</label>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-text-dark/40 ml-1">E-mail Corporativo</label>
               <input 
                 name="email"
                 type="email" 
                 required
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                disabled={loading}
-                placeholder="seu@email.com.br"
-                autoComplete="email"
-                className="w-full h-14 bg-bg-primary border border-brand-pink rounded-2xl px-5 focus:outline-none focus:border-brand-cyan/50 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isPending}
+                placeholder="exemplo@empresa.com"
+                className="w-full h-14 bg-[#F8F9FA] border border-transparent focus:border-brand-cyan/30 rounded-2xl px-5 text-sm outline-none transition-all focus:bg-white focus:shadow-inner disabled:opacity-60"
               />
             </div>
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-text-dark/40 mb-2 ml-1">Senha</label>
+
+            <div className="space-y-2">
+              <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-text-dark/40 ml-1">Senha de Acesso</label>
               <input 
                 name="password"
                 type="password" 
                 required
                 value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                disabled={loading}
-                placeholder="Sua senha"
-                autoComplete="current-password"
-                className="w-full h-14 bg-bg-primary border border-brand-pink rounded-2xl px-5 focus:outline-none focus:border-brand-cyan/50 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={isPending}
+                placeholder="••••••••"
+                className="w-full h-14 bg-[#F8F9FA] border border-transparent focus:border-brand-cyan/30 rounded-2xl px-5 text-sm outline-none transition-all focus:bg-white focus:shadow-inner disabled:opacity-60"
               />
             </div>
 
             {error && (
-              <p className="text-red-500 text-sm text-center font-medium bg-red-50 py-3 rounded-xl border border-red-100">
-                {error === "Invalid login credentials" ? "E-mail ou senha incorretos" : error}
-              </p>
+              <motion.div 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center gap-3 text-red-600 text-xs font-semibold bg-red-50 p-4 rounded-2xl border border-red-100 shadow-sm"
+              >
+                <AlertCircle size={16} className="shrink-0" />
+                <span>{error}</span>
+              </motion.div>
             )}
 
             <motion.button
               type="submit"
-              disabled={loading}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full py-5 bg-brand-cyan hover:bg-[#1a6e74] text-white rounded-2xl font-bold flex items-center justify-center gap-3 transition-all shadow-xl shadow-brand-cyan/20 disabled:opacity-70 disabled:cursor-not-allowed"
+              disabled={isPending}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              className="w-full h-16 bg-brand-cyan hover:bg-[#1a6e74] text-white rounded-2xl font-bold flex items-center justify-center gap-3 transition-all shadow-xl shadow-brand-cyan/20 disabled:opacity-70 disabled:cursor-not-allowed group"
             >
-              {loading ? (
+              {isPending ? (
                 <Loader2 className="animate-spin" size={20} />
               ) : (
-                <>Entrar no Portal <ArrowRight size={20} /></>
+                <>
+                  Entrar no Portal 
+                  <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
+                </>
               )}
             </motion.button>
           </form>
 
-          <div className="mt-8 text-center">
-            <p className="text-xs text-text-dark/40">
+          <div className="mt-8 text-center pt-6 border-t border-gray-50">
+            <p className="text-[11px] text-text-dark/40 leading-relaxed">
               Esqueceu sua senha ou não tem acesso? <br />
-              Entre em contato com o suporte da Ivani Pallets.
+              Entre em contato com o suporte em <span className="text-brand-cyan font-bold hover:underline cursor-pointer">contato@ivanipallets.com.br</span>
             </p>
           </div>
         </div>
 
         <div className="mt-12 text-center">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-dark/20">
-            Ivani Pallets — Gestão de Ativos Industriais
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-text-dark/20">
+            Logistics Intelligence System
           </p>
         </div>
       </motion.div>
