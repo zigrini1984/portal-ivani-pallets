@@ -202,13 +202,17 @@ export function AdminColetaClient({
       // 2. Se for envio para triagem, realizar verificações e insert extra
       if (newStatus === "enviado_triagem") {
         // Verificar duplicidade na tabela triagens
-        const { data: existingTriagem } = await supabase
+        // Usamos .limit(1) em vez de .maybeSingle() para evitar o erro
+        // "operator does not exist: json ? unknown" em colunas JSON (não JSONB)
+        const { data: existingTriagens, error: checkError } = await supabase
           .from("triagens")
           .select("id")
           .eq("coleta_id", id)
-          .maybeSingle();
+          .limit(1);
 
-        if (existingTriagem) {
+        if (checkError) throw checkError;
+
+        if (existingTriagens && existingTriagens.length > 0) {
           alert("Atenção: Já existe uma triagem vinculada a esta coleta.");
           setLoadingRowId(null);
           return;
