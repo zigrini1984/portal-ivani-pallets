@@ -10,11 +10,16 @@ const SESSION_COOKIE = "ivani_portal_usuario";
  * Cliente Supabase com Service Role para ignorar RLS no servidor.
  */
 function createAdminClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+
+  console.error("Admin client env check", {
+    hasUrl: Boolean(supabaseUrl),
+    hasKey: Boolean(serviceRoleKey)
+  });
 
   if (!supabaseUrl || !serviceRoleKey) {
-    console.error("ERRO: Configurações do Supabase ausentes no servidor.");
+    console.error("ERRO: Configurações do Supabase ausentes ou incompletas no servidor.");
     throw new Error("Configuração do servidor incompleta.");
   }
 
