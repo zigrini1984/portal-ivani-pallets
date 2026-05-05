@@ -8,14 +8,14 @@ const SESSION_COOKIE = "ivani_portal_usuario";
 
 /**
  * Cliente Supabase com Service Role para ignorar RLS no servidor.
- * O Service Role Key NUNCA deve ser exposto no client-side.
  */
 function createAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("Configurações do Supabase (URL ou Service Role Key) não encontradas.");
+    console.error("ERRO: Configurações do Supabase ausentes no servidor.");
+    throw new Error("Configuração do servidor incompleta.");
   }
 
   return createClient(supabaseUrl, serviceRoleKey, {
@@ -28,106 +28,130 @@ function createAdminClient() {
 
 /**
  * Valida se o usuário logado via cookie tem perfil 'admin'.
+ * Conforme exemplo obrigatório do usuário.
  */
 async function validateAdminPermission() {
   const cookieStore = await cookies();
-  const session = cookieStore.get(SESSION_COOKIE);
+  const raw = cookieStore.get(SESSION_COOKIE);
   
-  if (!session) return { allowed: false, error: "Sessão não encontrada. Faça login novamente." };
-  
-  try {
-    const user = JSON.parse(session.value);
-    if (user.perfil === "admin") {
-      return { allowed: true, user };
-    }
-    return { allowed: false, error: "Sem permissão para realizar esta operação. Acesso restrito a administradores." };
-  } catch (err) {
-    return { allowed: false, error: "Erro ao validar permissões." };
+  if (!raw) {
+    throw new Error("Usuário não autenticado");
   }
+  
+  let user;
+  try {
+    user = JSON.parse(raw.value);
+  } catch (err) {
+    throw new Error("Sessão inválida");
+  }
+  
+  if (user.perfil !== "admin") {
+    throw new Error("Sem permissão");
+  }
+
+  return user;
 }
 
 export async function salvarColeta(data: any, id?: string) {
-  const auth = await validateAdminPermission();
-  if (!auth.allowed) {
-    return { error: auth.error };
-  }
-
-  const supabase = createAdminClient();
-  
   try {
+    // 1. Validar permissão
+    await validateAdminPermission();
+
+    // 2. Validar campos obrigatórios e garantir que não há undefined
+    const nf_saida_pce = data.nf_saida_pce?.toString() || "";
+    const motorista = data.motorista?.toString() || "";
+    const caminhao = data.caminhao?.toString() || "";
+    const data_coleta = data.data_coleta?.toString() || "";
+    const quantidade_material_bruto = parseInt(data.quantidade_material_bruto || "0");
+    const observacao = data.observacao?.toString() || "";
+    const cliente_id = data.cliente_id?.toString() || "pce";
+
+    if (!data_coleta) {
+      return { error: "A data da coleta é obrigatória." };
+    }
+
+    if (isNaN(quantidade_material_bruto) || quantidade_material_bruto <= 0) {
+      return { error: "A quantidade de material bruto deve ser maior que zero." };
+    }
+
+    const supabase = createAdminClient();
+    
+    const payload = {
+      nf_saida_pce,
+      motorista,
+      caminhao,
+      data_coleta,
+      quantidade_material_bruto,
+      observacao,
+      cliente_id,
+      status: 'coletado',
+      enviado_triagem: false
+    };
+
     if (id) {
       // Update
       const { error } = await supabase
         .from("coletas")
-        .update(data)
+        .update(payload)
         .eq("id", id);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao atualizar coleta:", error);
+        throw new Error("Erro ao salvar coleta");
+      }
     } else {
       // Insert
-      const { data: newColeta, error } = await supabase
+      const { error } = await supabase
         .from("coletas")
         .insert({
-          ...data,
-          status: 'coletado',
-          enviado_triagem: false,
+          ...payload,
           created_at: new Date().toISOString()
-        })
-        .select()
-        .single();
+        });
       
-      if (error) throw error;
-
-      // Opcional: Se houver necessidade de registrar na timeline (lote_eventos)
-      // Como coletas ainda não são lotes oficiais, podemos pular ou criar um evento genérico
-      // se a tabela existir e houver um ID de lote relacionado.
+      if (error) {
+        console.error("Erro ao criar coleta:", error);
+        throw new Error("Erro ao salvar coleta");
+      }
     }
 
     revalidatePath("/admin/coleta");
     return { success: true };
   } catch (err: any) {
-    console.error("Erro ao salvar coleta:", err);
-    if (err.code === '42501') {
-      return { error: "Sem permissão para criar coleta (RLS). Verifique as chaves do servidor." };
-    }
-    return { error: "Erro ao salvar: " + (err.message || "Erro desconhecido") };
+    console.error("Erro na Server Action salvarColeta:", err.message);
+    // Retorna o erro de forma controlada para o frontend
+    return { error: err.message || "Erro inesperado ao processar a coleta" };
   }
 }
 
 export async function excluirColeta(id: string) {
-  const auth = await validateAdminPermission();
-  if (!auth.allowed) {
-    return { error: auth.error };
-  }
-
-  const supabase = createAdminClient();
-
   try {
+    await validateAdminPermission();
+    const supabase = createAdminClient();
+
     const { error } = await supabase
       .from("coletas")
       .delete()
       .eq("id", id);
     
-    if (error) throw error;
+    if (error) {
+      console.error("Erro ao excluir coleta:", error);
+      throw new Error("Erro ao excluir coleta");
+    }
 
     revalidatePath("/admin/coleta");
     return { success: true };
   } catch (err: any) {
-    console.error("Erro ao excluir coleta:", err);
-    return { error: "Erro ao excluir: " + (err.message || "Erro desconhecido") };
+    console.error("Erro na Server Action excluirColeta:", err.message);
+    return { error: err.message };
   }
 }
 
 export async function enviarParaTriagem(coleta: any) {
-  const auth = await validateAdminPermission();
-  if (!auth.allowed) {
-    return { error: auth.error };
-  }
-
-  const supabase = createAdminClient();
-
   try {
-    // 1. Verificar se já existe em triagens para evitar duplicidade
+    await validateAdminPermission();
+    const supabase = createAdminClient();
+
+    // 1. Verificar duplicidade
     const { data: existingTriagem } = await supabase
       .from("triagens")
       .select("id")
@@ -135,7 +159,6 @@ export async function enviarParaTriagem(coleta: any) {
       .maybeSingle();
 
     if (existingTriagem) {
-      // Apenas atualiza o status na coleta se já existir triagem (resiliência)
       await supabase
         .from("coletas")
         .update({ enviado_triagem: true, status: 'enviado_triagem' })
@@ -146,14 +169,14 @@ export async function enviarParaTriagem(coleta: any) {
     }
 
     // 2. Criar registro em Triagens
-    const { data: triagem, error: insertError } = await supabase
+    const { error: insertError } = await supabase
       .from("triagens")
       .insert({
         coleta_id: coleta.id,
-        cliente_id: "pce",
-        nf_saida_pce: coleta.nf_saida_pce,
-        motorista: coleta.motorista,
-        caminhao: coleta.caminhao,
+        cliente_id: coleta.cliente_id || "pce",
+        nf_saida_pce: coleta.nf_saida_pce || "",
+        motorista: coleta.motorista || "",
+        caminhao: coleta.caminhao || "",
         data_coleta: coleta.data_coleta,
         quantidade_total: coleta.quantidade_material_bruto,
         quantidade_sucata: 0,
@@ -161,11 +184,12 @@ export async function enviarParaTriagem(coleta: any) {
         quantidade_remanufatura: 0,
         quantidade_compra_ivani: 0,
         status: "em_triagem"
-      })
-      .select()
-      .single();
+      });
 
-    if (insertError) throw insertError;
+    if (insertError) {
+      console.error("Erro ao criar triagem:", insertError);
+      throw new Error("Erro ao transferir para triagem");
+    }
 
     // 3. Atualizar status na tabela Coletas
     const { error: updateError } = await supabase
@@ -177,13 +201,17 @@ export async function enviarParaTriagem(coleta: any) {
       })
       .eq("id", coleta.id);
 
-    if (updateError) throw updateError;
+    if (updateError) {
+      console.error("Erro ao atualizar status da coleta:", updateError);
+      throw new Error("Erro ao concluir transferência");
+    }
 
     revalidatePath("/admin/coleta");
     return { success: true };
   } catch (err: any) {
-    console.error("Erro ao enviar para triagem:", err);
-    return { error: "Erro ao transferir: " + (err.message || "Erro desconhecido") };
+    console.error("Erro na Server Action enviarParaTriagem:", err.message);
+    return { error: err.message };
   }
 }
+
 
