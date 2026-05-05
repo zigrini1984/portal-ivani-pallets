@@ -254,8 +254,20 @@ export function AdminColetaClient({
       
       router.refresh();
     } catch (err: any) {
-      console.error("Erro operacional:", err);
-      alert(`Erro ao processar: ${err.message || "Falha na comunicação"}`);
+      console.error("❌ [handleUpdateStatus] Erro operacional detalhado:", {
+        message: err.message,
+        details: err.details,
+        hint: err.hint,
+        code: err.code,
+        error: err
+      });
+      
+      const msg = err.message || "Falha na comunicação com o servidor.";
+      const details = err.details ? `\n\nDetalhes: ${err.details}` : "";
+      const hint = err.hint ? `\n\nDica: ${err.hint}` : "";
+      const code = err.code ? ` (Código: ${err.code})` : "";
+      
+      alert(`Erro ao processar status:${code}\n\n${msg}${details}${hint}`);
     } finally {
       setLoadingRowId(null);
     }
