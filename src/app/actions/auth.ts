@@ -1,22 +1,43 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 type UsuarioPerfil = "admin" | "cliente";
 
-type UsuarioLogin = {
-  id: string;
-  email: string;
-  nome: string | null;
-  perfil: UsuarioPerfil;
-};
-
 const SESSION_COOKIE = "ivani_portal_usuario";
 
-function getRedirectByPerfil(perfil: UsuarioPerfil) {
+/**
+ * Cria um cliente Supabase com Service Role para consultas server-side seguras.
+ * Necessário porque a tabela public.usuarios tem RLS que bloqueia a anon key.
+ */
+function createAuthClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  const serviceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_ANON_KEY;
+
+  console.log("[auth] env check", {
+    hasUrl: Boolean(supabaseUrl),
+    hasKey: Boolean(serviceRoleKey),
+  });
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Configuração do servidor incompleta.");
+  }
+
+  return createServiceClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
+
+function getRedirectByPerfil(perfil: UsuarioPerfil): string {
   return perfil === "admin" ? "/admin/configuracao" : "/cliente/dashboard";
 }
 
@@ -27,38 +48,49 @@ export async function login(formData: FormData) {
   const email = rawEmail.trim().toLowerCase();
   const password = rawPassword.trim();
 
-  console.log("[login] email recebido:", email);
+  console.log("[login] tentativa para:", email);
 
   if (!email || !password) {
     return { error: "Preencha e-mail e senha." };
   }
 
-  const supabase = await createClient();
+  let supabase;
+  try {
+    supabase = createAuthClient();
+  } catch (err: any) {
+    console.error("[login] falha ao criar cliente supabase:", err.message);
+    return { error: "Erro interno do servidor. Tente novamente." };
+  }
 
   const { data, error } = await supabase
     .from("usuarios")
-    .select("id,email,nome,perfil")
+    .select("id,nome,email,perfil,ativo")
     .eq("email", email)
     .eq("senha", password)
     .eq("ativo", true)
-    .maybeSingle<UsuarioLogin>();
+    .maybeSingle();
 
   if (error) {
-    console.error("[login] erro supabase:", error);
-    return { error: "Não foi possível validar o login. Tente novamente." };
+    console.error("[login] erro supabase", {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+    });
+    return { error: "Erro Supabase: " + error.message };
   }
 
   console.log("[login] usuario encontrado:", Boolean(data));
 
   if (!data) {
-    return { error: "E-mail ou senha incorretos, ou usuário inativo." };
+    return { error: "E-mail ou senha incorretos." };
   }
 
   if (data.perfil !== "admin" && data.perfil !== "cliente") {
     return { error: "Perfil de usuário inválido." };
   }
 
-  const redirectTo = getRedirectByPerfil(data.perfil);
+  const redirectTo = getRedirectByPerfil(data.perfil as UsuarioPerfil);
   const cookieStore = await cookies();
 
   cookieStore.set(
