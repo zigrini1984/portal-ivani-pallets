@@ -18,7 +18,8 @@ import {
   MoreVertical,
   ArrowRight,
   Wrench,
-  Archive
+  Archive,
+  Send
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -37,6 +38,7 @@ interface Coleta {
   observacao?: string;
   created_at: string;
   nf_saida_pce?: string;
+  enviado_triagem?: boolean;
 }
 
 interface AdminColetaClientProps {
@@ -48,10 +50,7 @@ interface AdminColetaClientProps {
 
 function formatDate(value: string) {
   try {
-    return new Intl.DateTimeFormat("pt-BR", {
-      dateStyle: "short",
-      timeStyle: "short"
-    }).format(new Date(value));
+    return new Intl.DateTimeFormat("pt-BR").format(new Date(value));
   } catch {
     return value;
   }
@@ -112,9 +111,12 @@ export function AdminColetaClient({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Form State
+  // Per-row loading state
+  const [loadingRowId, setLoadingRowId] = useState<string | null>(null);
+  
+  // Form State - Ajustado para DATE (YYYY-MM-DD)
   const [formData, setFormData] = useState({
-    data_coleta: new Date().toISOString().slice(0, 16),
+    data_coleta: new Date().toISOString().slice(0, 10),
     quantidade_material_bruto: "",
     nf_saida_pce: "",
     motorista: "",
@@ -157,8 +159,8 @@ export function AdminColetaClient({
     
     try {
       const { error: insertError } = await supabase.from("coletas").insert({
-        cliente_id: "pce", // Regra de negócio: coletas para PCE
-        data_coleta: new Date(formData.data_coleta).toISOString(),
+        cliente_id: "pce", 
+        data_coleta: formData.data_coleta, // Salva apenas a DATA (YYYY-MM-DD)
         quantidade_material_bruto: parseInt(formData.quantidade_material_bruto, 10),
         nf_saida_pce: formData.nf_saida_pce,
         motorista: formData.motorista,
@@ -171,7 +173,7 @@ export function AdminColetaClient({
 
       setIsModalOpen(false);
       setFormData({
-        data_coleta: new Date().toISOString().slice(0, 16),
+        data_coleta: new Date().toISOString().slice(0, 10),
         quantidade_material_bruto: "",
         nf_saida_pce: "",
         motorista: "",
@@ -189,6 +191,7 @@ export function AdminColetaClient({
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     setOpenMenuId(null);
+    setLoadingRowId(id);
     try {
       const updatePayload: any = { status: newStatus };
       
@@ -208,12 +211,13 @@ export function AdminColetaClient({
     } catch (err) {
       console.error("Erro ao atualizar status:", err);
       alert("Erro ao atualizar status.");
+    } finally {
+      setLoadingRowId(null);
     }
   };
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-text-dark pb-20">
-      {/* ── Header ── */}
       <AdminPageHeader
         title="Operações de Coleta"
         subtitle="Ivani Pallets — Admin"
@@ -221,7 +225,6 @@ export function AdminColetaClient({
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-10">
-        {/* ── Page title + KPIs ── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
@@ -270,7 +273,6 @@ export function AdminColetaClient({
           </div>
         </div>
 
-        {/* ── Error ── */}
         {error && (
           <div className="mb-8 bg-red-50 border border-red-100 rounded-2xl p-5 flex items-center gap-3">
             <AlertCircle className="text-red-500 shrink-0" size={20} />
@@ -278,7 +280,6 @@ export function AdminColetaClient({
           </div>
         )}
 
-        {/* ── Toolbar ── */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1 max-w-sm">
             <Search
@@ -306,7 +307,6 @@ export function AdminColetaClient({
           </button>
         </div>
 
-        {/* ── Empty state ── */}
         {!error && filtered.length === 0 && (
           <div className="py-32 text-center bg-white rounded-3xl border border-brand-pink/20">
             <Truck className="mx-auto text-text-dark/10 mb-4" size={64} />
@@ -321,7 +321,6 @@ export function AdminColetaClient({
           </div>
         )}
 
-        {/* ── Table ── */}
         {!error && filtered.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -354,7 +353,7 @@ export function AdminColetaClient({
                       Observação
                     </th>
                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40 rounded-tr-3xl text-right">
-                      Ações
+                      Operacional
                     </th>
                   </tr>
                 </thead>
@@ -407,47 +406,59 @@ export function AdminColetaClient({
                             <span className="italic">—</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-right relative">
-                          <button
-                            onClick={() => setOpenMenuId(openMenuId === c.id ? null : c.id)}
-                            className="p-1.5 text-text-dark/30 hover:bg-brand-pink/10 hover:text-text-dark rounded-lg transition-colors"
-                          >
-                            <MoreVertical size={16} />
-                          </button>
-                          
-                          {/* Dropdown Actions */}
-                          {openMenuId === c.id && (
-                            <>
-                              <div 
-                                className="fixed inset-0 z-10" 
-                                onClick={() => setOpenMenuId(null)}
-                              />
-                              <motion.div 
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="absolute right-6 top-10 w-48 bg-white rounded-xl shadow-lg border border-brand-pink/10 py-1.5 z-20 flex flex-col"
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {/* Botão Principal: Enviar para Triagem */}
+                            <button
+                              onClick={() => handleUpdateStatus(c.id, "enviado_triagem")}
+                              disabled={loadingRowId === c.id || c.status === "enviado_triagem"}
+                              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${
+                                c.status === "enviado_triagem"
+                                  ? "bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed"
+                                  : "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-600 hover:text-white"
+                              }`}
+                            >
+                              {loadingRowId === c.id ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : (
+                                <Send size={12} />
+                              )}
+                              {c.status === "enviado_triagem" ? "Na Triagem" : "Enviar p/ Triagem"}
+                            </button>
+
+                            <div className="relative">
+                              <button
+                                onClick={() => setOpenMenuId(openMenuId === c.id ? null : c.id)}
+                                className="p-1.5 text-text-dark/30 hover:bg-brand-pink/10 hover:text-text-dark rounded-lg transition-colors"
                               >
-                                <button
-                                  onClick={() => handleUpdateStatus(c.id, "enviado_triagem")}
-                                  className="px-4 py-2 text-left text-[11px] font-bold text-blue-600 hover:bg-blue-50 flex items-center gap-2"
-                                >
-                                  <ArrowRight size={14} /> Enviar para Triagem
-                                </button>
-                                <button
-                                  onClick={() => handleUpdateStatus(c.id, "manutencao")}
-                                  className="px-4 py-2 text-left text-[11px] font-bold text-orange-600 hover:bg-orange-50 flex items-center gap-2"
-                                >
-                                  <Wrench size={14} /> Enviar para Manutenção
-                                </button>
-                                <button
-                                  onClick={() => handleUpdateStatus(c.id, "estoque")}
-                                  className="px-4 py-2 text-left text-[11px] font-bold text-green-600 hover:bg-green-50 flex items-center gap-2"
-                                >
-                                  <Archive size={14} /> Enviar para Estoque
-                                </button>
-                              </motion.div>
-                            </>
-                          )}
+                                <MoreVertical size={16} />
+                              </button>
+                              
+                              {openMenuId === c.id && (
+                                <>
+                                  <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
+                                  <motion.div 
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="absolute right-0 top-10 w-48 bg-white rounded-xl shadow-lg border border-brand-pink/10 py-1.5 z-20 flex flex-col"
+                                  >
+                                    <button
+                                      onClick={() => handleUpdateStatus(c.id, "manutencao")}
+                                      className="px-4 py-2 text-left text-[11px] font-bold text-orange-600 hover:bg-orange-50 flex items-center gap-2"
+                                    >
+                                      <Wrench size={14} /> Manutenção
+                                    </button>
+                                    <button
+                                      onClick={() => handleUpdateStatus(c.id, "estoque")}
+                                      className="px-4 py-2 text-left text-[11px] font-bold text-green-600 hover:bg-green-50 flex items-center gap-2"
+                                    >
+                                      <Archive size={14} /> Estoque
+                                    </button>
+                                  </motion.div>
+                                </>
+                              )}
+                            </div>
+                          </div>
                         </td>
                       </motion.tr>
                     ))}
@@ -456,7 +467,6 @@ export function AdminColetaClient({
               </table>
             </div>
 
-            {/* Footer */}
             <div className="px-6 py-4 border-t border-brand-pink/10 bg-bg-primary/30 flex items-center justify-between rounded-b-3xl">
               <p className="text-[10px] font-bold text-text-dark/30 uppercase tracking-widest">
                 {filtered.length} de {initialColetas.length} registros
@@ -466,7 +476,6 @@ export function AdminColetaClient({
         )}
       </main>
 
-      {/* ── Modal Nova Coleta ── */}
       <AnimatePresence>
         {isModalOpen && (
           <>
@@ -504,7 +513,7 @@ export function AdminColetaClient({
                       Data da Coleta
                     </label>
                     <input
-                      type="datetime-local"
+                      type="date"
                       required
                       value={formData.data_coleta}
                       onChange={(e) => setFormData({ ...formData, data_coleta: e.target.value })}
