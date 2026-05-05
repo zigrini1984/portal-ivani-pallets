@@ -110,7 +110,7 @@ export function AdminConfiguracaoClient({ initialModelos, initialUsuarios, initi
       // 1. Buscar Modelos
       const { data: mData, error: mError } = await supabase
         .from("modelos_pallets")
-        .select("*")
+        .select("id, cliente_id, nome, codigo, medidas, preco_pallet_novo, preco_reforma, preco_remanufatura, preco_compra_ivani, ativo, observacao")
         .eq("cliente_id", "pce")
         .order("codigo", { ascending: true });
       

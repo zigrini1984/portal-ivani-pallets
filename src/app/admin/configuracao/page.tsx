@@ -7,7 +7,7 @@ export default async function AdminConfiguracaoPage() {
   // 1. Buscar Modelos
   const { data: modelos } = await supabase
     .from("modelos_pallets")
-    .select("id, nome, codigo, medidas, preco_pallet_novo, preco_reforma, preco_remanufatura, preco_compra_ivani, ativo")
+    .select("id, cliente_id, nome, codigo, medidas, preco_pallet_novo, preco_reforma, preco_remanufatura, preco_compra_ivani, ativo, observacao")
     .eq("cliente_id", "pce")
     .order("codigo", { ascending: true });
 
