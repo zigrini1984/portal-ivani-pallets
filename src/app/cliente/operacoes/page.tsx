@@ -76,12 +76,12 @@ export default function CentralOperacoesPCE() {
         { data: faturamentos },
         { data: modelos }
       ] = await Promise.all([
-        supabase.from("coletas").select("*").eq("cliente_id", "pce").order("data_coleta", { ascending: false }),
-        supabase.from("triagens").select("*, modelo:modelos_pallets(nome)").eq("cliente_id", "pce"),
-        supabase.from("estoque_pallets").select("*, modelo:modelos_pallets(nome)").eq("cliente_id", "pce"),
-        supabase.from("estoque_movimentacoes").select("*, modelo:modelos_pallets(nome)").eq("cliente_id", "pce").order("created_at", { ascending: false }),
-        supabase.from("faturamentos").select("*, modelo:modelos_pallets(nome), parcelas:faturamento_parcelas(*)").eq("cliente_id", "pce"),
-        supabase.from("modelos_pallets").select("*").eq("cliente_id", "pce")
+        supabase.from("coletas").select("id, cliente_id, data_coleta, quantidade_material_bruto, status, numero_lote, updated_at, created_at").eq("cliente_id", "pce").order("data_coleta", { ascending: false }),
+        supabase.from("triagens").select("id, cliente_id, coleta_id, quantidade_total, quantidade_manutencao, quantidade_remanufatura, quantidade_compra_ivani, created_at, modelo_pallet_id, modelo:modelos_pallets(nome)").eq("cliente_id", "pce"),
+        supabase.from("estoque_pallets").select("id, cliente_id, quantidade_disponivel, modelo_pallet_id, modelo:modelos_pallets(nome)").eq("cliente_id", "pce"),
+        supabase.from("estoque_movimentacoes").select("id, cliente_id, tipo, quantidade, created_at, modelo_pallet_id, modelo:modelos_pallets(nome)").eq("cliente_id", "pce").order("created_at", { ascending: false }),
+        supabase.from("faturamentos").select("id, cliente_id, valor_total_estimado, estoque_movimentacao_id, created_at, modelo:modelos_pallets(nome), parcelas:faturamento_parcelas(id, faturamento_id, numero_parcela, data_vencimento, status)").eq("cliente_id", "pce"),
+        supabase.from("modelos_pallets").select("id, cliente_id, nome, codigo, medidas, preco_pallet_novo, preco_reforma, preco_remanufatura").eq("cliente_id", "pce")
       ]);
 
       setData({

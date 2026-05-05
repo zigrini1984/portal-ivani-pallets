@@ -98,7 +98,7 @@ export function AdminTriagemClient({ initialTriagens, initialModelosPallets }: A
     try {
       const { data: triagensData, error: fetchError } = await supabase
         .from("triagens")
-        .select("*")
+        .select("id, cliente_id, coleta_id, nf_saida_pce, motorista, caminhao, data_coleta, quantidade_total, quantidade_sucata, quantidade_manutencao, quantidade_remanufatura, quantidade_compra_ivani, status, observacao, created_at")
         .eq("cliente_id", "pce")
         .order("created_at", { ascending: false });
 
@@ -118,7 +118,7 @@ export function AdminTriagemClient({ initialTriagens, initialModelosPallets }: A
       
       const { data: itensData, error: itensError } = await supabase
         .from("triagem_itens")
-        .select("*")
+        .select("id, triagem_id, modelo_pallet_id, quantidade_reforma, quantidade_remanufatura, quantidade_compra_ivani")
         .in("triagem_id", triagemIds);
 
       if (itensError) {

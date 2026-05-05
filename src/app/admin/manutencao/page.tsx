@@ -18,7 +18,7 @@ export default async function AdminManutencaoPage() {
   // 2. Buscar manutenções existentes
   const { data: manutencoes } = await supabase
     .from("manutencoes")
-    .select("*")
+    .select("id, triagem_item_id, status, observacao, created_at")
     .eq("cliente_id", "pce");
 
   // 3. Mesclar dados

@@ -56,11 +56,11 @@ export async function fetchDashboardKPIs(clienteId: string = "pce", supabasePara
       { data: movimentacoes },
       { data: modelos }
     ] = await Promise.all([
-      supabase.from("coletas").select("*").eq("cliente_id", clienteId),
-      supabase.from("triagens").select("*").eq("cliente_id", clienteId),
-      supabase.from("estoque_pallets").select("*").eq("cliente_id", clienteId),
-      supabase.from("estoque_movimentacoes").select("*").eq("cliente_id", clienteId),
-      supabase.from("modelos_pallets").select("*").eq("cliente_id", clienteId)
+      supabase.from("coletas").select("id, cliente_id, quantidade_material_bruto, data_coleta").eq("cliente_id", clienteId),
+      supabase.from("triagens").select("id, cliente_id, coleta_id, quantidade_total, quantidade_manutencao, quantidade_remanufatura, quantidade_compra_ivani, created_at, modelo_pallet_id").eq("cliente_id", clienteId),
+      supabase.from("estoque_pallets").select("id, cliente_id, quantidade_disponivel").eq("cliente_id", clienteId),
+      supabase.from("estoque_movimentacoes").select("id, cliente_id, tipo, quantidade").eq("cliente_id", clienteId),
+      supabase.from("modelos_pallets").select("id, cliente_id, preco_pallet_novo, preco_reforma, preco_remanufatura").eq("cliente_id", clienteId)
     ]);
 
     const coletasArr = coletas || [];

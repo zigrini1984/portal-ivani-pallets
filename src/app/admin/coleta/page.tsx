@@ -12,7 +12,7 @@ export default async function AdminColetaPage() {
   // O cliente_id = 'pce' é mantido pois é a regra de negócio do app
   const { data: coletasData, error: supabaseError } = await supabase
     .from("coletas")
-    .select("*")
+    .select("id, cliente_id, data_coleta, quantidade_material_bruto, motorista, caminhao, status, observacao, created_at, nf_saida_pce, enviado_triagem, data_envio_triagem")
     .eq("cliente_id", "pce")
     .order("data_coleta", { ascending: false });
 
