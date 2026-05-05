@@ -159,14 +159,17 @@ export async function enviarParaTriagem(coleta: any) {
     await validateAdminPermission();
     const supabase = createAdminClient();
 
-    // 1. Verificar duplicidade
-    const { data: existingTriagem } = await supabase
+    // 1. Verificar duplicidade — usa .limit(1) para evitar o erro
+    // "operator does not exist: json ? unknown" causado por .maybeSingle()
+    const { data: existingTriagens, error: checkError } = await supabase
       .from("triagens")
       .select("id")
       .eq("coleta_id", coleta.id)
-      .maybeSingle();
+      .limit(1);
 
-    if (existingTriagem) {
+    if (checkError) throw checkError;
+
+    if (existingTriagens && existingTriagens.length > 0) {
       await supabase
         .from("coletas")
         .update({ enviado_triagem: true, status: 'enviado_triagem' })

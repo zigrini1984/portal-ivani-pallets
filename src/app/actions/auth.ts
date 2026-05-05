@@ -66,13 +66,16 @@ export async function login(formData: FormData) {
   }
 
   try {
-    const { data, error } = await supabase
+    const { data: rows, error } = await supabase
       .from("usuarios")
       .select("id,nome,email,perfil,ativo")
       .eq("email", email)
       .eq("senha", password)
       .eq("ativo", true)
-      .maybeSingle();
+      .limit(1);
+
+    // Extrai o primeiro resultado do array (equivalente ao maybeSingle sem o operador ?)
+    const data = rows && rows.length > 0 ? rows[0] : null;
 
     if (error) {
       console.error("[login] erro supabase", {
