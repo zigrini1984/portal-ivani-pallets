@@ -11,12 +11,15 @@ export default async function AdminManutencaoPage() {
   let serverError: string | null = null;
 
   try {
-    // 1. Busca SIMPLES e EXPLÍCITA - Apenas manutencoes, sem relacionamentos
+    // 1. Busca EXPLÍCITA de todas as colunas necessárias para KPIs e listagem
     const { data, error: manutError } = await supabase
       .from("manutencoes")
       .select(`
         id,
+        triagem_id,
+        coleta_id,
         cliente_id,
+        modelo_id,
         modelo_nome_snapshot,
         tipo_servico,
         quantidade,
@@ -38,7 +41,7 @@ export default async function AdminManutencaoPage() {
       manutData = data || [];
     }
 
-    // 2. Busca de modelos (opcional, não trava)
+    // 2. Busca de modelos (opcional, para referência)
     const { data: mData } = await supabase
       .from("modelos_pallets")
       .select("id, nome, codigo, medidas")
@@ -47,7 +50,6 @@ export default async function AdminManutencaoPage() {
     modelosData = mData || [];
 
   } catch (err: any) {
-    // NUNCA lançar throw aqui
     console.error("[AdminManutencaoPage] Fatal Error:", err.message);
     serverError = "Falha crítica ao carregar dados de manutenção.";
   }

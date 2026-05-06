@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import {
   Wrench, AlertCircle, CheckCircle2, Loader2, Search,
   Play, ChevronDown, Calendar, Clock, Package, Inbox,
-  RefreshCw, Check
+  RefreshCw, Check, ClipboardList, Hammer, Zap
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -16,7 +16,8 @@ import { iniciarManutencao, concluirManutencao, sincronizarManutencoesPendentes 
 interface ModeloPallet { id: string; nome: string; codigo: string; medidas: string; }
 
 interface Manutencao {
-  id: string; triagem_id: string; modelo_nome_snapshot: string;
+  id: string; triagem_id?: string; coleta_id?: string; cliente_id?: string;
+  modelo_id?: string; modelo_nome_snapshot: string;
   tipo_servico: "reforma" | "remanufatura";
   quantidade: number; status: "pendente" | "em_andamento" | "concluida";
   data_entrada: string; data_inicio: string | null; data_conclusao: string | null;
@@ -27,6 +28,27 @@ interface Props {
   initialManutencoes?: Manutencao[];
   initialModelos?: ModeloPallet[];
   serverError?: string | null;
+}
+
+// ─── Sub-Component: KPI Card ─────────────────────────────────────────────────
+
+function KPICard({ title, value, unit = "un", icon, color }: { title: string; value: number; unit?: string; icon: React.ReactNode; color: string }) {
+  return (
+    <div className="bg-white rounded-3xl p-6 border border-brand-pink/10 shadow-sm hover:shadow-md transition-all group">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`p-3 rounded-2xl ${color} bg-opacity-10 text-opacity-100 transition-transform group-hover:scale-110`}>
+          {icon}
+        </div>
+      </div>
+      <div className="flex flex-col">
+        <span className="text-3xl font-black tracking-tight text-slate-800">
+          {value.toLocaleString()}
+          <span className="text-xs font-bold text-slate-400 ml-1.5 uppercase tracking-widest">{unit}</span>
+        </span>
+        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">{title}</span>
+      </div>
+    </div>
+  );
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -42,24 +64,46 @@ export function AdminManutencaoClient({
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Garantir que initialManutencoes é array e filtrar inválidos (quantidade 0 ou sem nome)
-  const safeList = useMemo(() => {
+  // 1. Filtragem de dados válidos para KPIs e Tabela
+  const manutencoesValidas = useMemo(() => {
     if (!Array.isArray(initialManutencoes)) return [];
-    return initialManutencoes.filter(m => 
-      m.quantidade > 0 && 
-      m.modelo_nome_snapshot && 
-      m.modelo_nome_snapshot !== "Modelo s/ Nome"
+    return initialManutencoes.filter(item => 
+      Number(item.quantidade || 0) > 0 && 
+      ["reforma", "remanufatura"].includes(item.tipo_servico)
     );
   }, [initialManutencoes]);
 
-  const filtered = useMemo(() => {
-    return safeList.filter(m => {
+  // 2. Cálculo dos KPIs
+  const stats = useMemo(() => {
+    return {
+      totalGeral: manutencoesValidas.reduce((acc, curr) => acc + Number(curr.quantidade || 0), 0),
+      pendentes: manutencoesValidas
+        .filter(i => i.status === "pendente")
+        .reduce((acc, curr) => acc + Number(curr.quantidade || 0), 0),
+      emAndamento: manutencoesValidas
+        .filter(i => i.status === "em_andamento")
+        .reduce((acc, curr) => acc + Number(curr.quantidade || 0), 0),
+      concluidas: manutencoesValidas
+        .filter(i => i.status === "concluida")
+        .reduce((acc, curr) => acc + Number(curr.quantidade || 0), 0),
+      reforma: manutencoesValidas
+        .filter(i => i.tipo_servico === "reforma")
+        .reduce((acc, curr) => acc + Number(curr.quantidade || 0), 0),
+      remanufatura: manutencoesValidas
+        .filter(i => i.tipo_servico === "remanufatura")
+        .reduce((acc, curr) => acc + Number(curr.quantidade || 0), 0),
+    };
+  }, [manutencoesValidas]);
+
+  // 3. Filtragem de Busca/Filtro
+  const filteredList = useMemo(() => {
+    return manutencoesValidas.filter(m => {
       const name = m?.modelo_nome_snapshot?.toLowerCase() || "";
       const matchSearch = name.includes(searchTerm.toLowerCase());
       const matchStatus = filterStatus === "todos" || m.status === filterStatus;
       return matchSearch && matchStatus;
     });
-  }, [safeList, searchTerm, filterStatus]);
+  }, [manutencoesValidas, searchTerm, filterStatus]);
 
   async function handleAction(id: string, action: "iniciar" | "concluir") {
     setLoadingId(id);
@@ -114,6 +158,31 @@ export function AdminManutencaoClient({
           </button>
         </div>
 
+        {/* KPIs Section */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <KPICard title="Pendentes" value={stats.pendentes} icon={<Clock size={20} />} color="text-amber-500" />
+          <KPICard title="Em Andamento" value={stats.emAndamento} icon={<Zap size={20} />} color="text-blue-500" />
+          <KPICard title="Concluídos" value={stats.concluidas} icon={<CheckCircle2 size={20} />} color="text-green-500" />
+          <KPICard title="Total Geral" value={stats.totalGeral} icon={<ClipboardList size={20} />} color="text-brand-cyan" />
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+          <div className="bg-white rounded-2xl p-4 border border-brand-pink/5 flex items-center gap-4">
+             <div className="p-2 rounded-xl bg-amber-50 text-amber-600"><Hammer size={16} /></div>
+             <div>
+               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Reforma</p>
+               <p className="text-xl font-black text-slate-700">{stats.reforma} <span className="text-[10px] font-bold text-slate-400 uppercase">un</span></p>
+             </div>
+          </div>
+          <div className="bg-white rounded-2xl p-4 border border-brand-pink/5 flex items-center gap-4">
+             <div className="p-2 rounded-xl bg-purple-50 text-purple-600"><Wrench size={16} /></div>
+             <div>
+               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Remanufatura</p>
+               <p className="text-xl font-black text-slate-700">{stats.remanufatura} <span className="text-[10px] font-bold text-slate-400 uppercase">un</span></p>
+             </div>
+          </div>
+        </div>
+
         {serverError && (
           <div className="mb-6 bg-red-50 border border-red-100 rounded-2xl p-4 flex items-center gap-3">
             <AlertCircle className="text-red-500 shrink-0" size={18} />
@@ -143,11 +212,19 @@ export function AdminManutencaoClient({
 
         {/* List/Table */}
         <div className="bg-white rounded-3xl border border-brand-pink/20 overflow-hidden shadow-sm">
-          {filtered.length === 0 ? (
-            <div className="py-32 text-center">
+          {filteredList.length === 0 ? (
+            <div className="py-32 text-center px-4">
               <Inbox className="mx-auto text-text-dark/10 mb-4" size={64} />
-              <h3 className="text-lg font-bold text-text-dark/40">Nenhum item em manutenção.</h3>
-              <p className="text-sm text-text-dark/30 mt-1 italic">Conclua triagens para alimentar este painel.</p>
+              <h3 className="text-lg font-bold text-text-dark/40">
+                {manutencoesValidas.length === 0 
+                  ? "Nenhum item em manutenção." 
+                  : "Nenhum item corresponde à sua busca."}
+              </h3>
+              <p className="text-sm text-text-dark/30 mt-1 italic">
+                {manutencoesValidas.length === 0 
+                  ? "Conclua uma triagem com reforma ou remanufatura para alimentar este painel." 
+                  : "Tente ajustar os filtros ou a busca."}
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -162,7 +239,7 @@ export function AdminManutencaoClient({
                 </thead>
                 <tbody className="divide-y divide-brand-pink/5">
                   <AnimatePresence>
-                    {filtered.map((item) => (
+                    {filteredList.map((item) => (
                       <motion.tr key={item.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="hover:bg-[#FAFAFA] transition-colors group">
                         <td className="px-6 py-5">
                           <div className="flex items-center gap-3">
@@ -170,7 +247,7 @@ export function AdminManutencaoClient({
                               <Package size={20} />
                             </div>
                             <div>
-                              <p className="text-sm font-black text-slate-800">{item.modelo_nome_snapshot}</p>
+                              <p className="text-sm font-black text-slate-800">{item.modelo_nome_snapshot || "Modelo não informado"}</p>
                               <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Triagem #{item.triagem_id?.split('-')[0]}</p>
                             </div>
                           </div>
