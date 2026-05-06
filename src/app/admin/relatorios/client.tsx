@@ -35,6 +35,8 @@ import { LoadingPage } from "@/components/ui/loading-screen";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 
+import { PageShell, KPIGrid, KPICard, AppCard, AppButton, StatusBadge, EmptyState } from "@/components/ui/tropical";
+
 // --- TIPAGEM ---
 
 interface Triagem {
@@ -48,51 +50,15 @@ interface Triagem {
   data_coleta: string;
 }
 
-// --- COMPONENTES DE UI ---
-
-const Badge = ({ children, variant = "default" }: { children: React.ReactNode, variant?: string }) => {
-  const styles: Record<string, string> = {
-    classificada: "bg-green-50 text-green-600 border-green-100",
-    em_triagem: "bg-amber-50 text-amber-600 border-amber-100",
-    finalizada: "bg-brand-cyan/5 text-brand-cyan border-brand-cyan/10",
-    default: "bg-gray-100 text-gray-600 border-gray-200"
-  };
-  return (
-    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${styles[variant] || styles.default}`}>
-      {children}
-    </span>
-  );
-};
-
-const Card = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-  <div className={`bg-white rounded-3xl border border-brand-pink/20 shadow-sm ${className}`}>
-    {children}
-  </div>
-);
-
-const KPICard = ({ label, value, icon, description, color = "brand-cyan" }: any) => (
-  <Card className="p-6 relative overflow-hidden group">
-    <div className={`absolute -right-4 -top-4 w-24 h-24 bg-${color}/5 rounded-full blur-2xl group-hover:bg-${color}/10 transition-all`} />
-    <div className="relative z-10">
-      <div className={`w-10 h-10 bg-${color}/10 rounded-xl flex items-center justify-center text-${color} mb-4`}>
-        {icon}
-      </div>
-      <div className="flex flex-col">
-        <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest">{label}</span>
-        <span className="text-2xl font-bold text-text-dark mt-1">{value}</span>
-        <p className="text-[10px] text-text-dark/50 font-medium mt-2">{description}</p>
-      </div>
-    </div>
-  </Card>
-);
+// --- COMPONENTES DE UI LOCAIS ---
 
 const DistributionBar = ({ label, value, total, color }: any) => (
   <div className="space-y-2">
     <div className="flex justify-between items-center text-[11px] font-bold">
-      <span className="text-text-dark/60 uppercase">{label}</span>
-      <span className="text-text-dark">{value} <span className="text-text-dark/30">({total > 0 ? ((value / total) * 100).toFixed(0) : 0}%)</span></span>
+      <span className="text-brand-indigo/60 uppercase">{label}</span>
+      <span className="text-brand-indigo">{value} <span className="text-brand-indigo/30">({total > 0 ? ((value / total) * 100).toFixed(0) : 0}%)</span></span>
     </div>
-    <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+    <div className="h-2 w-full bg-brand-indigo/5 rounded-full overflow-hidden">
       <motion.div 
         initial={{ width: 0 }}
         animate={{ width: total > 0 ? `${(value / total) * 100}%` : '0%' }}
@@ -198,123 +164,117 @@ export function AdminRelatoriosClient({ initialTriagens }: AdminRelatoriosClient
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-text-dark font-sans pb-20">
-      <AdminPageHeader
-        title="Relatórios Analíticos"
-        subtitle="Ivani Pallets — Admin Hub"
-        icon={<BarChart3 size={18} />}
-      />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-10">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
-           <div>
-             <h1 className="text-2xl font-bold tracking-tight">Dashboard de Performance</h1>
-             <p className="text-text-dark/50 text-sm mt-1">Visão holística da operação e impacto ambiental.</p>
-           </div>
-           <button className="flex items-center gap-2 px-6 py-3 bg-brand-cyan text-white rounded-2xl text-xs font-bold shadow-lg shadow-brand-cyan/20 hover:scale-[1.02] transition-all active:scale-95">
-             <Download size={16} /> Exportar Dados Completos
-           </button>
-        </div>
-
-        {/* Filtros */}
-        <Card className="p-6 mb-10 bg-white/50 backdrop-blur-md">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase text-text-dark/40 flex items-center gap-2">
-                <Calendar size={12} /> Período
-              </label>
-              <div className="flex gap-2">
-                <input type="date" onChange={(e) => setDateFilter(p => ({ ...p, start: e.target.value }))} className="flex-1 bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-xs" />
-                <input type="date" onChange={(e) => setDateFilter(p => ({ ...p, end: e.target.value }))} className="flex-1 bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-xs" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase text-text-dark/40 flex items-center gap-2">
-                <Activity size={12} /> Status da Triagem
-              </label>
-              <select onChange={(e) => setStatusFilter(e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-xs outline-none focus:ring-2 focus:ring-brand-cyan/10">
-                <option value="todos">Todos os Status</option>
-                <option value="em_triagem">Em Triagem</option>
-                <option value="classificada">Classificada</option>
-                <option value="finalizada">Finalizada</option>
-              </select>
-            </div>
-            <div className="flex items-end">
-              <button onClick={() => fetchData()} className="w-full bg-gray-50 hover:bg-gray-100 text-text-dark/60 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 border border-gray-100">
-                <Recycle size={14} /> Atualizar Inteligência
-              </button>
+    <PageShell
+      title="Dashboard de Performance"
+      subtitle="Visão holística da operação e impacto ambiental."
+      action={
+        <AppButton icon={<Download size={16} />}>
+          Exportar Dados Completos
+        </AppButton>
+      }
+    >
+      {/* Filtros */}
+      <AppCard className="mb-10 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="space-y-3">
+            <label className="text-[10px] font-black uppercase text-brand-indigo/50 flex items-center gap-2 tracking-widest">
+              <Calendar size={14} className="text-brand-aqua" /> Período
+            </label>
+            <div className="flex gap-3">
+              <input type="date" onChange={(e) => setDateFilter(p => ({ ...p, start: e.target.value }))} className="flex-1 bg-white border border-brand-indigo/10 rounded-xl px-4 py-3 text-xs font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all shadow-sm" />
+              <input type="date" onChange={(e) => setDateFilter(p => ({ ...p, end: e.target.value }))} className="flex-1 bg-white border border-brand-indigo/10 rounded-xl px-4 py-3 text-xs font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all shadow-sm" />
             </div>
           </div>
-        </Card>
-
-        {/* KPIs Principais */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-          <KPICard label="Total de Pallets" value={stats.totalPallets} icon={<Layers size={20} />} description="Volume total processado" />
-          <KPICard label="Recuperação (Reforma)" value={stats.reforma} icon={<Wrench size={20} />} description="Pallets enviados para oficina" color="amber-500" />
-          <KPICard label="Remanufatura" value={stats.remanufatura} icon={<Recycle size={20} />} description="Pallets reincorporados" color="purple-500" />
-          <KPICard label="Taxa de Sucata" value={stats.sucata} icon={<Recycle size={20} />} description="Material descartado" color="red-500" />
+          <div className="space-y-3">
+            <label className="text-[10px] font-black uppercase text-brand-indigo/50 flex items-center gap-2 tracking-widest">
+              <Activity size={14} className="text-brand-orange" /> Status da Triagem
+            </label>
+            <select onChange={(e) => setStatusFilter(e.target.value)} className="w-full bg-white border border-brand-indigo/10 rounded-xl px-4 py-3 text-xs font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all shadow-sm">
+              <option value="todos">Todos os Status</option>
+              <option value="em_triagem">Em Triagem</option>
+              <option value="classificada">Classificada</option>
+              <option value="finalizada">Finalizada</option>
+            </select>
+          </div>
+          <div className="flex items-end">
+            <AppButton onClick={() => fetchData()} variant="secondary" className="w-full" icon={<Recycle size={14} />}>
+              Atualizar Inteligência
+            </AppButton>
+          </div>
         </div>
+      </AppCard>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Distribuição Operacional */}
-          <Card className="p-8 lg:col-span-2">
-            <div className="flex justify-between items-center mb-8">
+      {/* KPIs Principais */}
+      <div className="mb-10">
+        <KPIGrid>
+          <KPICard title="Total de Pallets" value={stats.totalPallets} icon={<Layers size={20} />} description="Volume total processado" colorVariant="primary" />
+          <KPICard title="Recuperação (Reforma)" value={stats.reforma} icon={<Wrench size={20} />} description="Pallets enviados para oficina" colorVariant="orange" />
+          <KPICard title="Remanufatura" value={stats.remanufatura} icon={<Recycle size={20} />} description="Pallets reincorporados" colorVariant="floral" />
+          <KPICard title="Taxa de Sucata" value={stats.sucata} icon={<AlertCircle size={20} />} description="Material descartado" colorVariant="indigo" />
+        </KPIGrid>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Distribuição Operacional */}
+        <AppCard className="lg:col-span-2">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h3 className="text-lg font-black text-brand-indigo">Eficiência de Triagem</h3>
+              <p className="text-[10px] text-brand-indigo/40 font-bold uppercase tracking-widest mt-1">Distribuição por Categoria de Recuperação</p>
+            </div>
+            <div className="w-12 h-12 bg-brand-aqua/10 rounded-2xl flex items-center justify-center text-brand-aqua">
+              <PieChart size={24} />
+            </div>
+          </div>
+          <div className="space-y-6">
+            <DistributionBar label="Reforma / Manutenção" value={stats.reforma} total={stats.totalPallets} color="bg-brand-orange" />
+            <DistributionBar label="Remanufatura Direta" value={stats.remanufatura} total={stats.totalPallets} color="bg-brand-aqua" />
+            <DistributionBar label="Compra pela Ivani" value={stats.compra} total={stats.totalPallets} color="bg-emerald-400" />
+            <DistributionBar label="Sucata / Descarte" value={stats.sucata} total={stats.totalPallets} color="bg-brand-indigo" />
+          </div>
+        </AppCard>
+
+        {/* Impacto Ambiental */}
+        <AppCard className="bg-brand-floral/40 border-brand-floral">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600">
+              <Leaf size={24} />
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-brand-indigo">Eco-Impacto</h3>
+              <p className="text-[10px] text-brand-indigo/40 font-bold uppercase tracking-widest mt-1">Contribuição Ambiental PCE</p>
+            </div>
+          </div>
+          
+          <div className="space-y-8">
+            <div className="flex items-center gap-5">
+              <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center text-emerald-500 border border-emerald-50">
+                <Trees size={24} />
+              </div>
               <div>
-                <h3 className="text-lg font-bold text-text-dark">Eficiência de Triagem</h3>
-                <p className="text-[10px] text-text-dark/40 font-bold uppercase tracking-widest mt-1">Distribuição por Categoria de Recuperação</p>
+                <span className="text-[10px] font-black text-brand-indigo/40 uppercase tracking-widest block mb-1">Madeira Recuperada</span>
+                <div className="text-2xl font-black text-brand-indigo">{stats.madeiraRecuperada} <span className="text-sm font-bold text-brand-indigo/40 ml-1">Toneladas</span></div>
               </div>
-              <PieChart size={24} className="text-text-dark/10" />
             </div>
-            <div className="space-y-6">
-              <DistributionBar label="Reforma / Manutenção" value={stats.reforma} total={stats.totalPallets} color="bg-amber-400" />
-              <DistributionBar label="Remanufatura Direta" value={stats.remanufatura} total={stats.totalPallets} color="bg-purple-400" />
-              <DistributionBar label="Compra pela Ivani" value={stats.compra} total={stats.totalPallets} color="bg-brand-cyan" />
-              <DistributionBar label="Sucata / Descarte" value={stats.sucata} total={stats.totalPallets} color="bg-red-400" />
-            </div>
-          </Card>
 
-          {/* Impacto Ambiental */}
-          <Card className="p-8 bg-brand-cyan/[0.02] border-brand-cyan/20">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-12 h-12 bg-brand-cyan/10 rounded-2xl flex items-center justify-center text-brand-cyan">
-                <Leaf size={24} />
+            <div className="flex items-center gap-5">
+              <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center text-blue-400 border border-blue-50">
+                <Wind size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-text-dark">Eco-Impacto</h3>
-                <p className="text-[10px] text-text-dark/40 font-bold uppercase tracking-widest">Contribuição Ambiental PCE</p>
+                <span className="text-[10px] font-black text-brand-indigo/40 uppercase tracking-widest block mb-1">CO2 Evitado</span>
+                <div className="text-2xl font-black text-brand-indigo">{stats.co2Evitado} <span className="text-sm font-bold text-brand-indigo/40 ml-1">Toneladas</span></div>
               </div>
             </div>
-            
-            <div className="space-y-8">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-green-500 border border-green-50">
-                  <Trees size={20} />
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block">Madeira Recuperada</span>
-                  <div className="text-xl font-bold text-text-dark">{stats.madeiraRecuperada} <span className="text-xs font-medium opacity-40">Toneladas</span></div>
-                </div>
-              </div>
 
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-blue-400 border border-blue-50">
-                  <Wind size={20} />
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block">CO2 Evitado</span>
-                  <div className="text-xl font-bold text-text-dark">{stats.co2Evitado} <span className="text-xs font-medium opacity-40">Toneladas</span></div>
-                </div>
-              </div>
-
-              <div className="mt-8 pt-8 border-t border-brand-pink/10">
-                <p className="text-[10px] text-text-dark/40 font-medium italic leading-relaxed">
-                  * Cálculos baseados na economia média de 25kg de madeira virgem e 15kg de emissão de CO2 por pallet recuperado.
-                </p>
-              </div>
+            <div className="mt-8 pt-8 border-t border-brand-indigo/5">
+              <p className="text-[10px] text-brand-indigo/40 font-bold tracking-wide italic leading-relaxed">
+                * Cálculos baseados na economia média de 25kg de madeira virgem e 15kg de emissão de CO2 por pallet recuperado.
+              </p>
             </div>
-          </Card>
-        </div>
-      </main>
-    </div>
+          </div>
+        </AppCard>
+      </div>
+    </PageShell>
   );
 }

@@ -2,16 +2,17 @@
 
 @theme {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 
-  --color-brand-cyan: #20878E;
-  --color-brand-blue: #92C4C6;
-  --color-brand-pink: #F6E3D6;
-  --color-brand-yellow: #F3C375;
-  --color-brand-brown: #D66F29;
+  /* Tropical Fusion Palette */
+  --color-brand-orange: #ff8811;
+  --color-brand-jasmine: #f4d06f;
+  --color-brand-floral: #fff8f0;
+  --color-brand-aqua: #9dd9d2;
+  --color-brand-indigo: #392f5a;
 
-  --color-bg-primary: #F8F5EF;
-  --color-text-dark: #263238;
+  --color-bg-primary: #fff8f0;
+  --color-text-dark: #392f5a;
 
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
@@ -20,8 +21,8 @@
 
 @layer base {
   :root {
-    --background: #F8F5EF;
-    --foreground: #263238;
+    --background: #fff8f0;
+    --foreground: #392f5a;
   }
 
   body {

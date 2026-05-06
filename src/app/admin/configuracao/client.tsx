@@ -2,46 +2,13 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { 
-  Plus, 
-  Search, 
-  Edit2, 
-  Loader2,
-  X,
-  Save,
-  ArrowLeft,
-  LogOut,
-  Box,
-  Hash,
-  DollarSign,
-  Maximize2,
-  AlertCircle,
-  Activity,
-  CheckCircle2,
-  ClipboardList,
-  Package,
-  Settings,
-  Users,
-  Eye,
-  History,
-  ShieldCheck,
-  Smartphone,
-  Globe,
-  UserPlus,
-  UserCheck,
-  UserX,
-  Shield,
-  Mail,
-  Lock,
-  Check,
-  Calendar
+  Plus, Search, Edit2, Loader2, X, Save, Box, Maximize2, AlertCircle, 
+  History, ShieldCheck, Globe, UserPlus, UserCheck, UserX, Shield, Mail, Lock, Check, Calendar, Users, CheckCircle2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { logout } from "@/app/actions/auth";
-import { AdminNav } from "@/components/admin/admin-nav";
-import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { LoadingScreen } from "@/components/ui/loading-screen";
+import { PageShell, AppCard, AppButton, StatusBadge, EmptyState } from "@/components/ui/tropical";
 
 // --- TIPAGEM ---
 
@@ -293,260 +260,278 @@ export function AdminConfiguracaoClient({ initialModelos, initialUsuarios, initi
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-text-dark pb-20">
-      <AdminPageHeader
-        title="Configurações"
-        subtitle="Ivani Pallets — Admin"
-        icon={<Settings size={18} />}
-      />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-10">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight">Painel de Controle</h1>
-          <p className="text-text-dark/50 text-sm mt-1">Gerencie modelos, usuários e monitore a atividade do portal.</p>
-        </div>
-
-        {/* Abas */}
-        <div className="flex flex-wrap gap-2 mb-8 bg-white p-1 rounded-2xl border border-brand-pink/10 w-fit shadow-sm">
+    <PageShell
+      title="Configurações do Sistema"
+      subtitle="Gerencie modelos, usuários e monitore a atividade do portal."
+      action={
+        <div className="flex gap-2 bg-white p-1 rounded-2xl border border-brand-indigo/10 shadow-sm overflow-x-auto max-w-full">
           <button 
             onClick={() => setActiveTab('modelos')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'modelos' ? 'bg-brand-cyan text-white shadow-lg shadow-brand-cyan/20' : 'text-text-dark/40 hover:bg-gray-50'}`}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'modelos' ? 'bg-brand-aqua text-white shadow-md' : 'text-brand-indigo/60 hover:bg-brand-floral/30'}`}
           >
             <Box size={16} /> Modelos & Preços
           </button>
           <button 
             onClick={() => setActiveTab('usuarios')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'usuarios' ? 'bg-brand-cyan text-white shadow-lg shadow-brand-cyan/20' : 'text-text-dark/40 hover:bg-gray-50'}`}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'usuarios' ? 'bg-brand-aqua text-white shadow-md' : 'text-brand-indigo/60 hover:bg-brand-floral/30'}`}
           >
-            <Users size={16} /> Gestão de Usuários
+            <Users size={16} /> Usuários
           </button>
           <button 
             onClick={() => setActiveTab('acessos')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'acessos' ? 'bg-brand-cyan text-white shadow-lg shadow-brand-cyan/20' : 'text-text-dark/40 hover:bg-gray-50'}`}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'acessos' ? 'bg-brand-aqua text-white shadow-md' : 'text-brand-indigo/60 hover:bg-brand-floral/30'}`}
           >
-            <History size={16} /> Relatório de Acessos
+            <History size={16} /> Acessos
           </button>
         </div>
-
-        {loading ? (
-          <LoadingScreen 
-            message="Carregando Painel" 
-            subMessage="Ivani Pallets — Configurações do Sistema"
-          />
-        ) : error ? (
-          <div className="py-20 text-center bg-white rounded-3xl border border-red-100">
-            <AlertCircle className="text-red-500 mx-auto mb-4" size={40} />
-            <p className="text-sm font-medium text-text-dark/50">{error}</p>
-          </div>
-        ) : (
-          <AnimatePresence mode="wait">
-            {activeTab === 'modelos' && (
-              <motion.div 
-                key="modelos"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="space-y-6"
-              >
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div className="relative w-full md:w-80">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dark/30" size={16} />
-                    <input 
-                      type="text" 
-                      placeholder="Buscar por nome ou código..." 
-                      className="pl-10 pr-4 py-3 bg-white border border-brand-pink/20 rounded-xl text-xs font-medium w-full outline-none focus:ring-2 focus:ring-brand-cyan/10 transition-all"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                  <button 
-                    onClick={() => { setEditingModelo(null); setIsModalOpen(true); }}
-                    className="px-6 py-3 bg-brand-cyan text-white rounded-xl text-xs font-bold shadow-lg shadow-brand-cyan/20 hover:bg-[#1a6e74] transition-all flex items-center gap-2"
-                  >
-                    <Plus size={18} /> Novo Modelo
-                  </button>
+      }
+    >
+      {loading ? (
+        <LoadingScreen 
+          message="Carregando Painel" 
+          subMessage="Ivani Pallets — Configurações do Sistema"
+        />
+      ) : error ? (
+        <div className="mb-8 bg-red-50 border border-red-100 rounded-3xl p-5 flex flex-col items-center justify-center py-12 gap-3 text-center">
+          <AlertCircle className="text-red-500" size={40} />
+          <p className="text-sm font-bold text-red-700">{error}</p>
+        </div>
+      ) : (
+        <AnimatePresence mode="wait">
+          {activeTab === 'modelos' && (
+            <motion.div 
+              key="modelos"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-6"
+            >
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="relative w-full md:w-80">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-indigo/30" size={16} />
+                  <input 
+                    type="text" 
+                    placeholder="Buscar por nome ou código..." 
+                    className="pl-12 pr-4 py-3 bg-white border border-brand-indigo/10 rounded-2xl text-xs font-bold text-brand-indigo w-full outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all shadow-sm"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 </div>
+                <AppButton 
+                  onClick={() => { setEditingModelo(null); setIsModalOpen(true); }}
+                  icon={<Plus size={18} />}
+                >
+                  Novo Modelo
+                </AppButton>
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredModelos.map((item) => (
-                    <div key={item.id} className={`bg-white rounded-3xl border ${item.ativo ? 'border-brand-pink/20' : 'border-gray-200 opacity-60'} p-6 card-shadow relative overflow-hidden`}>
-                      <div className="flex justify-between items-start mb-6">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 ${item.ativo ? 'bg-brand-cyan/5 text-brand-cyan' : 'bg-gray-50 text-gray-400'} rounded-xl flex items-center justify-center`}><Box size={20} /></div>
-                          <div>
-                            <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block">{item.codigo || "S/ COD"}</span>
-                            <h3 className="text-sm font-bold text-text-dark">{item.nome}</h3>
-                          </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredModelos.map((item) => (
+                  <AppCard key={item.id} className={`relative overflow-hidden ${!item.ativo ? 'opacity-60' : ''}`}>
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${item.ativo ? 'bg-brand-floral/50 text-brand-orange' : 'bg-gray-100 text-gray-400'}`}>
+                          <Box size={24} />
                         </div>
-                        <button onClick={() => { setEditingModelo(item); setIsModalOpen(true); }} className="p-2 text-text-dark/20 hover:text-brand-cyan transition-colors"><Edit2 size={16} /></button>
-                      </div>
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-2 text-text-dark/50 text-[11px] font-bold"><Maximize2 size={14} /> {item.medidas || "Medidas N/A"}</div>
-                        <div className="grid grid-cols-2 gap-2 pt-4 border-t border-brand-pink/10">
-                          <div className="bg-bg-primary p-3 rounded-2xl">
-                            <span className="text-[9px] font-bold text-text-dark/40 uppercase tracking-tighter block mb-1">Reforma</span>
-                            <div className="text-sm font-black text-text-dark">R$ {item.preco_reforma.toFixed(2)}</div>
-                          </div>
-                          <div className="bg-bg-primary p-3 rounded-2xl">
-                            <span className="text-[9px] font-bold text-text-dark/40 uppercase tracking-tighter block mb-1">Remanufat.</span>
-                            <div className="text-sm font-black text-text-dark">R$ {item.preco_remanufatura.toFixed(2)}</div>
-                          </div>
-                          <div className="bg-green-50 p-3 rounded-2xl border border-green-100">
-                            <span className="text-[9px] font-bold text-green-600 uppercase tracking-tighter block mb-1">Compra Ivani</span>
-                            <div className="text-sm font-black text-green-700">R$ {item.preco_compra_ivani.toFixed(2)}</div>
-                          </div>
-                          <div className="bg-brand-cyan/5 p-3 rounded-2xl border border-brand-cyan/10">
-                            <span className="text-[9px] font-bold text-brand-cyan uppercase tracking-tighter block mb-1">Preço Novo</span>
-                            <div className="text-sm font-black text-brand-cyan">R$ {item.preco_pallet_novo.toFixed(2)}</div>
-                          </div>
+                        <div>
+                          <span className="text-[10px] font-black text-brand-indigo/40 uppercase tracking-widest block mb-0.5">{item.codigo || "S/ COD"}</span>
+                          <h3 className="text-sm font-black text-brand-indigo">{item.nome}</h3>
                         </div>
-                        <button onClick={() => toggleStatusModelo(item)} className={`w-full py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest border transition-all ${item.ativo ? 'border-red-100 text-red-400 hover:bg-red-50' : 'border-green-100 text-green-500 hover:bg-green-50'}`}>
-                          {item.ativo ? "Desativar" : "Ativar"}
-                        </button>
                       </div>
+                      <button onClick={() => { setEditingModelo(item); setIsModalOpen(true); }} className="p-2 text-brand-indigo/20 hover:text-brand-aqua transition-colors">
+                        <Edit2 size={16} />
+                      </button>
                     </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {activeTab === 'usuarios' && (
-              <motion.div 
-                key="usuarios"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="space-y-6"
-              >
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div className="relative w-full md:w-80">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dark/30" size={16} />
-                    <input 
-                      type="text" 
-                      placeholder="Buscar usuário por nome ou email..." 
-                      className="pl-10 pr-4 py-3 bg-white border border-brand-pink/20 rounded-xl text-xs font-medium w-full outline-none focus:ring-2 focus:ring-brand-cyan/10 transition-all"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                  <button 
-                    onClick={() => setIsUserModalOpen(true)}
-                    className="px-6 py-3 bg-brand-cyan text-white rounded-xl text-xs font-bold shadow-lg shadow-brand-cyan/20 hover:bg-[#1a6e74] transition-all flex items-center gap-2"
-                  >
-                    <UserPlus size={18} /> Novo Usuário
-                  </button>
-                </div>
-
-                <div className="bg-white rounded-3xl border border-brand-pink/20 overflow-hidden shadow-sm">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse min-w-[800px]">
-                      <thead>
-                        <tr className="bg-bg-primary">
-                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40">Usuário</th>
-                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40">E-mail</th>
-                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40">Perfil</th>
-                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40">Status</th>
-                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40">Criado em</th>
-                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40 text-center">Ações</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-brand-pink/5">
-                        {filteredUsuarios.map((u) => (
-                          <tr key={u.id} className="hover:bg-bg-primary/30 transition-colors">
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 bg-brand-cyan/5 text-brand-cyan rounded-xl flex items-center justify-center font-bold text-xs uppercase">
-                                  {u.nome.charAt(0)}
-                                </div>
-                                <div className="text-xs font-bold text-text-dark">{u.nome}</div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 text-xs text-text-dark/60 font-medium">{u.email}</td>
-                            <td className="px-6 py-4">
-                              <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border ${u.perfil === 'admin' ? 'bg-brand-cyan/5 text-brand-cyan border-brand-cyan/10' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                                {u.perfil}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-1.5">
-                                <div className={`w-1.5 h-1.5 rounded-full ${u.ativo ? 'bg-green-500 animate-pulse' : 'bg-red-400'}`} />
-                                <span className={`text-[10px] font-bold uppercase tracking-tight ${u.ativo ? 'text-green-600' : 'text-red-400'}`}>
-                                  {u.ativo ? 'Ativo' : 'Inativo'}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 text-[10px] text-text-dark/40 font-bold uppercase">
-                              {new Date(u.created_at).toLocaleDateString('pt-BR')}
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex justify-center">
-                                <button 
-                                  onClick={() => toggleUserStatus(u)}
-                                  className={`p-2 rounded-xl transition-all ${u.ativo ? 'text-red-400 hover:bg-red-50' : 'text-green-500 hover:bg-green-50'}`}
-                                  title={u.ativo ? "Desativar" : "Ativar"}
-                                >
-                                  {u.ativo ? <UserX size={18} /> : <UserCheck size={18} />}
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {filteredUsuarios.length === 0 && (
-                    <div className="py-20 text-center">
-                      <Users className="mx-auto text-text-dark/10 mb-4" size={48} />
-                      <p className="text-text-dark/50 text-sm font-medium">Nenhum usuário encontrado.</p>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 text-brand-indigo/50 text-[11px] font-bold">
+                        <Maximize2 size={14} /> {item.medidas || "Medidas N/A"}
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3 pt-4 border-t border-brand-indigo/5">
+                        <div className="bg-[#FAFAFA] p-3 rounded-2xl border border-brand-indigo/5">
+                          <span className="text-[9px] font-black text-brand-indigo/40 uppercase tracking-tighter block mb-1">Reforma</span>
+                          <div className="text-sm font-black text-brand-indigo">R$ {item.preco_reforma.toFixed(2)}</div>
+                        </div>
+                        <div className="bg-[#FAFAFA] p-3 rounded-2xl border border-brand-indigo/5">
+                          <span className="text-[9px] font-black text-brand-indigo/40 uppercase tracking-tighter block mb-1">Remanuf.</span>
+                          <div className="text-sm font-black text-brand-indigo">R$ {item.preco_remanufatura.toFixed(2)}</div>
+                        </div>
+                        <div className="bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100/50">
+                          <span className="text-[9px] font-black text-emerald-600 uppercase tracking-tighter block mb-1">Compra Ivani</span>
+                          <div className="text-sm font-black text-emerald-700">R$ {item.preco_compra_ivani.toFixed(2)}</div>
+                        </div>
+                        <div className="bg-brand-aqua/5 p-3 rounded-2xl border border-brand-aqua/10">
+                          <span className="text-[9px] font-black text-brand-aqua uppercase tracking-tighter block mb-1">Preço Novo</span>
+                          <div className="text-sm font-black text-brand-aqua">R$ {item.preco_pallet_novo.toFixed(2)}</div>
+                        </div>
+                      </div>
+                      
+                      <button 
+                        onClick={() => toggleStatusModelo(item)} 
+                        className={`w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${item.ativo ? 'border-red-100 text-red-500 hover:bg-red-50' : 'border-emerald-100 text-emerald-600 hover:bg-emerald-50'}`}
+                      >
+                        {item.ativo ? "Desativar Modelo" : "Ativar Modelo"}
+                      </button>
                     </div>
-                  )}
-                </div>
-              </motion.div>
-            )}
+                  </AppCard>
+                ))}
+                
+                {filteredModelos.length === 0 && (
+                  <div className="col-span-full">
+                    <AppCard>
+                      <EmptyState 
+                        icon={<Box size={48} />}
+                        title="Nenhum modelo encontrado"
+                        description="Você ainda não cadastrou nenhum modelo ou a busca não encontrou resultados."
+                      />
+                    </AppCard>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
 
-            {activeTab === 'acessos' && (
-              <motion.div 
-                key="acessos"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="bg-white rounded-3xl border border-brand-pink/20 overflow-hidden shadow-sm"
-              >
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
+          {activeTab === 'usuarios' && (
+            <motion.div 
+              key="usuarios"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-6"
+            >
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="relative w-full md:w-80">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-indigo/30" size={16} />
+                  <input 
+                    type="text" 
+                    placeholder="Buscar usuário por nome ou email..." 
+                    className="pl-12 pr-4 py-3 bg-white border border-brand-indigo/10 rounded-2xl text-xs font-bold text-brand-indigo w-full outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all shadow-sm"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <AppButton 
+                  onClick={() => setIsUserModalOpen(true)}
+                  icon={<UserPlus size={18} />}
+                >
+                  Novo Usuário
+                </AppButton>
+              </div>
+
+              <AppCard noPadding>
+                <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                  <table className="w-full min-w-[800px] text-left">
                     <thead>
-                      <tr className="bg-bg-primary">
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40">Usuário</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40">Tipo</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40">Área</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-dark/40">Data/Hora</th>
+                      <tr className="bg-brand-floral/50 border-b border-brand-indigo/5">
+                        <th className="px-6 py-4 text-[10px] font-black text-brand-indigo/50 uppercase tracking-widest">Usuário</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-brand-indigo/50 uppercase tracking-widest">E-mail</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-brand-indigo/50 uppercase tracking-widest">Perfil</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-brand-indigo/50 uppercase tracking-widest">Status</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-brand-indigo/50 uppercase tracking-widest">Criado em</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-brand-indigo/50 uppercase tracking-widest text-center">Ações</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-brand-pink/5">
-                      {logs.map((log) => (
-                        <tr key={log.id} className="hover:bg-bg-primary/30 transition-colors">
+                    <tbody className="divide-y divide-brand-indigo/5">
+                      {filteredUsuarios.map((u) => (
+                        <tr key={u.id} className="hover:bg-brand-floral/30 transition-colors">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-text-dark/40"><Users size={14} /></div>
+                              <div className="w-10 h-10 bg-brand-aqua/10 text-brand-aqua rounded-xl flex items-center justify-center font-black text-xs uppercase">
+                                {u.nome.charAt(0)}
+                              </div>
+                              <div className="text-sm font-black text-brand-indigo">{u.nome}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-xs text-brand-indigo/60 font-bold">{u.email}</td>
+                          <td className="px-6 py-4">
+                            <StatusBadge variant={u.perfil === 'admin' ? 'info' : 'warning'}>
+                              {u.perfil}
+                            </StatusBadge>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-1.5 h-1.5 rounded-full ${u.ativo ? 'bg-emerald-500 animate-pulse' : 'bg-red-400'}`} />
+                              <span className={`text-[10px] font-black uppercase tracking-widest ${u.ativo ? 'text-emerald-600' : 'text-red-500'}`}>
+                                {u.ativo ? 'Ativo' : 'Inativo'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-[10px] text-brand-indigo/40 font-bold uppercase tracking-widest">
+                            {new Date(u.created_at).toLocaleDateString('pt-BR')}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex justify-center">
+                              <button 
+                                onClick={() => toggleUserStatus(u)}
+                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${u.ativo ? 'text-red-400 hover:bg-red-50 border border-transparent hover:border-red-100' : 'text-emerald-500 hover:bg-emerald-50 border border-transparent hover:border-emerald-100'}`}
+                                title={u.ativo ? "Desativar" : "Ativar"}
+                              >
+                                {u.ativo ? <UserX size={16} /> : <UserCheck size={16} />}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {filteredUsuarios.length === 0 && (
+                  <EmptyState 
+                    icon={<Users size={48} />}
+                    title="Nenhum usuário encontrado"
+                    description="Não há usuários com os termos pesquisados."
+                  />
+                )}
+              </AppCard>
+            </motion.div>
+          )}
+
+          {activeTab === 'acessos' && (
+            <motion.div 
+              key="acessos"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              <AppCard noPadding>
+                <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                  <table className="w-full min-w-[700px] text-left">
+                    <thead>
+                      <tr className="bg-brand-floral/50 border-b border-brand-indigo/5">
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-brand-indigo/50">Usuário</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-brand-indigo/50">Tipo</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-brand-indigo/50">Área</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-brand-indigo/50">Data/Hora</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-brand-indigo/5">
+                      {logs.map((log) => (
+                        <tr key={log.id} className="hover:bg-brand-floral/30 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-[#FAFAFA] rounded-xl flex items-center justify-center text-brand-indigo/30 border border-brand-indigo/5">
+                                <Users size={16} />
+                              </div>
                               <div>
-                                <div className="text-xs font-bold text-text-dark">{log.email}</div>
-                                <div className="text-[10px] text-text-dark/30 font-medium">ID: {log.usuario_id?.slice(0, 8)}...</div>
+                                <div className="text-sm font-black text-brand-indigo">{log.email}</div>
+                                <div className="text-[10px] text-brand-indigo/40 font-bold uppercase tracking-widest mt-0.5">ID: {log.usuario_id?.slice(0, 8)}...</div>
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border ${log.tipo_usuario === 'admin' ? 'bg-brand-cyan/5 text-brand-cyan border-brand-cyan/10' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                            <StatusBadge variant={log.tipo_usuario === 'admin' ? 'info' : 'warning'}>
                               {log.tipo_usuario}
-                            </span>
+                            </StatusBadge>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="flex items-center gap-2 text-text-dark/50 text-[10px] font-bold uppercase tracking-tight">
-                              {log.area.includes('admin') ? <ShieldCheck size={12} className="text-brand-cyan" /> : <Globe size={12} className="text-amber-500" />}
+                            <div className="flex items-center gap-2 text-brand-indigo/60 text-[10px] font-black uppercase tracking-widest">
+                              {log.area.includes('admin') ? <ShieldCheck size={14} className="text-brand-aqua" /> : <Globe size={14} className="text-brand-orange" />}
                               {log.area}
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="text-xs font-bold text-text-dark/60">{new Date(log.created_at).toLocaleString('pt-BR')}</div>
+                            <div className="text-xs font-bold text-brand-indigo/60">{new Date(log.created_at).toLocaleString('pt-BR')}</div>
                           </td>
                         </tr>
                       ))}
@@ -554,46 +539,47 @@ export function AdminConfiguracaoClient({ initialModelos, initialUsuarios, initi
                   </table>
                 </div>
                 {logs.length === 0 && (
-                  <div className="py-20 text-center">
-                    <History className="mx-auto text-text-dark/10 mb-4" size={48} />
-                    <p className="text-text-dark/50 text-sm font-medium">Nenhum registro de acesso encontrado.</p>
-                  </div>
+                  <EmptyState 
+                    icon={<History size={48} />}
+                    title="Nenhum registro de acesso"
+                    description="O histórico de acesso dos usuários aparecerá aqui."
+                  />
                 )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        )}
-      </main>
+              </AppCard>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
 
       {/* Modal Modelos */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-text-dark/20 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-brand-pink/20 overflow-hidden" >
-              <div className="px-8 py-6 border-b border-brand-pink/10 flex justify-between items-center bg-white sticky top-0 z-10">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-brand-indigo/20 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative bg-white w-full max-w-xl rounded-[2rem] shadow-2xl overflow-hidden" >
+              <div className="px-8 py-6 border-b border-brand-indigo/5 flex justify-between items-center bg-white sticky top-0 z-10">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-brand-cyan/10 rounded-xl flex items-center justify-center text-brand-cyan"><Box size={20} /></div>
-                  <h3 className="font-bold text-lg">{editingModelo ? "Editar Modelo" : "Novo Modelo de Pallet"}</h3>
+                  <div className="w-10 h-10 bg-brand-aqua/10 rounded-xl flex items-center justify-center text-brand-aqua"><Box size={20} /></div>
+                  <h3 className="font-black text-lg text-brand-indigo">{editingModelo ? "Editar Modelo" : "Novo Modelo"}</h3>
                 </div>
-                <button onClick={() => setIsModalOpen(false)} className="text-text-dark/30 hover:text-text-dark transition-colors"><X size={20} /></button>
+                <button onClick={() => setIsModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-[#FAFAFA] text-brand-indigo/40 hover:bg-brand-indigo/5 hover:text-brand-indigo transition-colors"><X size={16} /></button>
               </div>
               <form onSubmit={handleSubmitModelo} className="p-8 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5"><label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">Nome do Modelo</label><input name="nome" defaultValue={editingModelo?.nome} required className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm font-bold outline-none" /></div>
-                  <div className="space-y-1.5"><label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">Código Interno</label><input name="codigo" defaultValue={editingModelo?.codigo} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm font-bold outline-none" /></div>
+                  <div className="space-y-1.5"><label className="text-[10px] font-black uppercase tracking-widest text-brand-indigo/50 ml-1">Nome do Modelo</label><input name="nome" defaultValue={editingModelo?.nome} required className="w-full px-4 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all" /></div>
+                  <div className="space-y-1.5"><label className="text-[10px] font-black uppercase tracking-widest text-brand-indigo/50 ml-1">Código Interno</label><input name="codigo" defaultValue={editingModelo?.codigo} className="w-full px-4 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all" /></div>
                 </div>
-                <div className="space-y-1.5"><label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">Medidas (mm)</label><input name="medidas" defaultValue={editingModelo?.medidas} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm font-bold outline-none" /></div>
+                <div className="space-y-1.5"><label className="text-[10px] font-black uppercase tracking-widest text-brand-indigo/50 ml-1">Medidas (mm)</label><input name="medidas" defaultValue={editingModelo?.medidas} className="w-full px-4 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all" /></div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="space-y-1.5"><label className="text-[9px] font-bold uppercase tracking-tighter text-text-dark/40 ml-1">Reforma</label><input name="preco_reforma" type="number" step="0.01" defaultValue={editingModelo?.preco_reforma} className="w-full px-3 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm font-bold outline-none" /></div>
-                  <div className="space-y-1.5"><label className="text-[9px] font-bold uppercase tracking-tighter text-text-dark/40 ml-1">Remanuf.</label><input name="preco_remanufatura" type="number" step="0.01" defaultValue={editingModelo?.preco_remanufatura} className="w-full px-3 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm font-bold outline-none" /></div>
-                  <div className="space-y-1.5"><label className="text-[9px] font-bold uppercase tracking-tighter text-text-dark/40 ml-1">Compra</label><input name="preco_compra_ivani" type="number" step="0.01" defaultValue={editingModelo?.preco_compra_ivani} className="w-full px-3 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm font-bold outline-none" /></div>
-                  <div className="space-y-1.5"><label className="text-[9px] font-bold uppercase tracking-tighter text-text-dark/40 ml-1">Novo</label><input name="preco_pallet_novo" type="number" step="0.01" defaultValue={editingModelo?.preco_pallet_novo} className="w-full px-3 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm font-bold outline-none" /></div>
+                  <div className="space-y-1.5"><label className="text-[9px] font-black uppercase tracking-tighter text-brand-orange ml-1">Reforma</label><input name="preco_reforma" type="number" step="0.01" defaultValue={editingModelo?.preco_reforma} className="w-full px-3 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-orange/30 transition-all" /></div>
+                  <div className="space-y-1.5"><label className="text-[9px] font-black uppercase tracking-tighter text-brand-aqua ml-1">Remanuf.</label><input name="preco_remanufatura" type="number" step="0.01" defaultValue={editingModelo?.preco_remanufatura} className="w-full px-3 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all" /></div>
+                  <div className="space-y-1.5"><label className="text-[9px] font-black uppercase tracking-tighter text-emerald-500 ml-1">Compra</label><input name="preco_compra_ivani" type="number" step="0.01" defaultValue={editingModelo?.preco_compra_ivani} className="w-full px-3 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all" /></div>
+                  <div className="space-y-1.5"><label className="text-[9px] font-black uppercase tracking-tighter text-brand-indigo/50 ml-1">Novo</label><input name="preco_pallet_novo" type="number" step="0.01" defaultValue={editingModelo?.preco_pallet_novo} className="w-full px-3 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-indigo/30 transition-all" /></div>
                 </div>
-                <div className="space-y-1.5"><label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">Observações</label><textarea name="observacao" defaultValue={editingModelo?.observacao} className="w-full px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm outline-none min-h-[80px] resize-none" /></div>
+                <div className="space-y-1.5"><label className="text-[10px] font-black uppercase tracking-widest text-brand-indigo/50 ml-1">Observações</label><textarea name="observacao" defaultValue={editingModelo?.observacao} className="w-full px-4 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all min-h-[80px] resize-none" /></div>
                 <div className="flex gap-3 pt-4">
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-3 border border-gray-200 rounded-xl text-xs font-bold text-text-dark/60 hover:bg-gray-50 transition-colors">Cancelar</button>
-                  <button type="submit" disabled={isSubmitting} className="flex-1 px-6 py-3 bg-brand-cyan text-white rounded-xl text-xs font-bold shadow-lg hover:bg-[#1a6e74] disabled:opacity-50 flex items-center justify-center gap-2 transition-all">{isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Salvar</button>
+                  <AppButton type="button" onClick={() => setIsModalOpen(false)} variant="secondary" className="flex-1">Cancelar</AppButton>
+                  <AppButton type="submit" disabled={isSubmitting} className="flex-1" icon={isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}>Salvar</AppButton>
                 </div>
               </form>
             </motion.div>
@@ -605,52 +591,52 @@ export function AdminConfiguracaoClient({ initialModelos, initialUsuarios, initi
       <AnimatePresence>
         {isUserModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsUserModalOpen(false)} className="absolute inset-0 bg-text-dark/20 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl border border-brand-pink/20 overflow-hidden" >
-              <div className="px-8 py-6 border-b border-brand-pink/10 flex justify-between items-center bg-white sticky top-0 z-10">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsUserModalOpen(false)} className="absolute inset-0 bg-brand-indigo/20 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative bg-white w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden" >
+              <div className="px-8 py-6 border-b border-brand-indigo/5 flex justify-between items-center bg-white sticky top-0 z-10">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-brand-cyan/10 rounded-xl flex items-center justify-center text-brand-cyan"><UserPlus size={20} /></div>
-                  <h3 className="font-bold text-lg">Novo Usuário</h3>
+                  <div className="w-10 h-10 bg-brand-aqua/10 rounded-xl flex items-center justify-center text-brand-aqua"><UserPlus size={20} /></div>
+                  <h3 className="font-black text-lg text-brand-indigo">Novo Usuário</h3>
                 </div>
-                <button onClick={() => setIsUserModalOpen(false)} className="text-text-dark/30 hover:text-text-dark transition-colors"><X size={20} /></button>
+                <button onClick={() => setIsUserModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-[#FAFAFA] text-brand-indigo/40 hover:bg-brand-indigo/5 hover:text-brand-indigo transition-colors"><X size={16} /></button>
               </div>
               <form onSubmit={handleSubmitUsuario} className="p-8 space-y-5">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">Nome Completo</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-indigo/50 ml-1">Nome Completo</label>
                   <div className="relative">
-                    <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dark/20" size={16} />
-                    <input name="nome" type="text" required placeholder="Ex: João Silva" className="w-full pl-10 pr-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-brand-cyan/10 transition-all" />
+                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-indigo/30" size={16} />
+                    <input name="nome" type="text" required placeholder="Ex: João Silva" className="w-full pl-12 pr-4 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all" />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">E-mail de Acesso</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-indigo/50 ml-1">E-mail de Acesso</label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dark/20" size={16} />
-                    <input name="email" type="email" required placeholder="usuario@email.com" className="w-full pl-10 pr-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-brand-cyan/10 transition-all" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-indigo/30" size={16} />
+                    <input name="email" type="email" required placeholder="usuario@email.com" className="w-full pl-12 pr-4 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all" />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">Senha Provisória</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-indigo/50 ml-1">Senha Provisória</label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dark/20" size={16} />
-                    <input name="senha" type="password" required placeholder="••••••••" className="w-full pl-10 pr-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-brand-cyan/10 transition-all" />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-indigo/30" size={16} />
+                    <input name="senha" type="password" required placeholder="••••••••" className="w-full pl-12 pr-4 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all" />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40 ml-1">Perfil de Acesso</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-indigo/50 ml-1">Perfil de Acesso</label>
                   <div className="grid grid-cols-2 gap-3">
                     <label className="cursor-pointer">
                       <input type="radio" name="perfil" value="admin" defaultChecked className="peer hidden" />
-                      <div className="flex items-center justify-center gap-2 px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-xs font-bold text-text-dark/40 peer-checked:bg-brand-cyan peer-checked:text-white peer-checked:border-brand-cyan transition-all">
+                      <div className="flex items-center justify-center gap-2 px-4 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-xs font-bold text-brand-indigo/50 peer-checked:bg-brand-aqua peer-checked:text-white peer-checked:border-brand-aqua transition-all">
                         <Shield size={14} /> Admin
                       </div>
                     </label>
                     <label className="cursor-pointer">
                       <input type="radio" name="perfil" value="cliente" className="peer hidden" />
-                      <div className="flex items-center justify-center gap-2 px-4 py-3 bg-bg-primary border border-brand-pink/20 rounded-xl text-xs font-bold text-text-dark/40 peer-checked:bg-brand-cyan peer-checked:text-white peer-checked:border-brand-cyan transition-all">
+                      <div className="flex items-center justify-center gap-2 px-4 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-xs font-bold text-brand-indigo/50 peer-checked:bg-brand-aqua peer-checked:text-white peer-checked:border-brand-aqua transition-all">
                         <Users size={14} /> Cliente
                       </div>
                     </label>
@@ -658,11 +644,10 @@ export function AdminConfiguracaoClient({ initialModelos, initialUsuarios, initi
                 </div>
 
                 <div className="flex gap-3 pt-4">
-                  <button type="button" onClick={() => setIsUserModalOpen(false)} className="flex-1 px-6 py-3 border border-gray-200 rounded-xl text-xs font-bold text-text-dark/60 hover:bg-gray-50 transition-colors">Cancelar</button>
-                  <button type="submit" disabled={isUserSubmitting} className="flex-1 px-6 py-3 bg-brand-cyan text-white rounded-xl text-xs font-bold shadow-lg hover:bg-[#1a6e74] disabled:opacity-50 flex items-center justify-center gap-2 transition-all">
-                    {isUserSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />} 
+                  <AppButton type="button" onClick={() => setIsUserModalOpen(false)} variant="secondary" className="flex-1">Cancelar</AppButton>
+                  <AppButton type="submit" disabled={isUserSubmitting} className="flex-1" icon={isUserSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}>
                     Criar Usuário
-                  </button>
+                  </AppButton>
                 </div>
               </form>
             </motion.div>
@@ -673,12 +658,12 @@ export function AdminConfiguracaoClient({ initialModelos, initialUsuarios, initi
       {/* Feedback Toast */}
       <AnimatePresence>
         {successMessage && (
-          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[110] bg-green-500 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 font-bold text-sm">
+          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[110] bg-emerald-500 text-white px-6 py-4 rounded-2xl shadow-xl flex items-center gap-3 font-bold text-sm">
             <CheckCircle2 size={20} />
             {successMessage}
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </PageShell>
   );
 }
