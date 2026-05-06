@@ -7,6 +7,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { login } from "@/app/actions/auth";
 import { useFormStatus } from "react-dom";
+import { useActionState, useEffect } from "react";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -31,6 +32,18 @@ function SubmitButton() {
 }
 
 export default function LoginPage() {
+  const [state, formAction] = useActionState(
+    async (_: any, formData: FormData) => {
+      const result = await login(formData);
+      if (result.success && result.redirectTo) {
+        // Redirecionamento via window.location para garantir refresh de cookies
+        window.location.href = result.redirectTo;
+      }
+      return result;
+    },
+    null
+  );
+
   return (
     <main className="min-h-screen bg-[#FAFAFA] text-[#1A1A1A] font-sans flex items-center justify-center px-6 py-12 relative overflow-hidden">
       {/* Background Decorative Elements */}
@@ -60,7 +73,7 @@ export default function LoginPage() {
             <p className="text-sm text-text-dark/50">Acesse sua área exclusiva Ivani Pallets</p>
           </div>
 
-          <form action={login} className="space-y-6">
+          <form action={formAction} className="space-y-6">
             <div className="space-y-2">
               <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-text-dark/40 ml-1">E-mail Corporativo</label>
               <input 
@@ -82,6 +95,17 @@ export default function LoginPage() {
                 className="w-full h-14 bg-[#F8F9FA] border border-transparent focus:border-brand-cyan/30 rounded-2xl px-5 text-sm outline-none transition-all focus:bg-white focus:shadow-inner disabled:opacity-60"
               />
             </div>
+
+            {state?.error && (
+              <motion.div 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center gap-3 text-red-600 text-xs font-semibold bg-red-50 p-4 rounded-2xl border border-red-100 shadow-sm"
+              >
+                <AlertCircle size={16} className="shrink-0" />
+                <span>{state.error}</span>
+              </motion.div>
+            )}
 
             <SubmitButton />
           </form>
