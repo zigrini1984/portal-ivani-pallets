@@ -1,41 +1,48 @@
 export const dynamic = "force-dynamic";
 
-import { createClientServer } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { AdminManutencaoClient } from "./client";
 
 export default async function AdminManutencaoPage() {
-  const supabase = createClientServer();
+  const supabase = createAdminClient();
 
-  // 1. Buscar itens de triagem que precisam de reforma
-  const { data: triagemItens } = await supabase
-    .from("triagem_itens")
-    .select(`
-      *,
-      modelo_pallet:modelos_pallets(id, nome, codigo, medidas),
-      triagem:triagens!inner(id, nf_saida_pce, data_coleta, status, cliente_id)
-    `)
-    .gt("quantidade_reforma", 0)
-    .eq("triagem.cliente_id", "pce");
-
-  // 2. Buscar manutenções existentes
-  const { data: manutencoes } = await supabase
+  // 1. Buscar manutenções com dados relacionados
+  const { data: manutData, error: manutError } = await supabase
     .from("manutencoes")
-    .select("id, triagem_item_id, status, observacao, created_at, quantidade_concluida, quantidade_sucata")
-    .eq("cliente_id", "pce");
+    .select(`
+      id,
+      triagem_id,
+      coleta_id,
+      cliente_id,
+      modelo_id,
+      modelo_nome_snapshot,
+      tipo_servico,
+      quantidade,
+      status,
+      data_entrada,
+      data_inicio,
+      data_conclusao,
+      observacao,
+      created_at
+    `)
+    .eq("cliente_id", "pce")
+    .order("created_at", { ascending: false });
 
-  // 3. Mesclar dados
-  const listagem = (triagemItens || []).map((it: any) => {
-    const manut = manutencoes?.find((m: any) => m.triagem_id === it.triagem_id && m.modelo_pallet_id === it.modelo_pallet_id);
-    return {
-      ...it,
-      manutencao: manut || null,
-      quantidade_entrada: it.quantidade_reforma,
-      quantidade_concluida: manut?.quantidade_concluida || 0,
-      quantidade_sucata: manut?.quantidade_sucata || 0,
-      status: manut?.status || 'aguardando',
-      observacao: manut?.observacao || ""
-    };
-  });
+  if (manutError) {
+    console.error("[AdminManutencaoPage] Erro ao buscar manutenções:", manutError.message);
+  }
 
-  return <AdminManutencaoClient initialItemsPendente={listagem} />;
+  // 2. Buscar modelos para filtros/apoio
+  const { data: modelosData } = await supabase
+    .from("modelos_pallets")
+    .select("id, nome, codigo, medidas")
+    .eq("ativo", true);
+
+  return (
+    <AdminManutencaoClient 
+      initialManutencoes={manutData || []} 
+      initialModelos={modelosData || []}
+      serverError={manutError ? manutError.message : null}
+    />
+  );
 }

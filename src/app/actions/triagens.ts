@@ -106,43 +106,72 @@ export async function classificarTriagem(input: ClassificarTriagemInput) {
       if (itensError) throw itensError;
     }
 
-    // 5. Se finalizar, atualizar status da coleta e encaminhar para manutenção
-    if (input.finalizar && triagem.coleta_id) {
-      // Atualizar coleta
-      await supabase
-        .from("coletas")
-        .update({ status: "triagem_concluida" })
-        .eq("id", triagem.coleta_id)
-        .select("id");
+    // 5. Se finalizar, encaminhar para manutenção (REFORMA e REMANUFATURA)
+    if (input.finalizar) {
+      // Atualizar coleta se existir
+      if (triagem.coleta_id) {
+        await supabase
+          .from("coletas")
+          .update({ status: "triagem_concluida" })
+          .eq("id", triagem.coleta_id)
+          .select("id");
+      }
 
-      // Registrar na manutenção (apenas reforma + remanufatura)
-      const quantidadeParaManutencao =
-        (input.quantidade_reforma || 0) + (input.quantidade_remanufatura || 0);
+      // Buscar modelos para o snapshot
+      const { data: modelos } = await supabase.from("modelos_pallets").select("id, nome");
 
-      if (quantidadeParaManutencao > 0) {
-        // Verificar se já existe registro de manutenção para essa triagem
-        const { data: manutExist } = await supabase
-          .from("manutencao")
-          .select("id")
-          .eq("triagem_id", input.triagemId)
-          .limit(1);
+      // Gerar itens de manutenção para cada modelo triado
+      if (input.itens && input.itens.length > 0) {
+        const manutItems = [];
+        
+        for (const item of input.itens) {
+          const modelo = modelos?.find(m => m.id === item.modelo_pallet_id);
+          const modeloNome = modelo?.nome || "Modelo Desconhecido";
 
-        if (!manutExist || manutExist.length === 0) {
-          await supabase.from("manutencao").insert({
-            triagem_id: input.triagemId,
-            coleta_id: triagem.coleta_id,
-            cliente_id: triagem.cliente_id || "pce",
-            quantidade_total: quantidadeParaManutencao,
-            quantidade_reforma: input.quantidade_reforma || 0,
-            quantidade_remanufatura: input.quantidade_remanufatura || 0,
-            status: "pendente",
-            created_at: new Date().toISOString(),
-          });
+          if (item.quantidade_reforma > 0) {
+            manutItems.push({
+              triagem_id: triagem.id,
+              coleta_id: triagem.coleta_id,
+              cliente_id: triagem.cliente_id || "pce",
+              modelo_id: item.modelo_pallet_id,
+              modelo_nome_snapshot: modeloNome,
+              tipo_servico: "reforma",
+              quantidade: item.quantidade_reforma,
+              status: "pendente"
+            });
+          }
+
+          if (item.quantidade_remanufatura > 0) {
+            manutItems.push({
+              triagem_id: triagem.id,
+              coleta_id: triagem.coleta_id,
+              cliente_id: triagem.cliente_id || "pce",
+              modelo_id: item.modelo_pallet_id,
+              modelo_nome_snapshot: modeloNome,
+              tipo_servico: "remanufatura",
+              quantidade: item.quantidade_remanufatura,
+              status: "pendente"
+            });
+          }
+        }
+
+        if (manutItems.length > 0) {
+          // Evitar duplicidade: verificar se já existem manutenções para esta triagem
+          const { data: existManut } = await supabase
+            .from("manutencoes")
+            .select("id")
+            .eq("triagem_id", triagem.id)
+            .limit(1);
+
+          if (!existManut || existManut.length === 0) {
+            await supabase.from("manutencoes").insert(manutItems);
+          }
         }
       }
     }
 
     revalidatePath("/admin/triagem");
+    revalidatePath("/admin/manutencao");
     revalidatePath("/admin/coleta");
     return { success: true };
   } catch (err: any) {

@@ -1,426 +1,273 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-import { 
-  ClipboardList, 
-  Calendar, 
-  Edit3, 
-  AlertCircle,
-  Loader2,
-  X,
-  Save,
-  ArrowLeft,
-  LogOut,
-  Activity,
-  CheckCircle2,
-  History,
-  Lock,
-  Eye,
-  Wrench,
-  Hammer,
-  Trash2,
-  Package
+import React, { useState, useMemo } from "react";
+import {
+  Wrench, AlertCircle, CheckCircle2, Loader2, Search,
+  Filter, Play, Check, ChevronDown, Calendar,
+  Clock, Package, ArrowUpRight, Inbox
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
-import { logout } from "@/app/actions/auth";
-import { AdminNav } from "@/components/admin/admin-nav";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
-import { LoadingScreen } from "@/components/ui/loading-screen";
-import { sincronizarEstoqueOperacional } from "@/lib/services/estoque";
+import { useRouter } from "next/navigation";
+import { iniciarManutencao, concluirManutencao } from "@/app/actions/manutencao";
 
-interface ModeloPallet {
-  id: string;
-  nome: string;
-  codigo: string;
-  medidas: string;
-}
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-interface TriagemItem {
-  id: string;
-  triagem_id: string;
-  modelo_pallet_id: string;
-  quantidade_reforma: number;
-  modelo_pallet?: ModeloPallet;
-  triagem?: {
-    nf_saida_pce: string;
-    data_coleta: string;
-    status: string;
-  };
-}
+interface ModeloPallet { id: string; nome: string; codigo: string; medidas: string; }
 
 interface Manutencao {
-  id?: string;
-  triagem_id: string;
-  modelo_pallet_id: string;
-  quantidade_entrada: number;
-  quantidade_concluida: number;
-  quantidade_sucata: number;
-  status: 'aguardando' | 'em_andamento' | 'finalizada';
-  observacao: string;
-  created_at?: string;
-  updated_at?: string;
+  id: string; triagem_id: string; coleta_id: string; cliente_id: string;
+  modelo_id: string; modelo_nome_snapshot: string;
+  tipo_servico: "reforma" | "remanufatura";
+  quantidade: number; status: "pendente" | "em_andamento" | "concluida";
+  data_entrada: string; data_inicio: string | null; data_conclusao: string | null;
+  observacao: string | null; created_at: string;
 }
 
-interface AdminManutencaoClientProps {
-  initialItemsPendente: any[];
+interface Props {
+  initialManutencoes: Manutencao[];
+  initialModelos: ModeloPallet[];
+  serverError?: string | null;
 }
 
-export function AdminManutencaoClient({ initialItemsPendente }: AdminManutencaoClientProps) {
-  const supabase = createClient();
-  const [itemsPendente, setItemsPendente] = useState<any[]>(initialItemsPendente);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<any | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-  // Estados do formulário
-  const [formConcluida, setFormConcluida] = useState(0);
-  const [formSucata, setFormSucata] = useState(0);
-  const [formObservacao, setFormObservacao] = useState("");
+function fmtDate(v: string | null) {
+  if (!v) return "—";
+  try { return new Intl.DateTimeFormat("pt-BR", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(v)); } catch { return v; }
+}
 
-  const fetchData = async () => {
-    try {
-      // 1. Buscar itens de triagem que precisam de reforma
-      const { data: triagemItens, error: itError } = await supabase
-        .from("triagem_itens")
-        .select(`
-          *,
-          modelo_pallet:modelos_pallets(id, nome, codigo, medidas),
-          triagem:triagens(id, nf_saida_pce, data_coleta, status, cliente_id)
-        `)
-        .gt("quantidade_reforma", 0)
-        .eq("triagens.cliente_id", "pce");
-
-      if (itError) throw itError;
-
-      // 2. Buscar manutenções existentes
-      const { data: manutencoes, error: mError } = await supabase
-        .from("manutencoes")
-        .select("*")
-        .eq("cliente_id", "pce");
-
-      if (mError) throw mError;
-
-      // 3. Mesclar dados
-      const listagem = triagemItens.map(it => {
-        const manut = manutencoes?.find(m => m.triagem_id === it.triagem_id && m.modelo_pallet_id === it.modelo_pallet_id);
-        return {
-          ...it,
-          manutencao: manut || null,
-          quantidade_entrada: it.quantidade_reforma,
-          quantidade_concluida: manut?.quantidade_concluida || 0,
-          quantidade_sucata: manut?.quantidade_sucata || 0,
-          status: manut?.status || 'aguardando',
-          observacao: manut?.observacao || ""
-        };
-      });
-
-      setItemsPendente(listagem);
-    } catch (err: any) {
-      console.error("Erro Manutenção:", err);
-      setError("Erro ao carregar dados de manutenção.");
-    }
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; cls: string }> = {
+    pendente:     { label: "Pendente",     cls: "bg-amber-50 text-amber-700 border-amber-200" },
+    em_andamento: { label: "Iniciado",     cls: "bg-blue-50 text-blue-700 border-blue-200" },
+    concluida:    { label: "Concluída",    cls: "bg-green-50 text-green-700 border-green-200" },
   };
+  const c = map[status] ?? map["pendente"];
+  return (
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${c.cls}`}>
+      {c.label}
+    </span>
+  );
+}
 
-  useEffect(() => {
-    // Initial fetch done by Server Component
-  }, []);
+function ServiceTypeBadge({ type }: { type: string }) {
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border 
+      ${type === "reforma" ? "bg-amber-100/50 text-amber-800 border-amber-200" : "bg-purple-100/50 text-purple-800 border-purple-200"}`}>
+      {type}
+    </span>
+  );
+}
 
-  useEffect(() => {
-    if (editingItem) {
-      setFormConcluida(editingItem.quantidade_concluida || 0);
-      setFormSucata(editingItem.quantidade_sucata || 0);
-      setFormObservacao(editingItem.observacao || "");
-    }
-  }, [editingItem]);
+// ─── Main Component ───────────────────────────────────────────────────────────
 
-  const saldoPendente = useMemo(() => {
-    if (!editingItem) return 0;
-    return editingItem.quantidade_entrada - formConcluida - formSucata;
-  }, [editingItem, formConcluida, formSucata]);
+export function AdminManutencaoClient({ initialManutencoes, initialModelos, serverError }: Props) {
+  const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("todos");
+  const [filterType, setFilterType] = useState<string>("todos");
+  const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  const handleSave = async () => {
-    if (!editingItem) return;
-
-    if (formConcluida + formSucata > editingItem.quantidade_entrada) {
-      alert("A soma de concluídos e sucata não pode exceder a entrada.");
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-
-      const novoStatus = (formConcluida + formSucata === editingItem.quantidade_entrada) 
-        ? 'finalizada' 
-        : (formConcluida + formSucata > 0) ? 'em_andamento' : 'aguardando';
-
-      const payload = {
-        cliente_id: 'pce',
-        triagem_id: editingItem.triagem_id,
-        modelo_pallet_id: editingItem.modelo_pallet_id,
-        quantidade_entrada: editingItem.quantidade_entrada,
-        quantidade_concluida: formConcluida,
-        quantidade_sucata: formSucata,
-        status: novoStatus,
-        observacao: formObservacao,
-        updated_at: new Date().toISOString()
-      };
-
-      if (editingItem.manutencao?.id) {
-        // Update
-        const { error: upError } = await supabase
-          .from("manutencoes")
-          .update(payload)
-          .eq("id", editingItem.manutencao.id);
-        if (upError) throw upError;
-      } else {
-        // Insert
-        const { error: inError } = await supabase
-          .from("manutencoes")
-          .insert([payload]);
-        if (inError) throw inError;
-      }
-
-      await fetchData();
-      await sincronizarEstoqueOperacional();
-      setIsModalOpen(false);
-      setEditingItem(null);
-      alert("Manutenção atualizada com sucesso!");
-    } catch (err: any) {
-      alert("Erro ao salvar: " + err.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const sortedItems = useMemo(() => {
-    return [...itemsPendente].sort((a, b) => {
-      const getPriority = (s: string) => {
-        if (s === 'aguardando') return 1;
-        if (s === 'em_andamento') return 2;
-        return 3;
-      };
-      const pA = getPriority(a.status);
-      const pB = getPriority(b.status);
-      if (pA !== pB) return pA - pB;
-      return new Date(b.created_at || b.triagem?.data_coleta).getTime() - new Date(a.created_at || a.triagem?.data_coleta).getTime();
+  // Filtered list
+  const filtered = useMemo(() => {
+    return initialManutencoes.filter(m => {
+      const matchSearch = m.modelo_nome_snapshot.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchStatus = filterStatus === "todos" || m.status === filterStatus;
+      const matchType   = filterType === "todos" || m.tipo_servico === filterType;
+      return matchSearch && matchStatus && matchType;
     });
-  }, [itemsPendente]);
+  }, [initialManutencoes, searchTerm, filterStatus, filterType]);
+
+  // KPIs
+  const kpis = useMemo(() => ({
+    pendentes: initialManutencoes.filter(m => m.status === "pendente").reduce((a, b) => a + b.quantidade, 0),
+    emAndamento: initialManutencoes.filter(m => m.status === "em_andamento").reduce((a, b) => a + b.quantidade, 0),
+    concluidos: initialManutencoes.filter(m => m.status === "concluida").reduce((a, b) => a + b.quantidade, 0),
+    total: initialManutencoes.reduce((a, b) => a + b.quantidade, 0)
+  }), [initialManutencoes]);
+
+  async function handleAction(id: string, action: "iniciar" | "concluir") {
+    setLoadingId(id);
+    try {
+      const res = action === "iniciar" ? await iniciarManutencao(id) : await concluirManutencao(id);
+      if (!res.success) throw new Error(res.error);
+      router.refresh();
+    } catch (err: any) {
+      alert("Erro ao processar ação: " + err.message);
+    } finally {
+      setLoadingId(null);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-text-dark pb-20">
-      <AdminPageHeader
-        title="Oficina de Manutenção"
-        subtitle="Ivani Pallets — Admin"
-        icon={<Wrench size={18} />}
-      />
+      <AdminPageHeader title="Manutenção" subtitle="Ivani Pallets — Admin" icon={<Wrench size={18} />} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-10">
+        
+        {/* Header Section */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight text-text-dark">Controle de Oficina</h1>
-          <p className="text-text-dark/50 text-sm mt-1">Gerencie pallets em reforma e registre perdas por sucata.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Painel de Reparos</h1>
+          <p className="text-text-dark/50 text-sm mt-1">Controle de reforma e remanufatura. Itens concluídos entram automaticamente no estoque.</p>
         </div>
 
-        {loading ? (
-          <LoadingScreen 
-            message="Organizando Oficina" 
-            subMessage="Ivani Pallets — Gestão de Manutenções"
-          />
-        ) : error ? (
-          <div className="py-20 text-center">
-            <AlertCircle className="mx-auto text-red-400 mb-4" size={48} />
-            <h3 className="text-lg font-bold text-text-dark/60">{error}</h3>
-            <button onClick={() => fetchData()} className="mt-4 text-brand-cyan font-bold text-sm underline">Tentar novamente</button>
-          </div>
-        ) : sortedItems.length === 0 ? (
-          <div className="py-32 text-center bg-white rounded-3xl border border-brand-pink/20 card-shadow">
-            <Hammer className="mx-auto text-text-dark/10 mb-4" size={64} />
-            <h3 className="text-lg font-bold text-text-dark/60">Nenhum pallet para manutenção</h3>
-            <p className="text-sm text-text-dark/40 mt-2">Novos itens aparecerão aqui após serem triados como 'Reforma'.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sortedItems.map((item) => {
-              const pendente = item.quantidade_entrada - item.quantidade_concluida - item.quantidade_sucata;
-              const isFinalizado = item.status === 'finalizada';
-              const isAguardando = item.status === 'aguardando';
-
-              return (
-                <motion.div 
-                  key={item.id}
-                  layout
-                  className={`bg-white rounded-3xl border p-6 card-shadow transition-all relative overflow-hidden group
-                    ${isAguardando ? 'border-amber-100' : isFinalizado ? 'border-green-100 opacity-80' : 'border-brand-cyan/20'}
-                  `}
-                >
-                  {isAguardando && <div className="absolute top-0 left-0 right-0 h-1 bg-amber-400/40" />}
-                  {isFinalizado && <div className="absolute top-0 left-0 right-0 h-1 bg-green-400/40" />}
-                  
-                  <div className="flex justify-between items-start mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center 
-                        ${isAguardando ? 'bg-amber-50 text-amber-600' : isFinalizado ? 'bg-green-50 text-green-600' : 'bg-brand-cyan/5 text-brand-cyan'}
-                      `}>
-                        {isFinalizado ? <CheckCircle2 size={20} /> : <Wrench size={20} />}
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block">Status</span>
-                        <div className={`text-[10px] font-bold uppercase flex items-center gap-1.5
-                          ${isFinalizado ? 'text-green-600' : isAguardando ? 'text-amber-600' : 'text-brand-cyan'}
-                        `}>
-                          <div className={`w-1.5 h-1.5 rounded-full ${isFinalizado ? 'bg-green-600' : isAguardando ? 'bg-amber-500 animate-pulse' : 'bg-brand-cyan animate-pulse'}`} />
-                          {item.status.replace('_', ' ')}
-                        </div>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => { setEditingItem(item); setIsModalOpen(true); }}
-                      className={`p-2 px-3 rounded-lg transition-all flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest 
-                        ${isFinalizado ? 'text-text-dark/40 bg-gray-50 hover:bg-gray-100' : 'text-brand-cyan bg-brand-cyan/5 hover:bg-brand-cyan/10'}
-                      `}
-                    >
-                      {isFinalizado ? <><Eye size={14} /> Ver</> : <><Hammer size={14} /> Atualizar</>}
-                    </button>
-                  </div>
-
-                  <div className="mb-6">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Package size={14} className="text-text-dark/30" />
-                      <span className="text-sm font-black text-text-dark">{item.modelo_pallet?.nome || "Modelo Indefinido"}</span>
-                    </div>
-                    <p className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest">
-                      Ref: {item.triagem?.nf_saida_pce || "S/NF"} — {new Date(item.triagem?.data_coleta).toLocaleDateString()}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-bg-primary rounded-2xl p-3 border border-brand-pink/5">
-                      <span className="text-[9px] font-bold text-text-dark/40 uppercase block mb-1">Entrada</span>
-                      <div className="text-lg font-black text-text-dark">{item.quantidade_entrada}</div>
-                    </div>
-                    <div className="bg-green-50/30 rounded-2xl p-3 border border-green-100/30">
-                      <span className="text-[9px] font-bold text-green-600 uppercase block mb-1">OK</span>
-                      <div className="text-lg font-black text-green-600">{item.quantidade_concluida}</div>
-                    </div>
-                    <div className="bg-red-50/30 rounded-2xl p-3 border border-red-100/30">
-                      <span className="text-[9px] font-bold text-red-500 uppercase block mb-1">Sucata</span>
-                      <div className="text-lg font-black text-red-500">{item.quantidade_sucata}</div>
-                    </div>
-                  </div>
-
-                  {pendente > 0 && (
-                    <div className="mt-4 pt-4 border-t border-brand-pink/5 flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest">Pendente para reforma</span>
-                      <span className="text-sm font-black text-amber-600">{pendente} un</span>
-                    </div>
-                  )}
-                </motion.div>
-              );
-            })}
+        {/* Error Alert */}
+        {serverError && (
+          <div className="mb-6 bg-red-50 border border-red-100 rounded-2xl p-4 flex items-center gap-3">
+            <AlertCircle className="text-red-500 shrink-0" size={18} />
+            <p className="text-sm text-red-700">{serverError}</p>
           </div>
         )}
+
+        {/* KPI Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+          {[
+            { label: "Pendentes", value: kpis.pendentes, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100", icon: <Clock size={14} /> },
+            { label: "Em Andamento", value: kpis.emAndamento, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100", icon: <Play size={14} /> },
+            { label: "Concluídos", value: kpis.concluidos, color: "text-green-600", bg: "bg-green-50", border: "border-green-100", icon: <CheckCircle2 size={14} /> },
+            { label: "Total Geral", value: kpis.total, color: "text-brand-cyan", bg: "bg-brand-cyan/5", border: "border-brand-cyan/10", icon: <Package size={14} /> },
+          ].map(card => (
+            <div key={card.label} className={`bg-white rounded-2xl border ${card.border} p-5 shadow-sm`}>
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`${card.color} opacity-40`}>{card.icon}</span>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-text-dark/40">{card.label}</p>
+              </div>
+              <p className={`text-2xl font-black ${card.color}`}>{card.value.toLocaleString("pt-BR")}<span className="text-[10px] font-normal ml-1 text-text-dark/20">un</span></p>
+            </div>
+          ))}
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-col md:flex-row gap-3 mb-6">
+          <div className="relative flex-1 group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-dark/30 group-focus-within:text-brand-cyan transition-colors" size={18} />
+            <input type="text" placeholder="Buscar por modelo de pallet..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+              className="w-full pl-11 pr-4 py-3 bg-white border border-brand-pink/20 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-brand-cyan/5 focus:border-brand-cyan transition-all shadow-sm" />
+          </div>
+          
+          <div className="flex gap-2">
+            <div className="relative min-w-[140px]">
+              <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+                className="w-full appearance-none pl-4 pr-10 py-3 bg-white border border-brand-pink/20 rounded-2xl text-sm font-bold outline-none cursor-pointer focus:border-brand-cyan shadow-sm transition-all">
+                <option value="todos">Todos Status</option>
+                <option value="pendente">Pendentes</option>
+                <option value="em_andamento">Iniciados</option>
+                <option value="concluida">Concluídos</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-text-dark/30 pointer-events-none" size={16} />
+            </div>
+
+            <div className="relative min-w-[140px]">
+              <select value={filterType} onChange={e => setFilterType(e.target.value)}
+                className="w-full appearance-none pl-4 pr-10 py-3 bg-white border border-brand-pink/20 rounded-2xl text-sm font-bold outline-none cursor-pointer focus:border-brand-cyan shadow-sm transition-all">
+                <option value="todos">Todos Serviços</option>
+                <option value="reforma">Reforma</option>
+                <option value="remanufatura">Remanufatura</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-text-dark/30 pointer-events-none" size={16} />
+            </div>
+          </div>
+        </div>
+
+        {/* List/Table */}
+        <div className="bg-white rounded-3xl border border-brand-pink/20 overflow-hidden shadow-sm">
+          {filtered.length === 0 ? (
+            <div className="py-32 text-center">
+              <Inbox className="mx-auto text-text-dark/10 mb-4" size={64} />
+              <h3 className="text-lg font-bold text-text-dark/40">Nenhum item encontrado</h3>
+              <p className="text-sm text-text-dark/30 mt-1">Ajuste os filtros ou verifique se há triagens finalizadas.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[900px]">
+                <thead>
+                  <tr className="bg-[#FAFAFA]">
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-text-dark/40">Modelo de Pallet</th>
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-text-dark/40">Tipo / Qtd</th>
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-text-dark/40">Status</th>
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-text-dark/40">Datas</th>
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-text-dark/40 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-brand-pink/5">
+                  <AnimatePresence>
+                    {filtered.map((item, i) => (
+                      <motion.tr key={item.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }} className="hover:bg-[#FAFAFA] transition-colors group">
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-brand-cyan/5 flex items-center justify-center text-brand-cyan group-hover:scale-110 transition-transform">
+                              <Package size={20} />
+                            </div>
+                            <div>
+                              <p className="text-sm font-black text-text-dark">{item.modelo_nome_snapshot}</p>
+                              <p className="text-[10px] text-text-dark/40 mt-0.5 uppercase tracking-tighter">Origem: Triagem #{item.triagem_id?.split('-')[0] || '?'}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex flex-col gap-1.5">
+                            <ServiceTypeBadge type={item.tipo_servico} />
+                            <p className="text-sm font-black text-text-dark">{item.quantidade}<span className="text-[10px] font-normal text-text-dark/30 ml-1">unidades</span></p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <StatusBadge status={item.status} />
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-[10px] text-text-dark/40">
+                              <Calendar size={10} /> <span>Entrada: {fmtDate(item.data_entrada)}</span>
+                            </div>
+                            {item.data_inicio && (
+                              <div className="flex items-center gap-2 text-[10px] text-blue-600/60">
+                                <Play size={10} /> <span>Início: {fmtDate(item.data_inicio)}</span>
+                              </div>
+                            )}
+                            {item.data_conclusao && (
+                              <div className="flex items-center gap-2 text-[10px] text-green-600/60">
+                                <Check size={10} /> <span>Fim: {fmtDate(item.data_conclusao)}</span>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex justify-end gap-2">
+                            {item.status === "pendente" && (
+                              <button onClick={() => handleAction(item.id, "iniciar")} disabled={loadingId === item.id}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all disabled:opacity-50">
+                                {loadingId === item.id ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />} Iniciar
+                              </button>
+                            )}
+                            
+                            {item.status === "em_andamento" && (
+                              <button onClick={() => handleAction(item.id, "concluir")} disabled={loadingId === item.id}
+                                className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 border border-green-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-green-100 transition-all shadow-sm shadow-green-100/50 disabled:opacity-50">
+                                {loadingId === item.id ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />} Concluir & Estoque
+                              </button>
+                            )}
+
+                            {item.status === "concluida" && (
+                              <div className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 text-gray-400 rounded-xl text-[9px] font-bold uppercase border border-gray-100">
+                                <ArrowUpRight size={12} /> Enviado ao Estoque
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
+                </tbody>
+              </table>
+            </div>
+          )}
+          
+          <div className="px-6 py-4 border-t border-brand-pink/5 bg-[#FAFAFA]/50 rounded-b-3xl flex justify-between items-center">
+            <p className="text-[10px] font-bold text-text-dark/30 uppercase tracking-widest">{filtered.length} registros exibidos</p>
+            <p className="text-[10px] font-bold text-brand-cyan uppercase tracking-widest">Sincronizado com Estoque PCE</p>
+          </div>
+        </div>
       </main>
-
-      <AnimatePresence>
-        {isModalOpen && editingItem && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-text-dark/20 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-brand-pink/20 overflow-hidden" >
-              
-              <div className="px-8 py-6 border-b border-brand-pink/10 flex justify-between items-center bg-white sticky top-0 z-10">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-brand-cyan/10 rounded-xl flex items-center justify-center text-brand-cyan">
-                    <Hammer size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg leading-tight">Atualizar Manutenção</h3>
-                    <p className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest mt-0.5">{editingItem.modelo_pallet?.nome} — Total {editingItem.quantidade_entrada} un</p>
-                  </div>
-                </div>
-                <button onClick={() => setIsModalOpen(false)} className="text-text-dark/30 hover:text-text-dark transition-colors"><X size={20} /></button>
-              </div>
-
-              <div className="p-8 space-y-8">
-                <div className="grid grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <label className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block">Qtd. Reformada (OK)</label>
-                    <input 
-                      type="number" 
-                      value={formConcluida}
-                      onChange={(e) => setFormConcluida(Number(e.target.value))}
-                      className="w-full bg-bg-primary border-none rounded-2xl px-5 py-4 text-lg font-bold focus:ring-2 focus:ring-brand-cyan transition-all"
-                      placeholder="0"
-                      disabled={editingItem.status === 'finalizada'}
-                    />
-                    <p className="text-[10px] text-text-dark/40 italic">Pallets prontos para uso.</p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <label className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block">Qtd. Sucateada (Perda)</label>
-                    <input 
-                      type="number" 
-                      value={formSucata}
-                      onChange={(e) => setFormSucata(Number(e.target.value))}
-                      className="w-full bg-bg-primary border-none rounded-2xl px-5 py-4 text-lg font-bold focus:ring-2 focus:ring-red-500 transition-all text-red-500"
-                      placeholder="0"
-                      disabled={editingItem.status === 'finalizada'}
-                    />
-                    <p className="text-[10px] text-text-dark/40 italic">Pallets perdidos no processo.</p>
-                  </div>
-                </div>
-
-                <div className="bg-bg-primary rounded-3xl p-6 border border-brand-pink/5 flex justify-between items-center">
-                  <div>
-                    <span className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block mb-1">Saldo Atual Pendente</span>
-                    <div className={`text-2xl font-black ${saldoPendente < 0 ? 'text-red-500' : 'text-brand-cyan'}`}>
-                      {saldoPendente} <span className="text-xs font-bold opacity-30">un</span>
-                    </div>
-                  </div>
-                  {saldoPendente === 0 && (
-                    <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 rounded-xl border border-green-100">
-                      <CheckCircle2 size={16} />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">Tudo Processado</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  <label className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest block">Observações da Oficina</label>
-                  <textarea 
-                    value={formObservacao}
-                    onChange={(e) => setFormObservacao(e.target.value)}
-                    className="w-full bg-bg-primary border-none rounded-2xl px-5 py-4 text-sm font-medium focus:ring-2 focus:ring-brand-cyan transition-all min-h-[100px]"
-                    placeholder="Ex: Pallets com avaria grave na base..."
-                    disabled={editingItem.status === 'finalizada'}
-                  />
-                </div>
-
-                <div className="flex gap-4 pt-4">
-                  <button 
-                    onClick={() => setIsModalOpen(false)}
-                    className="flex-1 px-6 py-4 rounded-2xl font-bold text-sm text-text-dark/40 hover:bg-gray-50 transition-all border border-transparent hover:border-brand-pink/10"
-                  >
-                    Cancelar
-                  </button>
-                  {editingItem.status !== 'finalizada' && (
-                    <button 
-                      onClick={handleSave}
-                      disabled={isSubmitting || saldoPendente < 0}
-                      className="flex-[2] bg-brand-cyan text-white px-6 py-4 rounded-2xl font-bold text-sm hover:bg-brand-cyan/90 transition-all shadow-lg shadow-brand-cyan/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                      {saldoPendente === 0 ? "Finalizar Manutenção" : "Salvar Progresso"}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
