@@ -214,7 +214,7 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
   }, [faturamentos]);
 
   return (
-    <PageShell
+    <PageShell hideHeader={true}
       title="Faturamento PCE"
       subtitle="Gestão de recebíveis originados de saídas de estoque."
       actions={

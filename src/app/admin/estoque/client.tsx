@@ -159,7 +159,7 @@ export function AdminEstoqueClient({ initialEstoque, initialMovimentacoes }: Adm
   };
 
   return (
-    <PageShell
+    <PageShell hideHeader={true}
       title="Inventário de Pallets"
       subtitle="Saldo acumulado disponível para o cliente PCE."
       actions={

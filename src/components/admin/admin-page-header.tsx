@@ -24,7 +24,7 @@ export function AdminPageHeader({
   action,
 }: AdminPageHeaderProps) {
   return (
-    <header className="bg-white border-b border-brand-pink/20 sticky top-0 z-50">
+    <header className="bg-white border-b border-brand-orange/20 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex justify-between items-center h-16 sm:h-20">
           {/* Left: back + brand */}
@@ -34,18 +34,18 @@ export function AdminPageHeader({
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               aria-label="Voltar"
             >
-              <ArrowLeft size={18} className="text-text-dark/40" />
+              <ArrowLeft size={18} className="text-brand-mirage/40" />
             </button>
 
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-brand-cyan rounded-lg flex items-center justify-center text-white shrink-0">
+              <div className="w-8 h-8 bg-brand-teal rounded-lg flex items-center justify-center text-white shrink-0">
                 {icon}
               </div>
               <div className="flex flex-col leading-none">
-                <span className="font-bold text-sm text-brand-cyan">
+                <span className="font-bold text-sm text-brand-teal">
                   {title}
                 </span>
-                <span className="text-[10px] font-bold text-text-dark/30 uppercase tracking-tighter mt-0.5">
+                <span className="text-[10px] font-bold text-brand-mirage/30 uppercase tracking-tighter mt-0.5">
                   {subtitle}
                 </span>
               </div>
@@ -60,7 +60,7 @@ export function AdminPageHeader({
             {action}
             <button
               onClick={() => logout()}
-              className="p-2 text-text-dark/40 hover:text-red-500 transition-colors"
+              className="p-2 text-brand-mirage/40 hover:text-red-500 transition-colors"
               title="Sair"
             >
               <LogOut size={18} />

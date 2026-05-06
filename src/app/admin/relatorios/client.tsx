@@ -164,7 +164,7 @@ export function AdminRelatoriosClient({ initialTriagens }: AdminRelatoriosClient
   }
 
   return (
-    <PageShell
+    <PageShell hideHeader={true}
       title="Dashboard de Performance"
       subtitle="Visão holística da operação e impacto ambiental."
       actions={

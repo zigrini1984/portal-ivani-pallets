@@ -260,7 +260,7 @@ export function AdminConfiguracaoClient({ initialModelos, initialUsuarios, initi
   };
 
   return (
-    <PageShell
+    <PageShell hideHeader={true}
       title="Configurações do Sistema"
       subtitle="Gerencie modelos, usuários e monitore a atividade do portal."
       actions={

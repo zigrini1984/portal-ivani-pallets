@@ -25,11 +25,11 @@ export function LoadingScreen({
         }}
         className="relative mb-8"
       >
-        <div className="w-20 h-20 bg-brand-cyan/10 rounded-[2rem] flex items-center justify-center text-brand-cyan shadow-xl shadow-brand-cyan/5">
+        <div className="w-20 h-20 bg-brand-teal/10 rounded-[2rem] flex items-center justify-center text-brand-teal shadow-xl shadow-brand-teal/5">
           <Package size={40} />
         </div>
-        <div className="absolute -bottom-2 -right-2 bg-white p-1.5 rounded-xl shadow-lg border border-brand-pink/10">
-          <Loader2 className="animate-spin text-brand-cyan" size={20} />
+        <div className="absolute -bottom-2 -right-2 bg-white p-1.5 rounded-xl shadow-lg border border-brand-orange/10">
+          <Loader2 className="animate-spin text-brand-teal" size={20} />
         </div>
       </motion.div>
       
@@ -38,10 +38,10 @@ export function LoadingScreen({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <h3 className="text-sm font-black text-text-dark uppercase tracking-[0.2em] mb-2">
+        <h3 className="text-sm font-black text-brand-mirage uppercase tracking-[0.2em] mb-2">
           {message}
         </h3>
-        <p className="text-[10px] font-bold text-text-dark/30 uppercase tracking-widest">
+        <p className="text-[10px] font-bold text-brand-mirage/30 uppercase tracking-widest">
           {subMessage}
         </p>
       </motion.div>

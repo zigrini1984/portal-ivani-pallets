@@ -27,14 +27,14 @@ export const KpiCard: React.FC<KpiCardProps> = ({
     neutral: "text-neutral-500",
     success: "text-emerald-600",
     warning: "text-amber-600",
-    brand: "text-brand-cyan",
+    brand: "text-brand-teal",
   };
 
   const bgStyles = {
     neutral: "bg-neutral-50 border-neutral-100",
     success: "bg-emerald-50/50 border-emerald-100",
     warning: "bg-amber-50/50 border-amber-100",
-    brand: "bg-brand-cyan/5 border-brand-cyan/20",
+    brand: "bg-brand-teal/5 border-brand-teal/20",
   };
 
   return (

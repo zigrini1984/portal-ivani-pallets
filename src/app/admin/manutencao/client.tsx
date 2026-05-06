@@ -134,7 +134,7 @@ export function AdminManutencaoClient({
   }
 
   return (
-    <PageShell 
+    <PageShell hideHeader={true} 
       title="Manutenção e Reparos" 
       subtitle="Gerencie itens em reforma ou remanufatura vindos da triagem."
       actions={

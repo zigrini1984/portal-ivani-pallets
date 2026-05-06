@@ -161,7 +161,7 @@ export function AdminTriagemClient({ initialTriagens, initialModelosPallets, ser
   const isFinalizada = editing?.status === "concluida";
 
   return (
-    <PageShell 
+    <PageShell hideHeader={true} 
       title="Painel de Triagem" 
       subtitle="Classifique as cargas recebidas: Reforma · Remanufatura · Compra · Sucateado"
     >

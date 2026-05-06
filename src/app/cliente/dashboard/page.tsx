@@ -112,7 +112,7 @@ export default function ClienteDashboardPCE() {
         title: "Alto Retorno Operacional",
         message: "A recuperação de ativos está gerando um ROI altamente positivo. O orçamento logístico está sendo preservado com eficiência.",
         icon: TrendingUp,
-        colorClass: "text-brand-cyan bg-brand-cyan/10 border-brand-cyan/20"
+        colorClass: "text-brand-teal bg-brand-teal/10 border-brand-teal/20"
       };
     }
     return {
@@ -245,9 +245,9 @@ export default function ClienteDashboardPCE() {
             </div>
             
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-brand-cyan mb-2">
+              <div className="flex items-center gap-2 text-brand-teal mb-2">
                 <RotateCw size={16} />
-                <span className="text-[11px] font-bold uppercase tracking-widest text-brand-cyan">Eficiência</span>
+                <span className="text-[11px] font-bold uppercase tracking-widest text-brand-teal">Eficiência</span>
               </div>
               <p className="text-sm font-medium text-neutral-500 leading-relaxed">
                 A eficiência de reaproveitamento atingiu sólidos <span className="font-bold text-neutral-900">{formatPercent(kpis?.eficiencia?.taxa_reaproveitamento)}</span>, fortalecendo a circularidade logística.

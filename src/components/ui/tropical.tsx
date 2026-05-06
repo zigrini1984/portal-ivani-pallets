@@ -1,18 +1,20 @@
 import React from "react";
 import { motion } from "framer-motion";
 
-export function PageShell({ children, title, subtitle, actions }: { children: React.ReactNode, title: string, subtitle?: string, actions?: React.ReactNode }) {
+export function PageShell({ children, title, subtitle, actions, hideHeader = false }: { children: React.ReactNode, title: string, subtitle?: string, actions?: React.ReactNode, hideHeader?: boolean }) {
   return (
     <div className="min-h-screen bg-brand-sand/30 text-brand-mirage pb-20">
-      <header className="bg-white border-b border-brand-mirage/5 sticky top-0 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-brand-mirage">{title}</h1>
-            {subtitle && <p className="text-sm text-brand-mirage/60 font-medium">{subtitle}</p>}
+      {!hideHeader && (
+        <header className="bg-white border-b border-brand-mirage/5 sticky top-0 z-30 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-brand-mirage">{title}</h1>
+              {subtitle && <p className="text-sm text-brand-mirage/60 font-medium">{subtitle}</p>}
+            </div>
+            {actions && <div className="flex items-center gap-3">{actions}</div>}
           </div>
-          {actions && <div className="flex items-center gap-3">{actions}</div>}
-        </div>
-      </header>
+        </header>
+      )}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-8">
         {children}
       </main>

@@ -190,7 +190,7 @@ export function AdminColetaClient({
   };
 
   return (
-    <PageShell
+    <PageShell hideHeader={true}
       title="Painel de Coletas"
       subtitle="Gerencie e encaminhe coletas recebidas da PCE."
       actions={
