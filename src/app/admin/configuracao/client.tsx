@@ -264,22 +264,22 @@ export function AdminConfiguracaoClient({ initialModelos, initialUsuarios, initi
       title="Configurações do Sistema"
       subtitle="Gerencie modelos, usuários e monitore a atividade do portal."
       actions={
-        <div className="flex gap-2 bg-white p-1 rounded-2xl border border-brand-indigo/10 shadow-sm overflow-x-auto max-w-full">
+        <div className="flex gap-2 bg-white p-1 rounded-2xl border border-brand-mirage/10 shadow-sm overflow-x-auto max-w-full">
           <button 
             onClick={() => setActiveTab('modelos')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'modelos' ? 'bg-brand-aqua text-white shadow-md' : 'text-brand-indigo/60 hover:bg-brand-floral/30'}`}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'modelos' ? 'bg-brand-teal text-white shadow-md' : 'text-brand-mirage/60 hover:bg-brand-sand/30'}`}
           >
             <Box size={16} /> Modelos & Preços
           </button>
           <button 
             onClick={() => setActiveTab('usuarios')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'usuarios' ? 'bg-brand-aqua text-white shadow-md' : 'text-brand-indigo/60 hover:bg-brand-floral/30'}`}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'usuarios' ? 'bg-brand-teal text-white shadow-md' : 'text-brand-mirage/60 hover:bg-brand-sand/30'}`}
           >
             <Users size={16} /> Usuários
           </button>
           <button 
             onClick={() => setActiveTab('acessos')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'acessos' ? 'bg-brand-aqua text-white shadow-md' : 'text-brand-indigo/60 hover:bg-brand-floral/30'}`}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'acessos' ? 'bg-brand-teal text-white shadow-md' : 'text-brand-mirage/60 hover:bg-brand-sand/30'}`}
           >
             <History size={16} /> Acessos
           </button>
@@ -308,11 +308,11 @@ export function AdminConfiguracaoClient({ initialModelos, initialUsuarios, initi
             >
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="relative w-full md:w-80">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-indigo/30" size={16} />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-mirage/30" size={16} />
                   <input 
                     type="text" 
                     placeholder="Buscar por nome ou código..." 
-                    className="pl-12 pr-4 py-3 bg-white border border-brand-indigo/10 rounded-2xl text-xs font-bold text-brand-indigo w-full outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all shadow-sm"
+                    className="pl-12 pr-4 py-3 bg-white border border-brand-mirage/10 rounded-2xl text-xs font-bold text-brand-mirage w-full outline-none focus:ring-2 focus:ring-brand-teal/30 transition-all shadow-sm"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -330,40 +330,40 @@ export function AdminConfiguracaoClient({ initialModelos, initialUsuarios, initi
                   <AppCard key={item.id} className={`relative overflow-hidden ${!item.ativo ? 'opacity-60' : ''}`}>
                     <div className="flex justify-between items-start mb-6">
                       <div className="flex items-center gap-3">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${item.ativo ? 'bg-brand-floral/50 text-brand-orange' : 'bg-gray-100 text-gray-400'}`}>
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${item.ativo ? 'bg-brand-sand/50 text-brand-orange' : 'bg-gray-100 text-gray-400'}`}>
                           <Box size={24} />
                         </div>
                         <div>
-                          <span className="text-[10px] font-black text-brand-indigo/40 uppercase tracking-widest block mb-0.5">{item.codigo || "S/ COD"}</span>
-                          <h3 className="text-sm font-black text-brand-indigo">{item.nome}</h3>
+                          <span className="text-[10px] font-black text-brand-mirage/40 uppercase tracking-widest block mb-0.5">{item.codigo || "S/ COD"}</span>
+                          <h3 className="text-sm font-black text-brand-mirage">{item.nome}</h3>
                         </div>
                       </div>
-                      <button onClick={() => { setEditingModelo(item); setIsModalOpen(true); }} className="p-2 text-brand-indigo/20 hover:text-brand-aqua transition-colors">
+                      <button onClick={() => { setEditingModelo(item); setIsModalOpen(true); }} className="p-2 text-brand-mirage/20 hover:text-brand-teal transition-colors">
                         <Edit2 size={16} />
                       </button>
                     </div>
                     
                     <div className="space-y-4">
-                      <div className="flex items-center gap-2 text-brand-indigo/50 text-[11px] font-bold">
+                      <div className="flex items-center gap-2 text-brand-mirage/50 text-[11px] font-bold">
                         <Maximize2 size={14} /> {item.medidas || "Medidas N/A"}
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-3 pt-4 border-t border-brand-indigo/5">
-                        <div className="bg-[#FAFAFA] p-3 rounded-2xl border border-brand-indigo/5">
-                          <span className="text-[9px] font-black text-brand-indigo/40 uppercase tracking-tighter block mb-1">Reforma</span>
-                          <div className="text-sm font-black text-brand-indigo">R$ {item.preco_reforma.toFixed(2)}</div>
+                      <div className="grid grid-cols-2 gap-3 pt-4 border-t border-brand-mirage/5">
+                        <div className="bg-[#FAFAFA] p-3 rounded-2xl border border-brand-mirage/5">
+                          <span className="text-[9px] font-black text-brand-mirage/40 uppercase tracking-tighter block mb-1">Reforma</span>
+                          <div className="text-sm font-black text-brand-mirage">R$ {item.preco_reforma.toFixed(2)}</div>
                         </div>
-                        <div className="bg-[#FAFAFA] p-3 rounded-2xl border border-brand-indigo/5">
-                          <span className="text-[9px] font-black text-brand-indigo/40 uppercase tracking-tighter block mb-1">Remanuf.</span>
-                          <div className="text-sm font-black text-brand-indigo">R$ {item.preco_remanufatura.toFixed(2)}</div>
+                        <div className="bg-[#FAFAFA] p-3 rounded-2xl border border-brand-mirage/5">
+                          <span className="text-[9px] font-black text-brand-mirage/40 uppercase tracking-tighter block mb-1">Remanuf.</span>
+                          <div className="text-sm font-black text-brand-mirage">R$ {item.preco_remanufatura.toFixed(2)}</div>
                         </div>
                         <div className="bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100/50">
                           <span className="text-[9px] font-black text-emerald-600 uppercase tracking-tighter block mb-1">Compra Ivani</span>
                           <div className="text-sm font-black text-emerald-700">R$ {item.preco_compra_ivani.toFixed(2)}</div>
                         </div>
-                        <div className="bg-brand-aqua/5 p-3 rounded-2xl border border-brand-aqua/10">
-                          <span className="text-[9px] font-black text-brand-aqua uppercase tracking-tighter block mb-1">Preço Novo</span>
-                          <div className="text-sm font-black text-brand-aqua">R$ {item.preco_pallet_novo.toFixed(2)}</div>
+                        <div className="bg-brand-teal/5 p-3 rounded-2xl border border-brand-teal/10">
+                          <span className="text-[9px] font-black text-brand-teal uppercase tracking-tighter block mb-1">Preço Novo</span>
+                          <div className="text-sm font-black text-brand-teal">R$ {item.preco_pallet_novo.toFixed(2)}</div>
                         </div>
                       </div>
                       
@@ -402,11 +402,11 @@ export function AdminConfiguracaoClient({ initialModelos, initialUsuarios, initi
             >
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="relative w-full md:w-80">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-indigo/30" size={16} />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-mirage/30" size={16} />
                   <input 
                     type="text" 
                     placeholder="Buscar usuário por nome ou email..." 
-                    className="pl-12 pr-4 py-3 bg-white border border-brand-indigo/10 rounded-2xl text-xs font-bold text-brand-indigo w-full outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all shadow-sm"
+                    className="pl-12 pr-4 py-3 bg-white border border-brand-mirage/10 rounded-2xl text-xs font-bold text-brand-mirage w-full outline-none focus:ring-2 focus:ring-brand-teal/30 transition-all shadow-sm"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -423,27 +423,27 @@ export function AdminConfiguracaoClient({ initialModelos, initialUsuarios, initi
                 <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
                   <table className="w-full min-w-[800px] text-left">
                     <thead>
-                      <tr className="bg-brand-floral/50 border-b border-brand-indigo/5">
-                        <th className="px-6 py-4 text-[10px] font-black text-brand-indigo/50 uppercase tracking-widest">Usuário</th>
-                        <th className="px-6 py-4 text-[10px] font-black text-brand-indigo/50 uppercase tracking-widest">E-mail</th>
-                        <th className="px-6 py-4 text-[10px] font-black text-brand-indigo/50 uppercase tracking-widest">Perfil</th>
-                        <th className="px-6 py-4 text-[10px] font-black text-brand-indigo/50 uppercase tracking-widest">Status</th>
-                        <th className="px-6 py-4 text-[10px] font-black text-brand-indigo/50 uppercase tracking-widest">Criado em</th>
-                        <th className="px-6 py-4 text-[10px] font-black text-brand-indigo/50 uppercase tracking-widest text-center">Ações</th>
+                      <tr className="bg-brand-sand/50 border-b border-brand-mirage/5">
+                        <th className="px-6 py-4 text-[10px] font-black text-brand-mirage/50 uppercase tracking-widest">Usuário</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-brand-mirage/50 uppercase tracking-widest">E-mail</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-brand-mirage/50 uppercase tracking-widest">Perfil</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-brand-mirage/50 uppercase tracking-widest">Status</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-brand-mirage/50 uppercase tracking-widest">Criado em</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-brand-mirage/50 uppercase tracking-widest text-center">Ações</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-brand-indigo/5">
+                    <tbody className="divide-y divide-brand-mirage/5">
                       {filteredUsuarios.map((u) => (
-                        <tr key={u.id} className="hover:bg-brand-floral/30 transition-colors">
+                        <tr key={u.id} className="hover:bg-brand-sand/30 transition-colors">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-brand-aqua/10 text-brand-aqua rounded-xl flex items-center justify-center font-black text-xs uppercase">
+                              <div className="w-10 h-10 bg-brand-teal/10 text-brand-teal rounded-xl flex items-center justify-center font-black text-xs uppercase">
                                 {u.nome.charAt(0)}
                               </div>
-                              <div className="text-sm font-black text-brand-indigo">{u.nome}</div>
+                              <div className="text-sm font-black text-brand-mirage">{u.nome}</div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-xs text-brand-indigo/60 font-bold">{u.email}</td>
+                          <td className="px-6 py-4 text-xs text-brand-mirage/60 font-bold">{u.email}</td>
                           <td className="px-6 py-4">
                             <StatusBadge variant={u.perfil === 'admin' ? 'info' : 'warning'}>
                               {u.perfil}
@@ -457,7 +457,7 @@ export function AdminConfiguracaoClient({ initialModelos, initialUsuarios, initi
                               </span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-[10px] text-brand-indigo/40 font-bold uppercase tracking-widest">
+                          <td className="px-6 py-4 text-[10px] text-brand-mirage/40 font-bold uppercase tracking-widest">
                             {new Date(u.created_at).toLocaleDateString('pt-BR')}
                           </td>
                           <td className="px-6 py-4">
@@ -498,24 +498,24 @@ export function AdminConfiguracaoClient({ initialModelos, initialUsuarios, initi
                 <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
                   <table className="w-full min-w-[700px] text-left">
                     <thead>
-                      <tr className="bg-brand-floral/50 border-b border-brand-indigo/5">
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-brand-indigo/50">Usuário</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-brand-indigo/50">Tipo</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-brand-indigo/50">Área</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-brand-indigo/50">Data/Hora</th>
+                      <tr className="bg-brand-sand/50 border-b border-brand-mirage/5">
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-brand-mirage/50">Usuário</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-brand-mirage/50">Tipo</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-brand-mirage/50">Área</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-brand-mirage/50">Data/Hora</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-brand-indigo/5">
+                    <tbody className="divide-y divide-brand-mirage/5">
                       {logs.map((log) => (
-                        <tr key={log.id} className="hover:bg-brand-floral/30 transition-colors">
+                        <tr key={log.id} className="hover:bg-brand-sand/30 transition-colors">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-[#FAFAFA] rounded-xl flex items-center justify-center text-brand-indigo/30 border border-brand-indigo/5">
+                              <div className="w-10 h-10 bg-[#FAFAFA] rounded-xl flex items-center justify-center text-brand-mirage/30 border border-brand-mirage/5">
                                 <Users size={16} />
                               </div>
                               <div>
-                                <div className="text-sm font-black text-brand-indigo">{log.email}</div>
-                                <div className="text-[10px] text-brand-indigo/40 font-bold uppercase tracking-widest mt-0.5">ID: {log.usuario_id?.slice(0, 8)}...</div>
+                                <div className="text-sm font-black text-brand-mirage">{log.email}</div>
+                                <div className="text-[10px] text-brand-mirage/40 font-bold uppercase tracking-widest mt-0.5">ID: {log.usuario_id?.slice(0, 8)}...</div>
                               </div>
                             </div>
                           </td>
@@ -525,13 +525,13 @@ export function AdminConfiguracaoClient({ initialModelos, initialUsuarios, initi
                             </StatusBadge>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="flex items-center gap-2 text-brand-indigo/60 text-[10px] font-black uppercase tracking-widest">
-                              {log.area.includes('admin') ? <ShieldCheck size={14} className="text-brand-aqua" /> : <Globe size={14} className="text-brand-orange" />}
+                            <div className="flex items-center gap-2 text-brand-mirage/60 text-[10px] font-black uppercase tracking-widest">
+                              {log.area.includes('admin') ? <ShieldCheck size={14} className="text-brand-teal" /> : <Globe size={14} className="text-brand-orange" />}
                               {log.area}
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="text-xs font-bold text-brand-indigo/60">{new Date(log.created_at).toLocaleString('pt-BR')}</div>
+                            <div className="text-xs font-bold text-brand-mirage/60">{new Date(log.created_at).toLocaleString('pt-BR')}</div>
                           </td>
                         </tr>
                       ))}
@@ -555,28 +555,28 @@ export function AdminConfiguracaoClient({ initialModelos, initialUsuarios, initi
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-brand-indigo/20 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-brand-mirage/20 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative bg-white w-full max-w-xl rounded-[2rem] shadow-2xl overflow-hidden" >
-              <div className="px-8 py-6 border-b border-brand-indigo/5 flex justify-between items-center bg-white sticky top-0 z-10">
+              <div className="px-8 py-6 border-b border-brand-mirage/5 flex justify-between items-center bg-white sticky top-0 z-10">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-brand-aqua/10 rounded-xl flex items-center justify-center text-brand-aqua"><Box size={20} /></div>
-                  <h3 className="font-black text-lg text-brand-indigo">{editingModelo ? "Editar Modelo" : "Novo Modelo"}</h3>
+                  <div className="w-10 h-10 bg-brand-teal/10 rounded-xl flex items-center justify-center text-brand-teal"><Box size={20} /></div>
+                  <h3 className="font-black text-lg text-brand-mirage">{editingModelo ? "Editar Modelo" : "Novo Modelo"}</h3>
                 </div>
-                <button onClick={() => setIsModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-[#FAFAFA] text-brand-indigo/40 hover:bg-brand-indigo/5 hover:text-brand-indigo transition-colors"><X size={16} /></button>
+                <button onClick={() => setIsModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-[#FAFAFA] text-brand-mirage/40 hover:bg-brand-mirage/5 hover:text-brand-mirage transition-colors"><X size={16} /></button>
               </div>
               <form onSubmit={handleSubmitModelo} className="p-8 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5"><label className="text-[10px] font-black uppercase tracking-widest text-brand-indigo/50 ml-1">Nome do Modelo</label><input name="nome" defaultValue={editingModelo?.nome} required className="w-full px-4 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all" /></div>
-                  <div className="space-y-1.5"><label className="text-[10px] font-black uppercase tracking-widest text-brand-indigo/50 ml-1">Código Interno</label><input name="codigo" defaultValue={editingModelo?.codigo} className="w-full px-4 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all" /></div>
+                  <div className="space-y-1.5"><label className="text-[10px] font-black uppercase tracking-widest text-brand-mirage/50 ml-1">Nome do Modelo</label><input name="nome" defaultValue={editingModelo?.nome} required className="w-full px-4 py-3 bg-[#FAFAFA] border border-brand-mirage/10 rounded-xl text-sm font-bold text-brand-mirage outline-none focus:ring-2 focus:ring-brand-teal/30 transition-all" /></div>
+                  <div className="space-y-1.5"><label className="text-[10px] font-black uppercase tracking-widest text-brand-mirage/50 ml-1">Código Interno</label><input name="codigo" defaultValue={editingModelo?.codigo} className="w-full px-4 py-3 bg-[#FAFAFA] border border-brand-mirage/10 rounded-xl text-sm font-bold text-brand-mirage outline-none focus:ring-2 focus:ring-brand-teal/30 transition-all" /></div>
                 </div>
-                <div className="space-y-1.5"><label className="text-[10px] font-black uppercase tracking-widest text-brand-indigo/50 ml-1">Medidas (mm)</label><input name="medidas" defaultValue={editingModelo?.medidas} className="w-full px-4 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all" /></div>
+                <div className="space-y-1.5"><label className="text-[10px] font-black uppercase tracking-widest text-brand-mirage/50 ml-1">Medidas (mm)</label><input name="medidas" defaultValue={editingModelo?.medidas} className="w-full px-4 py-3 bg-[#FAFAFA] border border-brand-mirage/10 rounded-xl text-sm font-bold text-brand-mirage outline-none focus:ring-2 focus:ring-brand-teal/30 transition-all" /></div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="space-y-1.5"><label className="text-[9px] font-black uppercase tracking-tighter text-brand-orange ml-1">Reforma</label><input name="preco_reforma" type="number" step="0.01" defaultValue={editingModelo?.preco_reforma} className="w-full px-3 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-orange/30 transition-all" /></div>
-                  <div className="space-y-1.5"><label className="text-[9px] font-black uppercase tracking-tighter text-brand-aqua ml-1">Remanuf.</label><input name="preco_remanufatura" type="number" step="0.01" defaultValue={editingModelo?.preco_remanufatura} className="w-full px-3 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all" /></div>
-                  <div className="space-y-1.5"><label className="text-[9px] font-black uppercase tracking-tighter text-emerald-500 ml-1">Compra</label><input name="preco_compra_ivani" type="number" step="0.01" defaultValue={editingModelo?.preco_compra_ivani} className="w-full px-3 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all" /></div>
-                  <div className="space-y-1.5"><label className="text-[9px] font-black uppercase tracking-tighter text-brand-indigo/50 ml-1">Novo</label><input name="preco_pallet_novo" type="number" step="0.01" defaultValue={editingModelo?.preco_pallet_novo} className="w-full px-3 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-indigo/30 transition-all" /></div>
+                  <div className="space-y-1.5"><label className="text-[9px] font-black uppercase tracking-tighter text-brand-orange ml-1">Reforma</label><input name="preco_reforma" type="number" step="0.01" defaultValue={editingModelo?.preco_reforma} className="w-full px-3 py-3 bg-[#FAFAFA] border border-brand-mirage/10 rounded-xl text-sm font-bold text-brand-mirage outline-none focus:ring-2 focus:ring-brand-orange/30 transition-all" /></div>
+                  <div className="space-y-1.5"><label className="text-[9px] font-black uppercase tracking-tighter text-brand-teal ml-1">Remanuf.</label><input name="preco_remanufatura" type="number" step="0.01" defaultValue={editingModelo?.preco_remanufatura} className="w-full px-3 py-3 bg-[#FAFAFA] border border-brand-mirage/10 rounded-xl text-sm font-bold text-brand-mirage outline-none focus:ring-2 focus:ring-brand-teal/30 transition-all" /></div>
+                  <div className="space-y-1.5"><label className="text-[9px] font-black uppercase tracking-tighter text-emerald-500 ml-1">Compra</label><input name="preco_compra_ivani" type="number" step="0.01" defaultValue={editingModelo?.preco_compra_ivani} className="w-full px-3 py-3 bg-[#FAFAFA] border border-brand-mirage/10 rounded-xl text-sm font-bold text-brand-mirage outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all" /></div>
+                  <div className="space-y-1.5"><label className="text-[9px] font-black uppercase tracking-tighter text-brand-mirage/50 ml-1">Novo</label><input name="preco_pallet_novo" type="number" step="0.01" defaultValue={editingModelo?.preco_pallet_novo} className="w-full px-3 py-3 bg-[#FAFAFA] border border-brand-mirage/10 rounded-xl text-sm font-bold text-brand-mirage outline-none focus:ring-2 focus:ring-brand-mirage/30 transition-all" /></div>
                 </div>
-                <div className="space-y-1.5"><label className="text-[10px] font-black uppercase tracking-widest text-brand-indigo/50 ml-1">Observações</label><textarea name="observacao" defaultValue={editingModelo?.observacao} className="w-full px-4 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all min-h-[80px] resize-none" /></div>
+                <div className="space-y-1.5"><label className="text-[10px] font-black uppercase tracking-widest text-brand-mirage/50 ml-1">Observações</label><textarea name="observacao" defaultValue={editingModelo?.observacao} className="w-full px-4 py-3 bg-[#FAFAFA] border border-brand-mirage/10 rounded-xl text-sm font-bold text-brand-mirage outline-none focus:ring-2 focus:ring-brand-teal/30 transition-all min-h-[80px] resize-none" /></div>
                 <div className="flex gap-3 pt-4">
                   <AppButton type="button" onClick={() => setIsModalOpen(false)} variant="secondary" className="flex-1">Cancelar</AppButton>
                   <AppButton type="submit" disabled={isSubmitting} className="flex-1" icon={isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}>Salvar</AppButton>
@@ -591,52 +591,52 @@ export function AdminConfiguracaoClient({ initialModelos, initialUsuarios, initi
       <AnimatePresence>
         {isUserModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsUserModalOpen(false)} className="absolute inset-0 bg-brand-indigo/20 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsUserModalOpen(false)} className="absolute inset-0 bg-brand-mirage/20 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative bg-white w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden" >
-              <div className="px-8 py-6 border-b border-brand-indigo/5 flex justify-between items-center bg-white sticky top-0 z-10">
+              <div className="px-8 py-6 border-b border-brand-mirage/5 flex justify-between items-center bg-white sticky top-0 z-10">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-brand-aqua/10 rounded-xl flex items-center justify-center text-brand-aqua"><UserPlus size={20} /></div>
-                  <h3 className="font-black text-lg text-brand-indigo">Novo Usuário</h3>
+                  <div className="w-10 h-10 bg-brand-teal/10 rounded-xl flex items-center justify-center text-brand-teal"><UserPlus size={20} /></div>
+                  <h3 className="font-black text-lg text-brand-mirage">Novo Usuário</h3>
                 </div>
-                <button onClick={() => setIsUserModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-[#FAFAFA] text-brand-indigo/40 hover:bg-brand-indigo/5 hover:text-brand-indigo transition-colors"><X size={16} /></button>
+                <button onClick={() => setIsUserModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-[#FAFAFA] text-brand-mirage/40 hover:bg-brand-mirage/5 hover:text-brand-mirage transition-colors"><X size={16} /></button>
               </div>
               <form onSubmit={handleSubmitUsuario} className="p-8 space-y-5">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-indigo/50 ml-1">Nome Completo</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-mirage/50 ml-1">Nome Completo</label>
                   <div className="relative">
-                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-indigo/30" size={16} />
-                    <input name="nome" type="text" required placeholder="Ex: João Silva" className="w-full pl-12 pr-4 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all" />
+                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-mirage/30" size={16} />
+                    <input name="nome" type="text" required placeholder="Ex: João Silva" className="w-full pl-12 pr-4 py-3 bg-[#FAFAFA] border border-brand-mirage/10 rounded-xl text-sm font-bold text-brand-mirage outline-none focus:ring-2 focus:ring-brand-teal/30 transition-all" />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-indigo/50 ml-1">E-mail de Acesso</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-mirage/50 ml-1">E-mail de Acesso</label>
                   <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-indigo/30" size={16} />
-                    <input name="email" type="email" required placeholder="usuario@email.com" className="w-full pl-12 pr-4 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-mirage/30" size={16} />
+                    <input name="email" type="email" required placeholder="usuario@email.com" className="w-full pl-12 pr-4 py-3 bg-[#FAFAFA] border border-brand-mirage/10 rounded-xl text-sm font-bold text-brand-mirage outline-none focus:ring-2 focus:ring-brand-teal/30 transition-all" />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-indigo/50 ml-1">Senha Provisória</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-mirage/50 ml-1">Senha Provisória</label>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-indigo/30" size={16} />
-                    <input name="senha" type="password" required placeholder="••••••••" className="w-full pl-12 pr-4 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-sm font-bold text-brand-indigo outline-none focus:ring-2 focus:ring-brand-aqua/30 transition-all" />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-mirage/30" size={16} />
+                    <input name="senha" type="password" required placeholder="••••••••" className="w-full pl-12 pr-4 py-3 bg-[#FAFAFA] border border-brand-mirage/10 rounded-xl text-sm font-bold text-brand-mirage outline-none focus:ring-2 focus:ring-brand-teal/30 transition-all" />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-indigo/50 ml-1">Perfil de Acesso</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-mirage/50 ml-1">Perfil de Acesso</label>
                   <div className="grid grid-cols-2 gap-3">
                     <label className="cursor-pointer">
                       <input type="radio" name="perfil" value="admin" defaultChecked className="peer hidden" />
-                      <div className="flex items-center justify-center gap-2 px-4 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-xs font-bold text-brand-indigo/50 peer-checked:bg-brand-aqua peer-checked:text-white peer-checked:border-brand-aqua transition-all">
+                      <div className="flex items-center justify-center gap-2 px-4 py-3 bg-[#FAFAFA] border border-brand-mirage/10 rounded-xl text-xs font-bold text-brand-mirage/50 peer-checked:bg-brand-teal peer-checked:text-white peer-checked:border-brand-teal transition-all">
                         <Shield size={14} /> Admin
                       </div>
                     </label>
                     <label className="cursor-pointer">
                       <input type="radio" name="perfil" value="cliente" className="peer hidden" />
-                      <div className="flex items-center justify-center gap-2 px-4 py-3 bg-[#FAFAFA] border border-brand-indigo/10 rounded-xl text-xs font-bold text-brand-indigo/50 peer-checked:bg-brand-aqua peer-checked:text-white peer-checked:border-brand-aqua transition-all">
+                      <div className="flex items-center justify-center gap-2 px-4 py-3 bg-[#FAFAFA] border border-brand-mirage/10 rounded-xl text-xs font-bold text-brand-mirage/50 peer-checked:bg-brand-teal peer-checked:text-white peer-checked:border-brand-teal transition-all">
                         <Users size={14} /> Cliente
                       </div>
                     </label>

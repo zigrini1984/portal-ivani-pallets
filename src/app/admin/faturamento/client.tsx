@@ -218,20 +218,20 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
       title="Faturamento PCE"
       subtitle="Gestão de recebíveis originados de saídas de estoque."
       actions={
-        <div className="flex gap-2 bg-white p-1 rounded-2xl border border-brand-indigo/10 shadow-sm">
+        <div className="flex gap-2 bg-white p-1 rounded-2xl border border-brand-mirage/10 shadow-sm">
           <button 
             onClick={() => setActiveTab('ativos')}
-            className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'ativos' ? 'bg-brand-aqua text-white shadow-md' : 'text-brand-indigo/60 hover:bg-brand-floral/30'}`}
+            className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'ativos' ? 'bg-brand-teal text-white shadow-md' : 'text-brand-mirage/60 hover:bg-brand-sand/30'}`}
           >
             Faturamentos
           </button>
           <button 
             onClick={() => setActiveTab('pendentes')}
-            className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'pendentes' ? 'bg-brand-aqua text-white shadow-md' : 'text-brand-indigo/60 hover:bg-brand-floral/30'}`}
+            className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'pendentes' ? 'bg-brand-teal text-white shadow-md' : 'text-brand-mirage/60 hover:bg-brand-sand/30'}`}
           >
             Saídas Pendentes
             {saidasPendentes.length > 0 && (
-              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${activeTab === 'pendentes' ? 'bg-white text-brand-aqua' : 'bg-brand-orange text-white'}`}>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${activeTab === 'pendentes' ? 'bg-white text-brand-teal' : 'bg-brand-orange text-white'}`}>
                 {saidasPendentes.length}
               </span>
             )}
@@ -265,7 +265,7 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
               {saidasPendentes.map((saida) => (
                 <AppCard key={saida.id} className="relative overflow-hidden group">
                   <div className="flex justify-between items-start mb-6">
-                    <div className="w-12 h-12 bg-brand-floral/50 rounded-2xl flex items-center justify-center text-brand-orange">
+                    <div className="w-12 h-12 bg-brand-sand/50 rounded-2xl flex items-center justify-center text-brand-orange">
                       <Layers size={24} />
                     </div>
                     <AppButton 
@@ -275,11 +275,11 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
                       Faturar Saída
                     </AppButton>
                   </div>
-                  <h3 className="text-lg font-black text-brand-indigo mb-1">{saida.modelo_pallet.nome}</h3>
-                  <p className="text-[10px] font-bold text-brand-indigo/40 uppercase tracking-widest mb-6">Saída em {new Date(saida.created_at).toLocaleDateString('pt-BR')}</p>
-                  <div className="bg-[#FAFAFA] border border-brand-indigo/5 rounded-2xl p-4 flex justify-between items-center">
-                    <span className="text-xs font-bold text-brand-indigo/40 uppercase">Quantidade</span>
-                    <span className="text-xl font-black text-brand-aqua">{saida.quantidade} un</span>
+                  <h3 className="text-lg font-black text-brand-mirage mb-1">{saida.modelo_pallet.nome}</h3>
+                  <p className="text-[10px] font-bold text-brand-mirage/40 uppercase tracking-widest mb-6">Saída em {new Date(saida.created_at).toLocaleDateString('pt-BR')}</p>
+                  <div className="bg-[#FAFAFA] border border-brand-mirage/5 rounded-2xl p-4 flex justify-between items-center">
+                    <span className="text-xs font-bold text-brand-mirage/40 uppercase">Quantidade</span>
+                    <span className="text-xl font-black text-brand-teal">{saida.quantidade} un</span>
                   </div>
                 </AppCard>
               ))}
@@ -310,15 +310,15 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
                   <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
                     <table className="w-full min-w-[700px] text-left">
                       <thead>
-                        <tr className="bg-brand-floral/50 border-b border-brand-indigo/5">
-                          <th className="px-6 py-4 text-[10px] font-black text-brand-indigo/50 uppercase tracking-widest">Modelo / Data Saída</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-brand-indigo/50 uppercase tracking-widest">Valor Total</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-brand-indigo/50 uppercase tracking-widest">Parcela 1 (30d)</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-brand-indigo/50 uppercase tracking-widest">Parcela 2 (60d)</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-brand-indigo/50 uppercase tracking-widest">Status Geral</th>
+                        <tr className="bg-brand-sand/50 border-b border-brand-mirage/5">
+                          <th className="px-6 py-4 text-[10px] font-black text-brand-mirage/50 uppercase tracking-widest">Modelo / Data Saída</th>
+                          <th className="px-6 py-4 text-[10px] font-black text-brand-mirage/50 uppercase tracking-widest">Valor Total</th>
+                          <th className="px-6 py-4 text-[10px] font-black text-brand-mirage/50 uppercase tracking-widest">Parcela 1 (30d)</th>
+                          <th className="px-6 py-4 text-[10px] font-black text-brand-mirage/50 uppercase tracking-widest">Parcela 2 (60d)</th>
+                          <th className="px-6 py-4 text-[10px] font-black text-brand-mirage/50 uppercase tracking-widest">Status Geral</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-brand-indigo/5">
+                      <tbody className="divide-y divide-brand-mirage/5">
                         {faturamentos.map((fat) => {
                           const p1 = fat.parcelas.find(p => p.numero_parcela === 1);
                           const p2 = fat.parcelas.find(p => p.numero_parcela === 2);
@@ -332,17 +332,17 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
                           };
 
                           return (
-                            <tr key={fat.id} className="hover:bg-brand-floral/30 transition-colors group">
+                            <tr key={fat.id} className="hover:bg-brand-sand/30 transition-colors group">
                               <td className="px-6 py-4">
                                 <div className="flex flex-col">
-                                  <span className="text-sm font-black text-brand-indigo">{fat.modelo_pallet.nome}</span>
-                                  <span className="text-[10px] font-bold text-brand-indigo/40 uppercase mt-1">
+                                  <span className="text-sm font-black text-brand-mirage">{fat.modelo_pallet.nome}</span>
+                                  <span className="text-[10px] font-bold text-brand-mirage/40 uppercase mt-1">
                                     {fat.quantidade} un em {new Date(fat.data_saida).toLocaleDateString('pt-BR')}
                                   </span>
                                 </div>
                               </td>
                               <td className="px-6 py-4">
-                                <span className="text-sm font-black text-brand-aqua">
+                                <span className="text-sm font-black text-brand-teal">
                                   R$ {Number(fat.valor_total_estimado).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                 </span>
                               </td>
@@ -357,7 +357,7 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
                                       {p.status !== 'ok' && (
                                         <button 
                                           onClick={() => handleMarcarOk(p)}
-                                          className="w-8 h-8 rounded-lg bg-[#FAFAFA] text-brand-indigo/20 hover:bg-brand-aqua hover:text-white transition-all flex items-center justify-center border border-brand-indigo/5"
+                                          className="w-8 h-8 rounded-lg bg-[#FAFAFA] text-brand-mirage/20 hover:bg-brand-teal hover:text-white transition-all flex items-center justify-center border border-brand-mirage/5"
                                           title="Marcar como Pago"
                                         >
                                           <Check size={16} />
@@ -369,8 +369,8 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
                               ))}
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-2">
-                                  <div className={`w-1.5 h-1.5 rounded-full ${fat.parcelas.every(p => p.status === 'ok') ? 'bg-green-500' : 'bg-brand-aqua animate-pulse'}`} />
-                                  <span className="text-[10px] font-black uppercase tracking-widest text-brand-indigo/60">
+                                  <div className={`w-1.5 h-1.5 rounded-full ${fat.parcelas.every(p => p.status === 'ok') ? 'bg-green-500' : 'bg-brand-teal animate-pulse'}`} />
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-brand-mirage/60">
                                     {fat.parcelas.filter(p => p.status === 'ok').length} / 2 Parcelas
                                   </span>
                                 </div>

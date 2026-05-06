@@ -4,21 +4,14 @@
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 
-  /* Tropical Fusion Palette - Base Tokens */
-  --color-brand-orange: #ff8811;
-  --color-brand-gold: #f4d06f;
-  --color-brand-cream: #fff8f0;
-  --color-brand-mint: #9dd9d2;
-  --color-brand-cyan: #9dd9d2;
-  --color-brand-indigo: #392f5a;
-
-  /* Aliases for compatibility */
-  --color-brand-jasmine: #f4d06f;
-  --color-brand-floral: #fff8f0;
-  --color-brand-aqua: #9dd9d2;
-
-  --color-bg-primary: #fff8f0;
-  --color-text-dark: #392f5a;
+  /* Premium SaaS Palette */
+  --color-brand-mirage: #16232A;
+  --color-brand-orange: #FF5B04;
+  --color-brand-teal: #075056;
+  --color-brand-sand: #E4EEF0;
+  
+  --color-bg-primary: #F8FAFB;
+  --color-text-dark: #1E293B;
 
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
@@ -27,8 +20,8 @@
 
 @layer base {
   :root {
-    --background: #fff8f0;
-    --foreground: #392f5a;
+    --background: #F8FAFB;
+    --foreground: #16232A;
   }
 
   body {
@@ -40,15 +33,9 @@
 
 @layer utilities {
   .card-shadow {
-    box-shadow: 0 10px 40px -10px rgba(38, 50, 56, 0.08);
+    box-shadow: 0 4px 20px -2px rgba(22, 35, 42, 0.05);
   }
   .glass-light {
-    @apply bg-white/60 backdrop-blur-md border border-white/40;
-  }
-  .text-cyan {
-    @apply text-brand-cyan;
-  }
-  .bg-cyan {
-    @apply bg-brand-cyan;
+    @apply bg-white/70 backdrop-blur-lg border border-white/50;
   }
 }
