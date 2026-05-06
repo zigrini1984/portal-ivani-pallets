@@ -1,3 +1,5 @@
+
+export const dynamic = "force-dynamic";
 export const dynamic = "force-dynamic";
 
 import { createClientServer } from "@/lib/supabase/server";
@@ -22,9 +24,9 @@ export default async function AdminColetaPage() {
   }
 
   return (
-    <AdminColetaClient 
-      initialColetas={coletasData || []} 
-      error={supabaseError ? JSON.stringify(supabaseError, null, 2) : null} 
+    <AdminColetaClient
+      initialColetas={coletasData || []}
+      error={supabaseError ? JSON.stringify(supabaseError, null, 2) : null}
     />
   );
 }
