@@ -1,12 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClientServer } from "@/lib/supabase/server";
 import { AdminColetaClient } from "./client";
 
 export default async function AdminColetaPage() {
-  // Debug para verificar se as variáveis de ambiente estão chegando no servidor
-  console.log("[AdminColetaPage] Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
-  console.log("[AdminColetaPage] Has Anon Key:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-
-  const supabase = await createClient();
+  const supabase = createClientServer();
 
   // Buscar Coletas (respeitando o RLS via anon key)
   // O cliente_id = 'pce' é mantido pois é a regra de negócio do app

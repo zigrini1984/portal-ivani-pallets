@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClientServer } from "@/lib/supabase/server";
 import { AdminFaturamentoClient } from "./client";
 
 export default async function AdminFaturamentoPage() {
-  const supabase = await createClient();
+  const supabase = createClientServer();
 
   // 1. Buscar Faturamentos e Parcelas
   const { data: fatData } = await supabase

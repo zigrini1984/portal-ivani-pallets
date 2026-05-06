@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClientServer } from "@/lib/supabase/server";
 import { AdminConfiguracaoClient } from "./client";
 
 export default async function AdminConfiguracaoPage() {
-  const supabase = await createClient();
+  const supabase = createClientServer();
 
   // 1. Buscar Modelos
   const { data: modelos } = await supabase

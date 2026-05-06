@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClientServer } from "@/lib/supabase/server";
 import { AdminManutencaoClient } from "./client";
 
 export default async function AdminManutencaoPage() {
-  const supabase = await createClient();
+  const supabase = createClientServer();
 
   // 1. Buscar itens de triagem que precisam de reforma
   const { data: triagemItens } = await supabase

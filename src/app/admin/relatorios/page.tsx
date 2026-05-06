@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClientServer } from "@/lib/supabase/server";
 import { AdminRelatoriosClient } from "./client";
 
 export default async function AdminRelatoriosPage() {
-  const supabase = await createClient();
+  const supabase = createClientServer();
 
   const { data: triagens } = await supabase
     .from("triagens")

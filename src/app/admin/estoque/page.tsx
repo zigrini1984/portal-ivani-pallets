@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClientServer } from "@/lib/supabase/server";
 import { AdminEstoqueClient } from "./client";
 
 export default async function AdminEstoquePage() {
-  const supabase = await createClient();
+  const supabase = createClientServer();
 
   const { data: estData } = await supabase
     .from("estoque_pallets")

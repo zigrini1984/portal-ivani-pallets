@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClientServer } from "@/lib/supabase/server";
 import { AdminTriagemClient } from "./client";
 
 export default async function AdminTriagemPage() {
-  const supabase = await createClient();
+  const supabase = createClientServer();
 
   // Buscar Modelos
   const { data: modelosData } = await supabase

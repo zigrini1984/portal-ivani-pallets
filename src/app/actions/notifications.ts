@@ -1,7 +1,7 @@
 "use server";
 
 import { resend } from "@/lib/resend";
-import { createClient } from "@/lib/supabase/server";
+import { createClientServer } from "@/lib/supabase/server";
 
 interface NotificationParams {
   cliente_id: string;
@@ -27,7 +27,7 @@ export async function sendStatusUpdateEmail({
   }
 
   try {
-    const supabase = await createClient();
+    const supabase = createClientServer();
 
     // 1. Buscar os e-mails dos usuários vinculados ao cliente_id
     const { data: perfis, error: fetchError } = await supabase
