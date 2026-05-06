@@ -14,7 +14,6 @@ export type CriarColetaInput = {
 
 export async function criarColeta(input: CriarColetaInput) {
   try {
-    // 1. Validar campos obrigatórios
     if (!input.data_coleta) {
       return { success: false, error: "A data da coleta é obrigatória." };
     }
@@ -25,7 +24,6 @@ export async function criarColeta(input: CriarColetaInput) {
 
     const supabase = createAdminClient();
 
-    // 2. Inserir na tabela public.coletas
     const { error } = await supabase
       .from("coletas")
       .insert({
@@ -54,8 +52,86 @@ export async function criarColeta(input: CriarColetaInput) {
   }
 }
 
-// Mantendo as outras funções para não quebrar o sistema, 
-// mas garantindo que usem o admin client do arquivo centralizado.
+/**
+ * Envia uma coleta para triagem de forma segura no servidor.
+ */
+export async function enviarColetaParaTriagem(coletaId: string) {
+  try {
+    if (!coletaId) {
+      return { success: false, error: "ID da coleta não informado." };
+    }
+
+    const supabase = createAdminClient();
+
+    // 1. Buscar coleta original
+    const { data: coletas, error: coletaError } = await supabase
+      .from("coletas")
+      .select("id, cliente_id, data_coleta, quantidade_material_bruto, status, enviado_triagem, nf_saida_pce, motorista, caminhao")
+      .eq("id", coletaId)
+      .limit(1);
+
+    if (coletaError) throw coletaError;
+    
+    const coleta = coletas && coletas.length > 0 ? coletas[0] : null;
+
+    if (!coleta) {
+      return { success: false, error: "Coleta não encontrada." };
+    }
+
+    // 2. Verificar se já existe triagem
+    const { data: triagens, error: triagemCheckError } = await supabase
+      .from("triagens")
+      .select("id")
+      .eq("coleta_id", coletaId)
+      .limit(1);
+
+    if (triagemCheckError) throw triagemCheckError;
+
+    // 3. Se não existir, criar triagem
+    if (!triagens || triagens.length === 0) {
+      const { error: insertError } = await supabase
+        .from("triagens")
+        .insert({
+          coleta_id: coleta.id,
+          cliente_id: coleta.cliente_id || "pce",
+          data_coleta: coleta.data_coleta,
+          quantidade_total: coleta.quantidade_material_bruto,
+          nf_saida_pce: coleta.nf_saida_pce || "",
+          motorista: coleta.motorista || "",
+          caminhao: coleta.caminhao || "",
+          status: "pendente",
+          created_at: new Date().toISOString()
+        });
+
+      if (insertError) {
+        console.error("[enviarColetaParaTriagem] Erro ao criar triagem:", insertError);
+        return { success: false, error: "Erro ao criar registro de triagem: " + insertError.message };
+      }
+    }
+
+    // 4. Atualizar coleta
+    const { error: updateError } = await supabase
+      .from("coletas")
+      .update({
+        status: "enviado_triagem",
+        enviado_triagem: true,
+        data_envio_triagem: new Date().toISOString()
+      })
+      .eq("id", coletaId);
+
+    if (updateError) {
+      console.error("[enviarColetaParaTriagem] Erro ao atualizar coleta:", updateError);
+      return { success: false, error: "Erro ao atualizar status da coleta: " + updateError.message };
+    }
+
+    revalidatePath("/admin/coleta");
+    return { success: true };
+  } catch (err: any) {
+    console.error("[enviarColetaParaTriagem] Erro inesperado:", err.message);
+    return { success: false, error: "Falha ao processar envio para triagem: " + err.message };
+  }
+}
+
 export async function salvarColeta(data: any, id?: string) {
   try {
     const supabase = createAdminClient();
@@ -92,52 +168,6 @@ export async function excluirColeta(id: string) {
     const supabase = createAdminClient();
     const { error } = await supabase.from("coletas").delete().eq("id", id);
     if (error) throw error;
-    revalidatePath("/admin/coleta");
-    return { success: true };
-  } catch (err: any) {
-    return { error: err.message };
-  }
-}
-
-export async function enviarParaTriagem(coleta: any) {
-  try {
-    const supabase = createAdminClient();
-
-    const { data: existing, error: checkError } = await supabase
-      .from("triagens")
-      .select("id")
-      .eq("coleta_id", coleta.id)
-      .limit(1);
-
-    if (checkError) throw checkError;
-
-    if (!existing || existing.length === 0) {
-      const { error: insertError } = await supabase
-        .from("triagens")
-        .insert({
-          coleta_id: coleta.id,
-          cliente_id: coleta.cliente_id || "pce",
-          nf_saida_pce: coleta.nf_saida_pce || "",
-          motorista: coleta.motorista || "",
-          caminhao: coleta.caminhao || "",
-          data_coleta: coleta.data_coleta,
-          quantidade_total: coleta.quantidade_material_bruto,
-          status: "em_triagem"
-        });
-      if (insertError) throw insertError;
-    }
-
-    const { error: updateError } = await supabase
-      .from("coletas")
-      .update({
-        enviado_triagem: true,
-        status: "enviado_triagem",
-        data_envio_triagem: new Date().toISOString()
-      })
-      .eq("id", coleta.id);
-
-    if (updateError) throw updateError;
-
     revalidatePath("/admin/coleta");
     return { success: true };
   } catch (err: any) {

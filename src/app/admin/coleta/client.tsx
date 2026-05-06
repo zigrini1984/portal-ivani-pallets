@@ -25,7 +25,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { criarColeta, enviarParaTriagem, salvarColeta } from "@/app/actions/coletas";
+import { criarColeta, enviarColetaParaTriagem, salvarColeta } from "@/app/actions/coletas";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -194,29 +194,16 @@ export function AdminColetaClient({
     setLoadingRowId(id);
     
     try {
-      // 1. Localizar os dados da coleta atual na lista
-      const coleta = initialColetas.find(c => c.id === id);
-      if (!coleta) throw new Error("Coleta não encontrada na lista local.");
-
-      // 2. Se for envio para triagem, realizar via Server Action
       if (newStatus === "enviado_triagem") {
-        const result = await enviarParaTriagem(coleta);
-        if (result.error) throw new Error(result.error);
+        const result = await enviarColetaParaTriagem(id);
+        if (!result.success) throw new Error(result.error);
       } else {
-        // Atualização simples para outros status via Server Action genérica
         const result = await salvarColeta({ status: newStatus }, id);
         if (result.error) throw new Error(result.error);
       }
       
       router.refresh();
     } catch (err: any) {
-      console.error("❌ [handleUpdateStatus] Erro operacional detalhado:", {
-        message: err.message,
-        details: err.details,
-        hint: err.hint,
-        code: err.code,
-        error: err
-      });
       
       const msg = err.message || "Falha na comunicação com o servidor.";
       const details = err.details ? `\n\nDetalhes: ${err.details}` : "";
