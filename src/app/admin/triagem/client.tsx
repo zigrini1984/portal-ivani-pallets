@@ -214,7 +214,7 @@ export function AdminTriagemClient({ initialTriagens, initialModelosPallets, ser
                       <td className="px-5 py-4"><span className="text-xs font-bold text-brand-aqua">{t.quantidade_compra_ivani ?? 0}</span></td>
                       <td className="px-5 py-4"><span className="text-xs font-bold text-red-500">{t.quantidade_sucata ?? 0}</span></td>
                       <td className="px-5 py-4">
-                        <StatusBadge status={t.status} type={t.status === 'concluida' ? 'success' : t.status === 'em_andamento' ? 'info' : 'warning'} />
+                        <StatusBadge variant={t.status === 'concluida' ? 'success' : t.status === 'em_andamento' ? 'info' : 'warning'}>{t.status}</StatusBadge>
                       </td>
                       <td className="px-5 py-4">
                         <AppButton onClick={() => openModal(t)} variant={t.status === "concluida" ? "secondary" : "primary"} icon={t.status === "concluida" ? <Eye size={14} /> : <Calculator size={14} />}>

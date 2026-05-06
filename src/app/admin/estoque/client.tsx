@@ -162,7 +162,7 @@ export function AdminEstoqueClient({ initialEstoque, initialMovimentacoes }: Adm
     <PageShell
       title="Inventário de Pallets"
       subtitle="Saldo acumulado disponível para o cliente PCE."
-      action={
+      actions={
         <AppButton
           onClick={handleSync}
           disabled={syncing}

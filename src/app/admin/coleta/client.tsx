@@ -193,7 +193,7 @@ export function AdminColetaClient({
     <PageShell
       title="Painel de Coletas"
       subtitle="Gerencie e encaminhe coletas recebidas da PCE."
-      action={
+      actions={
         <AppButton onClick={() => setIsModalOpen(true)} icon={<Plus size={16} />}>
           Nova Coleta
         </AppButton>
@@ -324,7 +324,7 @@ export function AdminColetaClient({
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <StatusBadge status={label} type={type} />
+                          <StatusBadge variant={type as any}>{label}</StatusBadge>
                         </td>
                         <td className="px-6 py-4 text-xs font-bold text-brand-indigo/50 max-w-[150px] truncate">
                           {c.observacao ?? (

@@ -217,7 +217,7 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
     <PageShell
       title="Faturamento PCE"
       subtitle="Gestão de recebíveis originados de saídas de estoque."
-      action={
+      actions={
         <div className="flex gap-2 bg-white p-1 rounded-2xl border border-brand-indigo/10 shadow-sm">
           <button 
             onClick={() => setActiveTab('ativos')}

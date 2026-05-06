@@ -263,7 +263,7 @@ export function AdminConfiguracaoClient({ initialModelos, initialUsuarios, initi
     <PageShell
       title="Configurações do Sistema"
       subtitle="Gerencie modelos, usuários e monitore a atividade do portal."
-      action={
+      actions={
         <div className="flex gap-2 bg-white p-1 rounded-2xl border border-brand-indigo/10 shadow-sm overflow-x-auto max-w-full">
           <button 
             onClick={() => setActiveTab('modelos')}

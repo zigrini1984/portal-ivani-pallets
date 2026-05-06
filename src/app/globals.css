@@ -4,12 +4,18 @@
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 
-  /* Tropical Fusion Palette */
+  /* Tropical Fusion Palette - Base Tokens */
   --color-brand-orange: #ff8811;
+  --color-brand-gold: #f4d06f;
+  --color-brand-cream: #fff8f0;
+  --color-brand-mint: #9dd9d2;
+  --color-brand-cyan: #9dd9d2;
+  --color-brand-indigo: #392f5a;
+
+  /* Aliases for compatibility */
   --color-brand-jasmine: #f4d06f;
   --color-brand-floral: #fff8f0;
   --color-brand-aqua: #9dd9d2;
-  --color-brand-indigo: #392f5a;
 
   --color-bg-primary: #fff8f0;
   --color-text-dark: #392f5a;

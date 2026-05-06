@@ -167,7 +167,7 @@ export function AdminRelatoriosClient({ initialTriagens }: AdminRelatoriosClient
     <PageShell
       title="Dashboard de Performance"
       subtitle="Visão holística da operação e impacto ambiental."
-      action={
+      actions={
         <AppButton icon={<Download size={16} />}>
           Exportar Dados Completos
         </AppButton>

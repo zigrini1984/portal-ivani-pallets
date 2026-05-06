@@ -40,12 +40,16 @@ export function KPIGrid({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function KPICard({ title, value, unit, icon, colorVariant = "default" }: { title: string, value: string | number, unit?: string, icon?: React.ReactNode, colorVariant?: "default" | "orange" | "aqua" | "jasmine" }) {
+export function KPICard({ title, value, unit, icon, colorVariant = "default", description }: { title: string, value: string | number, unit?: string, icon?: React.ReactNode, colorVariant?: "default" | "orange" | "aqua" | "jasmine" | "indigo" | "primary" | "floral" | "cream", description?: string }) {
   const colors = {
     default: "bg-white border-brand-indigo/10 text-brand-indigo",
     orange: "bg-brand-orange/10 border-brand-orange/20 text-brand-orange",
     aqua: "bg-brand-aqua/10 border-brand-aqua/20 text-brand-aqua",
     jasmine: "bg-brand-jasmine/20 border-brand-jasmine/30 text-amber-700",
+    indigo: "bg-brand-indigo/10 border-brand-indigo/20 text-brand-indigo",
+    primary: "bg-emerald-50 border-emerald-100 text-emerald-700",
+    floral: "bg-brand-floral border-brand-indigo/10 text-brand-indigo",
+    cream: "bg-brand-cream border-brand-indigo/10 text-brand-indigo",
   };
   
   const iconColors = {
@@ -53,6 +57,10 @@ export function KPICard({ title, value, unit, icon, colorVariant = "default" }: 
     orange: "bg-brand-orange/20 text-brand-orange",
     aqua: "bg-brand-aqua/20 text-brand-aqua",
     jasmine: "bg-brand-jasmine/40 text-amber-700",
+    indigo: "bg-brand-indigo/20 text-brand-indigo",
+    primary: "bg-emerald-100 text-emerald-600",
+    floral: "bg-brand-indigo/5 text-brand-indigo",
+    cream: "bg-brand-indigo/5 text-brand-indigo",
   };
 
   return (
@@ -69,20 +77,21 @@ export function KPICard({ title, value, unit, icon, colorVariant = "default" }: 
           {unit && <span className="text-xs font-bold opacity-60 ml-1.5 uppercase tracking-widest">{unit}</span>}
         </span>
         <span className="text-[10px] font-black uppercase tracking-widest opacity-60 mt-1">{title}</span>
+        {description && <p className="text-[10px] font-medium opacity-40 mt-1">{description}</p>}
       </div>
     </motion.div>
   );
 }
 
-export function AppCard({ children, className = "" }: { children: React.ReactNode, className?: string }) {
+export function AppCard({ children, className = "", noPadding = false }: { children: React.ReactNode, className?: string, noPadding?: boolean }) {
   return (
-    <div className={`bg-white rounded-3xl border border-brand-indigo/10 shadow-sm overflow-hidden ${className}`}>
+    <div className={`bg-white rounded-3xl border border-brand-indigo/10 shadow-sm overflow-hidden ${noPadding ? 'p-0' : 'p-6'} ${className}`}>
       {children}
     </div>
   );
 }
 
-export function StatusBadge({ status, type = "default" }: { status: string, type?: "success" | "warning" | "error" | "info" | "default" }) {
+export function StatusBadge({ children, variant = "default" }: { children: React.ReactNode, variant?: "success" | "warning" | "error" | "info" | "default" }) {
   const styles = {
     success: "bg-emerald-50 text-emerald-700 border-emerald-200",
     warning: "bg-amber-50 text-amber-700 border-amber-200",
@@ -92,24 +101,31 @@ export function StatusBadge({ status, type = "default" }: { status: string, type
   };
 
   return (
-    <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${styles[type]}`}>
-      {status}
+    <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${styles[variant]}`}>
+      {children}
     </span>
   );
 }
 
-export function EmptyState({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
+export function EmptyState({ icon, title, description }: { icon: React.ReactNode, title: string, description?: string }) {
   return (
     <div className="py-24 text-center px-4 flex flex-col items-center">
       <div className="text-brand-indigo/20 mb-4">{icon}</div>
       <h3 className="text-lg font-bold text-brand-indigo/60">{title}</h3>
-      <p className="text-sm text-brand-indigo/40 mt-1">{description}</p>
+      {description && <p className="text-sm text-brand-indigo/40 mt-1">{description}</p>}
     </div>
   );
 }
 
-export function AppButton({ children, onClick, variant = "primary", disabled = false, icon, className="" }: { children: React.ReactNode, onClick?: () => void, variant?: "primary" | "secondary" | "danger" | "ghost", disabled?: boolean, icon?: React.ReactNode, className?: string }) {
-  const base = "flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed";
+export function AppButton({ children, onClick, variant = "primary", disabled = false, icon, className="", type = "button", size = "md", title }: { children: React.ReactNode, onClick?: () => void, variant?: "primary" | "secondary" | "danger" | "ghost", disabled?: boolean, icon?: React.ReactNode, className?: string, type?: "button" | "submit" | "reset", size?: "sm" | "md" | "lg", title?: string }) {
+  const sizes = {
+    sm: "px-3 py-2 rounded-xl text-[10px]",
+    md: "px-5 py-3 rounded-2xl text-xs",
+    lg: "px-8 py-4 rounded-3xl text-sm"
+  };
+  
+  const base = "flex items-center justify-center gap-2 font-black uppercase tracking-widest transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed";
+  
   const variants = {
     primary: "bg-brand-orange text-white hover:bg-[#e67a0f]",
     secondary: "bg-white border border-brand-indigo/20 text-brand-indigo hover:bg-brand-indigo/5",
@@ -118,7 +134,7 @@ export function AppButton({ children, onClick, variant = "primary", disabled = f
   };
 
   return (
-    <button onClick={onClick} disabled={disabled} className={`${base} ${variants[variant]} ${className}`}>
+    <button title={title} type={type} onClick={onClick} disabled={disabled} className={`${base} ${sizes[size]} ${variants[variant]} ${className}`}>
       {icon}
       {children}
     </button>

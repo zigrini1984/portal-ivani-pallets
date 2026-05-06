@@ -240,13 +240,15 @@ export function AdminManutencaoClient({
                         <td className="px-6 py-5">
                           <div className="flex flex-col gap-2 items-start">
                             <StatusBadge 
-                              status={item.status} 
-                              type={item.status === 'concluida' ? 'success' : item.status === 'em_andamento' ? 'info' : 'warning'} 
-                            />
+                              variant={item.status === 'concluida' ? 'success' : item.status === 'em_andamento' ? 'info' : 'warning'} 
+                            >
+                              {item.status}
+                            </StatusBadge>
                             <StatusBadge 
-                              status={item.tipo_servico} 
-                              type={item.tipo_servico === 'reforma' ? 'warning' : 'default'} 
-                            />
+                              variant={item.tipo_servico === 'reforma' ? 'warning' : 'default'} 
+                            >
+                              {item.tipo_servico}
+                            </StatusBadge>
                           </div>
                         </td>
                         <td className="px-6 py-5 text-right">
