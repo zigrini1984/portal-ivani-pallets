@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { createClientServer } from "@/lib/supabase/server";
 import { AdminManutencaoClient } from "./client";
 
