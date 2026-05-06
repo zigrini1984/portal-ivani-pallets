@@ -110,6 +110,7 @@ export async function enviarColetaParaTriagem(coletaId: string) {
     }
 
     // 4. Atualizar coleta
+    // Adicionamos .select("id") para forçar um retorno explícito e evitar ambiguidades no PostgREST
     const { error: updateError } = await supabase
       .from("coletas")
       .update({
@@ -117,10 +118,16 @@ export async function enviarColetaParaTriagem(coletaId: string) {
         enviado_triagem: true,
         data_envio_triagem: new Date().toISOString()
       })
-      .eq("id", coletaId);
+      .eq("id", coletaId)
+      .select("id");
 
     if (updateError) {
-      console.error("[enviarColetaParaTriagem] Erro ao atualizar coleta:", updateError);
+      console.error("[enviarColetaParaTriagem] Erro ao atualizar coleta:", {
+        message: updateError.message,
+        details: updateError.details,
+        hint: updateError.hint,
+        code: updateError.code
+      });
       return { success: false, error: "Erro ao atualizar status da coleta: " + updateError.message };
     }
 
