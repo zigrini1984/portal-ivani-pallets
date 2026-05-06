@@ -24,7 +24,8 @@ export async function iniciarManutencao(id: string) {
     revalidatePath("/admin/manutencao");
     return { success: true };
   } catch (err: any) {
-    return { success: false, error: err.message };
+    console.error("[iniciarManutencao] Erro:", err.message);
+    return { success: false, error: err.message || "Erro ao iniciar manutenção." };
   }
 }
 
@@ -99,6 +100,6 @@ export async function concluirManutencao(id: string) {
     return { success: true };
   } catch (err: any) {
     console.error("[concluirManutencao] Erro:", err.message);
-    return { success: false, error: err.message };
+    return { success: false, error: err.message || "Erro ao concluir manutenção." };
   }
 }
