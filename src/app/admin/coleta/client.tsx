@@ -25,6 +25,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { criarColeta, enviarParaTriagem, salvarColeta } from "@/app/actions/coletas";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -159,18 +160,16 @@ export function AdminColetaClient({
     setIsSubmitting(true);
     
     try {
-      const { error: insertError } = await supabase.from("coletas").insert({
-        cliente_id: "pce", 
-        data_coleta: formData.data_coleta, // Salva apenas a DATA (YYYY-MM-DD)
+      const result = await criarColeta({
+        data_coleta: formData.data_coleta,
         quantidade_material_bruto: parseInt(formData.quantidade_material_bruto, 10),
         nf_saida_pce: formData.nf_saida_pce,
         motorista: formData.motorista,
         caminhao: formData.caminhao,
         observacao: formData.observacao,
-        status: "coletado"
       });
 
-      if (insertError) throw insertError;
+      if (!result.success) throw new Error(result.error);
 
       setIsModalOpen(false);
       setFormData({
@@ -182,9 +181,9 @@ export function AdminColetaClient({
         observacao: ""
       });
       router.refresh();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erro ao criar coleta:", err);
-      alert("Erro ao criar coleta. Verifique o console.");
+      alert(err.message || "Erro ao criar coleta. Verifique o console.");
     } finally {
       setIsSubmitting(false);
     }
@@ -199,57 +198,14 @@ export function AdminColetaClient({
       const coleta = initialColetas.find(c => c.id === id);
       if (!coleta) throw new Error("Coleta não encontrada na lista local.");
 
-      // 2. Se for envio para triagem, realizar verificações e insert extra
+      // 2. Se for envio para triagem, realizar via Server Action
       if (newStatus === "enviado_triagem") {
-        // Verificar duplicidade na tabela triagens
-        // Usamos .limit(1) em vez de .maybeSingle() para evitar o erro
-        // "operator does not exist: json ? unknown" em colunas JSON (não JSONB)
-        const { data: existingTriagens, error: checkError } = await supabase
-          .from("triagens")
-          .select("id")
-          .eq("coleta_id", id)
-          .limit(1);
-
-        if (checkError) throw checkError;
-
-        if (existingTriagens && existingTriagens.length > 0) {
-          alert("Atenção: Já existe uma triagem vinculada a esta coleta.");
-          setLoadingRowId(null);
-          return;
-        }
-
-        // A. Atualizar Coleta
-        const { error: updateError } = await supabase
-          .from("coletas")
-          .update({
-            status: "enviado_triagem",
-            enviado_triagem: true,
-            data_envio_triagem: new Date().toISOString()
-          })
-          .eq("id", id);
-
-        if (updateError) throw updateError;
-
-        // B. Criar Registro na Triagem
-        const { error: triagemError } = await supabase
-          .from("triagens")
-          .insert({
-            coleta_id: id,
-            cliente_id: coleta.cliente_id || "pce",
-            quantidade_total: coleta.quantidade_material_bruto,
-            status: "pendente",
-            created_at: new Date().toISOString()
-          });
-
-        if (triagemError) throw triagemError;
+        const result = await enviarParaTriagem(coleta);
+        if (result.error) throw new Error(result.error);
       } else {
-        // Atualização simples para outros status (manutenção/estoque)
-        const { error: updateError } = await supabase
-          .from("coletas")
-          .update({ status: newStatus })
-          .eq("id", id);
-
-        if (updateError) throw updateError;
+        // Atualização simples para outros status via Server Action genérica
+        const result = await salvarColeta({ status: newStatus }, id);
+        if (result.error) throw new Error(result.error);
       }
       
       router.refresh();
