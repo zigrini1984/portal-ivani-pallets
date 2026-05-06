@@ -117,16 +117,8 @@ export async function login(formData: FormData) {
       }
     );
 
-    return {
-      success: true,
-      redirectTo,
-      user: {
-        id: data.id,
-        email: data.email,
-        nome: data.nome,
-        perfil: data.perfil,
-      },
-    };
+    // Se chegou aqui, login deu certo. Salva o cookie e redireciona.
+    return redirect(redirectTo);
   } catch (err: any) {
     console.error("[login] erro inesperado:", err.message);
     return { error: "Erro de conexão com o banco de dados. Tente novamente." };

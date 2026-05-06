@@ -7,48 +7,31 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { login } from "@/app/actions/auth";
 
+import { useFormStatus } from "react";
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <motion.button
+      type="submit"
+      disabled={pending}
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
+      className="w-full h-16 bg-brand-cyan hover:bg-[#1a6e74] text-white rounded-2xl font-bold flex items-center justify-center gap-3 transition-all shadow-xl shadow-brand-cyan/20 disabled:opacity-70 disabled:cursor-not-allowed group"
+    >
+      {pending ? (
+        <Loader2 className="animate-spin" size={20} />
+      ) : (
+        <>
+          Entrar no Portal 
+          <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
+        </>
+      )}
+    </motion.button>
+  );
+}
+
 export default function LoginPage() {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-
-  // Form states
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    
-    // Clear previous errors and start transition
-    setError(null);
-
-    const formData = new FormData();
-    formData.set("email", email);
-    formData.set("password", password);
-
-    startTransition(async () => {
-      try {
-        const result = await login(formData);
-
-        if (result?.error) {
-          setError(result.error);
-          return;
-        }
-
-        if (result?.success && result?.redirectTo) {
-          // Usamos window.location.href para garantir um refresh completo 
-          // e que os cookies de sessão sejam lidos corretamente pelo middleware e layout
-          window.location.href = result.redirectTo;
-        } else {
-          setError("Ocorreu um erro inesperado. Tente novamente.");
-        }
-      } catch (err) {
-        console.error("Erro ao processar login:", err);
-        setError("Não foi possível conectar ao servidor. Verifique sua internet.");
-      }
-    });
-  }
-
   return (
     <main className="min-h-screen bg-[#FAFAFA] text-[#1A1A1A] font-sans flex items-center justify-center px-6 py-12 relative overflow-hidden">
       {/* Background Decorative Elements */}
@@ -78,16 +61,13 @@ export default function LoginPage() {
             <p className="text-sm text-text-dark/50">Acesse sua área exclusiva Ivani Pallets</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form action={login} className="space-y-6">
             <div className="space-y-2">
               <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-text-dark/40 ml-1">E-mail Corporativo</label>
               <input 
                 name="email"
                 type="email" 
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isPending}
                 placeholder="exemplo@empresa.com"
                 className="w-full h-14 bg-[#F8F9FA] border border-transparent focus:border-brand-cyan/30 rounded-2xl px-5 text-sm outline-none transition-all focus:bg-white focus:shadow-inner disabled:opacity-60"
               />
@@ -99,41 +79,12 @@ export default function LoginPage() {
                 name="password"
                 type="password" 
                 required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isPending}
                 placeholder="••••••••"
                 className="w-full h-14 bg-[#F8F9FA] border border-transparent focus:border-brand-cyan/30 rounded-2xl px-5 text-sm outline-none transition-all focus:bg-white focus:shadow-inner disabled:opacity-60"
               />
             </div>
 
-            {error && (
-              <motion.div 
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="flex items-center gap-3 text-red-600 text-xs font-semibold bg-red-50 p-4 rounded-2xl border border-red-100 shadow-sm"
-              >
-                <AlertCircle size={16} className="shrink-0" />
-                <span>{error}</span>
-              </motion.div>
-            )}
-
-            <motion.button
-              type="submit"
-              disabled={isPending}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              className="w-full h-16 bg-brand-cyan hover:bg-[#1a6e74] text-white rounded-2xl font-bold flex items-center justify-center gap-3 transition-all shadow-xl shadow-brand-cyan/20 disabled:opacity-70 disabled:cursor-not-allowed group"
-            >
-              {isPending ? (
-                <Loader2 className="animate-spin" size={20} />
-              ) : (
-                <>
-                  Entrar no Portal 
-                  <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
-                </>
-              )}
-            </motion.button>
+            <SubmitButton />
           </form>
 
           <div className="mt-8 text-center pt-6 border-t border-gray-50">
