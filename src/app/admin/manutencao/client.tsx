@@ -4,12 +4,12 @@ import React, { useState, useMemo } from "react";
 import {
   Wrench, AlertCircle, CheckCircle2, Loader2, Search,
   Play, ChevronDown, Calendar, Clock, Package, Inbox,
-  RefreshCw, Check, ClipboardList, Hammer, Zap
+  RefreshCw, Check, ClipboardList, Hammer, Zap, Trash2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { useRouter } from "next/navigation";
-import { iniciarManutencao, concluirManutencao, sincronizarManutencoesPendentes } from "@/app/actions/manutencao";
+import { iniciarManutencao, concluirManutencao, sincronizarManutencoesPendentes, limparRegistrosInvalidos } from "@/app/actions/manutencao";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -42,7 +42,7 @@ function KPICard({ title, value, unit = "un", icon, color }: { title: string; va
       </div>
       <div className="flex flex-col">
         <span className="text-3xl font-black tracking-tight text-slate-800">
-          {value.toLocaleString()}
+          {Number(value || 0).toLocaleString()}
           <span className="text-xs font-bold text-slate-400 ml-1.5 uppercase tracking-widest">{unit}</span>
         </span>
         <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">{title}</span>
@@ -67,10 +67,11 @@ export function AdminManutencaoClient({
   // 1. Filtragem de dados válidos para KPIs e Tabela
   const manutencoesValidas = useMemo(() => {
     if (!Array.isArray(initialManutencoes)) return [];
-    return initialManutencoes.filter(item => 
-      Number(item.quantidade || 0) > 0 && 
-      ["reforma", "remanufatura"].includes(item.tipo_servico)
-    );
+    return initialManutencoes.filter(item => {
+      const qty = Number(item.quantidade || 0);
+      const tipo = String(item.tipo_servico || "").toLowerCase();
+      return qty > 0 && ["reforma", "remanufatura"].includes(tipo);
+    });
   }, [initialManutencoes]);
 
   // 2. Cálculo dos KPIs
@@ -127,7 +128,7 @@ export function AdminManutencaoClient({
       const msg = `Sincronização concluída!\n\n` +
                   `Triagens verificadas: ${res.verificadas}\n` +
                   `Itens criados: ${res.criados}\n` +
-                  (res.criados === 0 ? "\n(Nenhum item pendente ou triagens sem quantidades de reforma/remanufatura)" : "");
+                  (res.motivos && res.motivos.length > 0 ? `\nObservações:\n- ${res.motivos.slice(0,3).join('\n- ')}` : "");
       
       alert(msg);
       router.refresh();
@@ -136,6 +137,21 @@ export function AdminManutencaoClient({
     } finally {
       setIsSyncing(false);
     }
+  }
+
+  async function handleClean() {
+      if(!confirm("Deseja remover registros zerados ou inválidos?")) return;
+      try {
+          const res = await limparRegistrosInvalidos();
+          if(res.success) {
+              alert("Limpeza concluída!");
+              router.refresh();
+          } else {
+              throw new Error(res.error);
+          }
+      } catch(err: any) {
+          alert("Erro na limpeza: " + err.message);
+      }
   }
 
   return (
@@ -151,11 +167,17 @@ export function AdminManutencaoClient({
             <p className="text-slate-500 text-sm mt-1">Gerencie itens em reforma ou remanufatura vindos da triagem.</p>
           </div>
           
-          <button onClick={handleSync} disabled={isSyncing}
-            className="flex items-center gap-2 px-5 py-3 bg-white border border-brand-cyan/20 text-brand-cyan rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-brand-cyan/5 transition-all shadow-sm disabled:opacity-50">
-            {isSyncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-            Sincronizar Triagens
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={handleClean} title="Limpar inválidos"
+                className="p-3 bg-white border border-red-100 text-red-500 rounded-2xl hover:bg-red-50 transition-all shadow-sm">
+                <Trash2 size={16} />
+            </button>
+            <button onClick={handleSync} disabled={isSyncing}
+                className="flex items-center gap-2 px-5 py-3 bg-white border border-brand-cyan/20 text-brand-cyan rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-brand-cyan/5 transition-all shadow-sm disabled:opacity-50">
+                {isSyncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                Sincronizar Triagens
+            </button>
+          </div>
         </div>
 
         {/* KPIs Section */}
