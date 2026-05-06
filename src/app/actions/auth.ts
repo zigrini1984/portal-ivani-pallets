@@ -54,7 +54,7 @@ export async function login(formData: FormData) {
   console.log("[login] tentativa para:", email);
 
   if (!email || !password) {
-    return { error: "Preencha e-mail e senha." };
+    redirect("/login?error=Preencha_email_e_senha");
   }
 
   let supabase;
@@ -62,7 +62,7 @@ export async function login(formData: FormData) {
     supabase = createAdminClient();
   } catch (err: any) {
     console.error("[login] falha ao criar cliente supabase:", err.message);
-    return { error: "Erro interno do servidor. Tente novamente." };
+    redirect("/login?error=Erro_interno_do_servidor");
   }
 
   try {
@@ -84,17 +84,17 @@ export async function login(formData: FormData) {
         hint: error.hint,
         code: error.code,
       });
-      return { error: "Erro ao validar login: " + error.message };
+      redirect("/login?error=Erro_ao_validar_login");
     }
 
     console.log("[login] usuario encontrado:", Boolean(data));
 
     if (!data) {
-      return { error: "E-mail ou senha incorretos." };
+      redirect("/login?error=Email_ou_senha_incorretos");
     }
 
     if (data.perfil !== "admin" && data.perfil !== "cliente") {
-      return { error: "Perfil de usuário inválido." };
+      redirect("/login?error=Perfil_de_usuario_invalido");
     }
 
     const redirectTo = getRedirectByPerfil(data.perfil as UsuarioPerfil);
@@ -120,8 +120,11 @@ export async function login(formData: FormData) {
     // Se chegou aqui, login deu certo. Salva o cookie e redireciona.
     return redirect(redirectTo);
   } catch (err: any) {
+    if (err?.digest?.startsWith("NEXT_REDIRECT")) {
+      throw err;
+    }
     console.error("[login] erro inesperado:", err.message);
-    return { error: "Erro de conexão com o banco de dados. Tente novamente." };
+    redirect("/login?error=Erro_de_conexao");
   }
 }
 
