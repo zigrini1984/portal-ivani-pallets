@@ -11,15 +11,12 @@ export default async function AdminManutencaoPage() {
   let serverError: string | null = null;
 
   try {
-    // 1. Buscar manutenções - Apenas colunas diretas para evitar quebra por relacionamentos
+    // 1. Busca SIMPLES e EXPLÍCITA - Apenas manutencoes, sem relacionamentos
     const { data, error: manutError } = await supabase
       .from("manutencoes")
       .select(`
         id,
-        triagem_id,
-        coleta_id,
         cliente_id,
-        modelo_id,
         modelo_nome_snapshot,
         tipo_servico,
         quantidade,
@@ -35,13 +32,13 @@ export default async function AdminManutencaoPage() {
       .order("created_at", { ascending: false });
 
     if (manutError) {
-      console.error("[AdminManutencaoPage] Erro na query de manutenções:", manutError);
-      serverError = manutError.message;
+      console.error("[AdminManutencaoPage] Query Error:", manutError.message);
+      serverError = `Erro no banco: ${manutError.message}`;
     } else {
       manutData = data || [];
     }
 
-    // 2. Buscar modelos (Opcional, não deve travar a página)
+    // 2. Busca de modelos (opcional, não trava)
     const { data: mData } = await supabase
       .from("modelos_pallets")
       .select("id, nome, codigo, medidas")
@@ -50,11 +47,11 @@ export default async function AdminManutencaoPage() {
     modelosData = mData || [];
 
   } catch (err: any) {
-    console.error("[AdminManutencaoPage] Erro crítico:", err.message);
-    serverError = "Ocorreu um erro ao carregar os dados. Verifique a conexão com o banco.";
+    // NUNCA lançar throw aqui
+    console.error("[AdminManutencaoPage] Fatal Error:", err.message);
+    serverError = "Falha crítica ao carregar dados de manutenção.";
   }
 
-  // Sempre retornar o componente, nunca dar throw
   return (
     <AdminManutencaoClient 
       initialManutencoes={manutData} 
