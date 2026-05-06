@@ -1,7 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = 'https://bbtgnzndgmaeukwhsqwm.supabase.co';
-const supabaseKey = 'sb_publishable_gMy7NAbvzbWNCxZulmOSFg_dvZGMC_j';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function diagnose() {
