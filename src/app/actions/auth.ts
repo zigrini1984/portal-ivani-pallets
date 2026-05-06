@@ -3,61 +3,92 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-/**
- * Tipo de retorno da Server Action de login
- */
 type LoginResult = {
   success?: boolean;
   error?: string;
   redirectTo?: string;
 };
 
-/**
- * LOGIN
- */
+type PerfilUsuario = "admin" | "cliente";
+
+const SESSION_COOKIE = "ivani_portal_usuario";
+
+function getRedirectByPerfil(perfil: PerfilUsuario) {
+  return perfil === "admin" ? "/admin/configuracao" : "/cliente/dashboard";
+}
+
 export async function login(formData: FormData): Promise<LoginResult> {
   try {
-    const email = String(formData.get("email") || "");
-    const senha = String(formData.get("senha") || "");
+    const rawEmail = String(formData.get("email") || "");
+    const rawPassword =
+      String(formData.get("password") || "") ||
+      String(formData.get("senha") || "");
 
-    // 🔒 Validação simples (ajuste depois para banco)
-    if (email === "admin@teste.com" && senha === "123456") {
+    const email = rawEmail.trim().toLowerCase();
+    const password = rawPassword.trim();
 
-      // cria cookie de sessão simples
-      cookies().set("ivani_portal_usuario", email, {
-        httpOnly: true,
-        path: "/",
-      });
-
+    if (!email || !password) {
       return {
-        success: true,
-        redirectTo: "/admin/coleta",
+        error: "Preencha e-mail e senha.",
       };
     }
 
-    return {
-      error: "Credenciais inválidas",
-    };
+    let perfil: PerfilUsuario | null = null;
+    let nome = "";
 
-  } catch (err: any) {
+    if (email === "admin@teste.com" && password === "123456") {
+      perfil = "admin";
+      nome = "Admin Teste";
+    }
+
+    if (email === "cliente@teste.com" && password === "123456") {
+      perfil = "cliente";
+      nome = "Cliente Teste";
+    }
+
+    if (!perfil) {
+      return {
+        error: "E-mail ou senha incorretos.",
+      };
+    }
+
+    const redirectTo = getRedirectByPerfil(perfil);
+    const cookieStore = await cookies();
+
+    cookieStore.set(
+      SESSION_COOKIE,
+      JSON.stringify({
+        id: email,
+        email,
+        nome,
+        perfil,
+      }),
+      {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: 60 * 60 * 8,
+      }
+    );
+
     return {
-      error: err?.message || "Erro no login",
+      success: true,
+      redirectTo,
+    };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Erro no login.";
+
+    return {
+      error: message,
     };
   }
 }
 
-/**
- * LOGOUT
- */
 export async function logout() {
-  try {
-    // remove cookie
-    cookies().delete("ivani_portal_usuario");
+  const cookieStore = await cookies();
 
-    // redireciona
-    redirect("/login");
+  cookieStore.delete(SESSION_COOKIE);
 
-  } catch (err) {
-    console.error("Erro no logout:", err);
-  }
+  redirect("/login");
 }
