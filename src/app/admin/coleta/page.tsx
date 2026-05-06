@@ -1,5 +1,4 @@
 export const dynamic = "force-dynamic";
-
 import { createClientServer } from "@/lib/supabase/server";
 import { AdminColetaClient } from "./client";
 
