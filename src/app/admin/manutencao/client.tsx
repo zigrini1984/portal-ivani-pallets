@@ -79,7 +79,13 @@ export function AdminManutencaoClient({
     try {
       const res = await sincronizarManutencoesPendentes();
       if (!res.success) throw new Error(res.error);
-      alert(`Sincronização concluída! ${res.count} triagens verificadas.`);
+      
+      const msg = `Sincronização concluída!\n\n` +
+                  `Triagens verificadas: ${res.verificadas}\n` +
+                  `Itens criados: ${res.criados}\n` +
+                  (res.criados === 0 ? "\n(Nenhum item pendente ou triagens sem quantidades de reforma/remanufatura)" : "");
+      
+      alert(msg);
       router.refresh();
     } catch (err: any) {
       alert("Erro ao sincronizar: " + err.message);
