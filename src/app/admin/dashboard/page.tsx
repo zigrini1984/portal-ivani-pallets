@@ -352,7 +352,7 @@ export default async function AdminDashboardPage() {
               "Eficiência é fazer o certo hoje para gerar valor sempre."
             </h2>
             <div className="w-24 h-[1px] bg-white/20 mx-auto" />
-            <p className="text-sm text-white/50 font-medium uppercase tracking-[0.4em]">Logística Ivani &bull; Industrial Intelligence</p>
+            <p className="text-sm text-white/50 font-medium uppercase tracking-[0.4em]">Logística Ivani &bull; Inteligência Industrial</p>
             
             <div className="pt-8 flex items-center justify-center gap-12 opacity-30 grayscale invert">
                <Recycle size={32} />

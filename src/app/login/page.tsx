@@ -121,7 +121,7 @@ export default function LoginPage() {
 
         <div className="mt-12 text-center">
           <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#133020]/20">
-            Logistics Intelligence System
+            Inteligência em Logística
           </p>
         </div>
       </motion.div>
