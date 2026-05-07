@@ -58,17 +58,17 @@ export function BicPenBanner({ title, subtitle, image, accentColor = "var(--ivan
           </motion.div>
         </div>
 
-        <div className="w-full md:w-1/2 h-72 md:h-96 relative overflow-hidden bg-[var(--ivani-bg)]/20">
+        <div className="w-full md:w-1/2 h-80 md:h-[32rem] relative overflow-hidden bg-white flex items-center justify-center">
           <motion.img 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, scale: 1.1 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.5 }}
             src={image} 
             alt="Operational Sketch"
-            className="w-full h-full object-contain mix-blend-multiply opacity-100 group-hover:scale-[1.02] transition-transform duration-1000 p-8"
+            className="w-full h-full object-contain opacity-100 group-hover:scale-[1.05] transition-transform duration-1000 p-4"
           />
-          {/* Bic Pen Soft Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-white via-transparent to-transparent hidden md:block opacity-40" />
+          {/* Subtle soft overlay to blend edges if needed */}
+          <div className="absolute inset-0 ring-1 ring-inset ring-black/5 pointer-events-none" />
         </div>
       </div>
       

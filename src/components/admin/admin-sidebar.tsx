@@ -60,13 +60,13 @@ function NavLink({
 // ─── Logo Block ───────────────────────────────────────────────────────────────
 function LogoBlock() {
   return (
-    <div className="w-full flex justify-center py-4">
-      <Link href="/admin/coleta" className="flex items-center group">
-        <div className="relative">
+    <div className="w-full h-full flex justify-center items-center bg-white overflow-hidden">
+      <Link href="/admin/coleta" className="w-full h-full flex items-center justify-center group">
+        <div className="relative w-full h-full flex items-center justify-center p-2">
           <img 
             src="/branding/logo-handwritten.png" 
             alt="Ivani Pallets" 
-            className="h-14 w-auto object-contain mix-blend-multiply transition-transform duration-500"
+            className="h-full w-full object-contain transition-transform duration-500 scale-110"
           />
         </div>
       </Link>
@@ -84,7 +84,7 @@ export function AdminSidebar() {
       {/* ── Desktop Sidebar ──────────────────────────────────────────────────── */}
       <aside className="hidden md:flex flex-col w-64 h-screen sticky top-0 z-40 floating-sidebar flex-shrink-0 paper-texture">
         {/* Logo */}
-        <div className="h-24 flex items-center border-b border-[var(--ivani-border)] bg-white/50">
+        <div className="h-32 flex items-center border-b border-[var(--ivani-border)] bg-white">
           <LogoBlock />
         </div>
 
