@@ -62,11 +62,15 @@ function LogoBlock() {
   return (
     <div className="w-full h-full flex justify-center items-center bg-white overflow-hidden">
       <Link href="/admin/coleta" className="w-full h-full flex items-center justify-center group">
-        <div className="relative w-full h-full flex items-center justify-center p-2">
+        <div className="relative w-full h-full flex items-center justify-center">
           <img 
             src="/branding/logo-handwritten.png" 
             alt="Ivani Pallets" 
-            className="h-full w-full object-contain transition-transform duration-500 scale-110"
+            className="h-full w-full object-contain transition-transform duration-500 scale-[1.5]"
+            style={{ 
+              filter: 'contrast(1.1) brightness(1.05)',
+              mixBlendMode: 'multiply'
+            }}
           />
         </div>
       </Link>
