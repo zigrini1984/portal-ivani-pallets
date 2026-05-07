@@ -1,41 +1,283 @@
 @import "tailwindcss";
 
-@theme {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+/* ─── Editorial Design System ─────────────────────────────────── */
+:root {
+  /* New editorial palette */
+  --ivani-bg: #FDFEFA;
+  --ivani-surface: #FFFFFF;
+  --ivani-border: #E8EBE4;
+  --ivani-primary: #327039; /* Forest Fern */
+  --ivani-secondary: #F8EDD9; /* Alabaster Hay */
+  --ivani-accent: #DD5C36; /* Cherry Grove */
+  --ivani-text: #133020; /* Tilled Earth */
+  --ivani-muted: #667065;
 
-  /* Premium SaaS Palette */
-  --color-brand-mirage: #16232A;
-  --color-brand-orange: #FF5B04;
-  --color-brand-teal: #075056;
-  --color-brand-sand: #E4EEF0;
-  
-  --color-bg-primary: #F8FAFB;
-  --color-text-dark: #1E293B;
-
-  --radius-xl: 1rem;
-  --radius-2xl: 1.5rem;
-  --radius-3xl: 2rem;
+  /* Legacy aliases — keep old pages working */
+  --color-forest-fern: #327039;
+  --color-tilled-earth: #133020;
+  --color-wheat-field: #F0BE49;
+  --color-cherry-grove: #DD5C36;
+  --color-alabaster-hay: #F8EDD9;
 }
 
-@layer base {
-  :root {
-    --background: #F8FAFB;
-    --foreground: #16232A;
-  }
+html,
+body {
+  min-height: 100%;
+  background-color: var(--ivani-bg);
+  color: var(--ivani-text);
+  font-family: var(--font-poppins), system-ui, sans-serif;
+  background-image: 
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E"),
+    linear-gradient(to bottom, #F7F8F4, #F2F4EE);
+  background-attachment: fixed;
+}
 
-  body {
-    color: var(--foreground);
-    background: var(--background);
-    font-family: var(--font-sans);
+/* ─── Utility Classes ─────────────────────────────────────────── */
+
+/* Subtle hand-drawn / organic border effect */
+.hand-drawn-border {
+  border: 1px solid var(--ivani-border);
+  border-radius: 8px 12px 10px 8px / 12px 8px 10px 12px;
+}
+
+/* Soft elevation used on cards */
+.soft-shadow {
+  box-shadow: 0 4px 20px -2px rgba(27, 31, 29, 0.05);
+}
+
+/* Main editorial card style */
+.editorial-card {
+  background-color: var(--ivani-surface);
+  border: 1px solid var(--ivani-border);
+  border-radius: 20px;
+  box-shadow: 0 4px 20px -2px rgba(27, 31, 29, 0.05);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.editorial-card:hover {
+  box-shadow: 0 8px 32px -4px rgba(27, 31, 29, 0.08);
+}
+
+/* Floating sidebar (light, white) */
+.floating-sidebar {
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border-right: 1px solid var(--ivani-border);
+  box-shadow: 4px 0 24px rgba(27, 31, 29, 0.02);
+}
+
+/* ─── Premium Tables ─────────────────────────────────────────── */
+
+.table-premium {
+  width: 100%;
+  border-separate: separate;
+  border-spacing: 0;
+}
+
+.table-premium th {
+  padding: 1.25rem 1.5rem;
+  font-size: 0.625rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--ivani-muted);
+  border-bottom: 1px solid var(--ivani-border);
+  text-align: left;
+  background-color: color-mix(in srgb, var(--ivani-bg), transparent 50%);
+}
+
+.table-premium td {
+  padding: 1.25rem 1.5rem;
+  font-size: 0.875rem;
+  color: var(--ivani-text);
+  border-bottom: 1px solid color-mix(in srgb, var(--ivani-border), transparent 50%);
+  transition: background-color 0.2s ease;
+}
+
+.table-premium tr:last-child td {
+  border-bottom-width: 0;
+}
+
+.table-premium tr:hover td {
+  background-color: color-mix(in srgb, var(--ivani-primary), transparent 98%);
+  cursor: default;
+}
+
+.table-premium tr.zebra-row td {
+  background-color: color-mix(in srgb, var(--ivani-bg), transparent 70%);
+}
+
+/* ─── Premium Buttons ────────────────────────────────────────── */
+
+.btn-premium {
+  position: relative;
+  display: inline-flex;
+  items-center: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 1rem;
+  font-weight: 700;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: all 0.3s ease;
+}
+
+.btn-premium:active {
+  transform: scale(0.97);
+}
+
+.btn-premium:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.btn-premium-primary {
+  background-color: var(--ivani-primary);
+  color: white;
+  box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--ivani-primary), transparent 90%);
+}
+
+.btn-premium-primary:hover {
+  box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--ivani-primary), transparent 80%);
+  transform: translateY(-0.125rem);
+}
+
+.btn-premium-secondary {
+  background-color: white;
+  color: var(--ivani-text);
+  border: 1px solid var(--ivani-border);
+}
+
+.btn-premium-secondary:hover {
+  background-color: var(--ivani-bg);
+  border-color: color-mix(in srgb, var(--ivani-muted), transparent 70%);
+}
+
+.btn-premium-ghost {
+  color: var(--ivani-muted);
+}
+
+.btn-premium-ghost:hover {
+  color: var(--ivani-text);
+  background-color: var(--ivani-bg);
+}
+
+/* ─── Premium Inputs ─────────────────────────────────────────── */
+
+.input-premium {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  background-color: var(--ivani-surface);
+  border: 1px solid var(--ivani-border);
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.input-premium:focus {
+  border-color: var(--ivani-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ivani-primary), transparent 95%);
+}
+
+.label-premium {
+  font-size: 0.625rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--ivani-muted);
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+/* ─── Premium Modals ─────────────────────────────────────────── */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: color-mix(in srgb, var(--ivani-text), transparent 60%);
+  backdrop-filter: blur(12px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .modal-backdrop {
+    padding: 1.5rem;
   }
 }
 
-@layer utilities {
-  .card-shadow {
-    box-shadow: 0 4px 20px -2px rgba(22, 35, 42, 0.05);
+.modal-content {
+  background-color: white;
+  border-radius: 2rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 42rem;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ─── Bic Pen Styles ──────────────────────────────────────────── */
+
+.bic-pen-sketch {
+  font-family: inherit;
+  position: relative;
+}
+
+.hand-drawn-path {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: draw 2s ease-out forwards;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
   }
-  .glass-light {
-    @apply bg-white/70 backdrop-blur-lg border border-white/50;
-  }
+}
+
+.paper-card {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E");
+}
+
+.sketch-icon {
+  filter: url(#wiggle);
+}
+
+.editorial-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ivani-border), transparent);
+  margin: 2rem 0;
+}
+
+/* Legacy card-shadow used by tropical.tsx components */
+.card-shadow {
+  box-shadow: 0 4px 20px -2px rgba(27, 31, 29, 0.05);
+}
+
+/* ─── Typography ─────────────────────────────────────────────── */
+.font-display {
+  font-family: var(--font-poppins), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--ivani-border);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ivani-muted);
 }

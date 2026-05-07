@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { 
   Receipt, 
   Calendar, 
@@ -13,24 +13,34 @@ import {
   MoreVertical,
   Plus,
   Loader2,
+  X,
+  ChevronDown,
+  ArrowUpRight,
+  Download,
+  Info,
+  DollarSign,
+  FileText,
   ArrowLeft,
   LogOut,
   ChevronRight,
-  DollarSign,
   Briefcase,
   Layers,
-  Check
+  Check,
+  Package,
+  History,
+  LayoutGrid,
+  List
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
-import { logout } from "@/app/actions/auth";
-import { AdminNav } from "@/components/admin/admin-nav";
-import { AdminPageHeader } from "@/components/admin/admin-page-header";
-import { LoadingScreen } from "@/components/ui/loading-screen";
+import { 
+  BicPenBanner, 
+  PremiumCard, 
+  PremiumButton, 
+  PremiumBadge 
+} from "@/components/ui/editorial";
 
-
-import { PageShell, KPIGrid, KPICard, AppCard, AppButton, StatusBadge, EmptyState } from "@/components/ui/tropical";
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Faturamento {
   id: string;
@@ -74,6 +84,18 @@ interface AdminFaturamentoClientProps {
   initialSaidasPendentes: SaidaPendente[];
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function fmtDate(v: string) {
+  try { return new Date(v).toLocaleDateString('pt-BR'); } catch { return v; }
+}
+
+function fmtMoney(v: number) {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPendentes }: AdminFaturamentoClientProps) {
   const supabase = createClient();
   const [faturamentos, setFaturamentos] = useState<Faturamento[]>(initialFaturamentos);
@@ -84,7 +106,6 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
 
   const fetchData = async () => {
     try {
-      // 1. Buscar Faturamentos e Parcelas
       const { data: fatData, error: fatError } = await supabase
         .from("faturamentos")
         .select(`
@@ -97,7 +118,6 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
 
       if (fatError) throw fatError;
 
-      // 2. Buscar Saídas de Estoque que ainda não estão faturadas
       const { data: allSaidas, error: sError } = await supabase
         .from("estoque_movimentacoes")
         .select(`
@@ -110,7 +130,6 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
 
       if (sError) throw sError;
 
-      // Filtrar as que já foram faturadas (estoque_movimentacao_id no faturamentos)
       const faturadasIds = new Set(fatData?.map(f => f.estoque_movimentacao_id));
       const pendentes = allSaidas?.filter(s => !faturadasIds.has(s.id)) || [];
 
@@ -122,16 +141,12 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
     }
   };
 
-  useEffect(() => {
-    // Initial fetch done by Server Component
-  }, []);
-
   const handleGerarFaturamento = async (saida: SaidaPendente) => {
     try {
+      setLoading(true);
       const precoRef = saida.modelo_pallet.preco_reforma || saida.modelo_pallet.preco_remanufatura || 0;
       const valorTotal = saida.quantidade * precoRef;
 
-      // 1. Criar Faturamento
       const { data: fat, error: fError } = await supabase
         .from("faturamentos")
         .insert([{
@@ -148,7 +163,6 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
 
       if (fError) throw fError;
 
-      // 2. Criar 2 Parcelas (30 e 60 dias)
       const dataSaida = new Date(saida.created_at);
       const p1Data = new Date(dataSaida); p1Data.setDate(p1Data.getDate() + 30);
       const p2Data = new Date(dataSaida); p2Data.setDate(p2Data.getDate() + 60);
@@ -180,11 +194,14 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
       alert("Faturamento gerado com sucesso!");
     } catch (err: any) {
       alert("Erro: " + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleMarcarOk = async (parcela: Parcela) => {
     try {
+      setLoading(true);
       const { error: upError } = await supabase
         .from("faturamento_parcelas")
         .update({ 
@@ -198,6 +215,8 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
       await fetchData();
     } catch (err: any) {
       alert("Erro ao atualizar parcela: " + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -214,179 +233,252 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
   }, [faturamentos]);
 
   return (
-    <PageShell hideHeader={true}
-      title="Faturamento PCE"
-      subtitle="Gestão de recebíveis originados de saídas de estoque."
-      actions={
-        <div className="flex gap-2 bg-white p-1 rounded-2xl border border-brand-mirage/10 shadow-sm">
-          <button 
-            onClick={() => setActiveTab('ativos')}
-            className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'ativos' ? 'bg-brand-teal text-white shadow-md' : 'text-brand-mirage/60 hover:bg-brand-sand/30'}`}
-          >
-            Faturamentos
-          </button>
-          <button 
-            onClick={() => setActiveTab('pendentes')}
-            className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'pendentes' ? 'bg-brand-teal text-white shadow-md' : 'text-brand-mirage/60 hover:bg-brand-sand/30'}`}
-          >
-            Saídas Pendentes
-            {saidasPendentes.length > 0 && (
-              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${activeTab === 'pendentes' ? 'bg-white text-brand-teal' : 'bg-brand-orange text-white'}`}>
-                {saidasPendentes.length}
-              </span>
-            )}
-          </button>
-        </div>
-      }
-    >
-      <KPIGrid>
-        <KPICard title="Total Apontado" value={`R$ ${stats.totalApontado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} icon={<DollarSign size={18} />} colorVariant="aqua" />
-        <KPICard title="Para Vencer" value={`R$ ${stats.paraVencer.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} icon={<Clock size={18} />} colorVariant="orange" />
-        <KPICard title="Vencidas" value={`R$ ${stats.vencidas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} icon={<AlertCircle size={18} />} colorVariant="indigo" />
-        <KPICard title="Recebido (OK)" value={`R$ ${stats.ok.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} icon={<CheckCircle2 size={18} />} colorVariant="primary" />
-      </KPIGrid>
+    <div className="max-w-[1200px] mx-auto pb-20">
+      <BicPenBanner 
+        title="Controle de Faturamento" 
+        subtitle="Gestão de notas fiscais, volumes expedidos e histórico financeiro operacional."
+        image="/branding/banner-relatorios.png"
+        hueRotate="160deg"
+      />
 
-      {error && (
-        <div className="mb-8 bg-red-50 border border-red-100 rounded-3xl p-5 flex items-center gap-3">
-          <AlertCircle className="text-red-500 shrink-0" size={20} />
-          <p className="text-sm font-bold text-red-700">{error}</p>
+      <div className="flex justify-end mb-12">
+        <div className="inline-flex p-1.5 bg-[var(--ivani-bg)]/60 rounded-2xl border border-[var(--ivani-border)]/50 shadow-sm">
+          {[
+            { id: "ativos", label: "Faturamentos", icon: <LayoutGrid size={16} /> },
+            { id: "pendentes", label: "Saídas Pendentes", icon: <Layers size={16} />, count: saidasPendentes.length }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex items-center gap-3 px-8 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                activeTab === tab.id
+                  ? "bg-white text-[var(--ivani-text)] shadow-sm border border-[var(--ivani-border)]"
+                  : "text-[var(--ivani-muted)] hover:text-[var(--ivani-text)] opacity-60"
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+              {tab.count !== undefined && tab.count > 0 && (
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black ${activeTab === tab.id ? 'bg-[var(--ivani-primary)] text-white' : 'bg-[#DD5C36] text-white shadow-sm shadow-[#DD5C36]/30'}`}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
-      )}
+      </div>
 
-      {loading ? (
-        <LoadingScreen 
-          message="Processando Faturas" 
-          subMessage="Ivani Pallets — Apontamento Financeiro"
-        />
-      ) : (
-        <AnimatePresence mode="wait">
-          {activeTab === 'pendentes' ? (
-            <motion.div key="pend" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {saidasPendentes.map((saida) => (
-                <AppCard key={saida.id} className="relative overflow-hidden group">
-                  <div className="flex justify-between items-start mb-6">
-                    <div className="w-12 h-12 bg-brand-sand/50 rounded-2xl flex items-center justify-center text-brand-orange">
-                      <Layers size={24} />
-                    </div>
-                    <AppButton 
-                      onClick={() => handleGerarFaturamento(saida)}
-                      size="sm"
-                    >
-                      Faturar Saída
-                    </AppButton>
-                  </div>
-                  <h3 className="text-lg font-black text-brand-mirage mb-1">{saida.modelo_pallet.nome}</h3>
-                  <p className="text-[10px] font-bold text-brand-mirage/40 uppercase tracking-widest mb-6">Saída em {new Date(saida.created_at).toLocaleDateString('pt-BR')}</p>
-                  <div className="bg-[#FAFAFA] border border-brand-mirage/5 rounded-2xl p-4 flex justify-between items-center">
-                    <span className="text-xs font-bold text-brand-mirage/40 uppercase">Quantidade</span>
-                    <span className="text-xl font-black text-brand-teal">{saida.quantidade} un</span>
-                  </div>
-                </AppCard>
-              ))}
-              {saidasPendentes.length === 0 && (
-                <div className="col-span-full">
-                  <AppCard>
-                    <EmptyState 
-                      icon={<CheckCircle2 size={48} />}
-                      title="Tudo faturado!"
-                      description="Nenhuma saída de estoque pendente para faturamento."
-                    />
-                  </AppCard>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        {[
+          { label: "Total Apontado", value: fmtMoney(stats.totalApontado), icon: <DollarSign size={20} />, color: "var(--ivani-blue)" },
+          { label: "Para Vencer", value: fmtMoney(stats.paraVencer), icon: <Clock size={20} />, color: "#F59E0B" },
+          { label: "Vencidas", value: fmtMoney(stats.vencidas), icon: <AlertCircle size={20} />, color: "#EF4444" },
+          { label: "Recebido (OK)", value: fmtMoney(stats.ok), icon: <CheckCircle2 size={20} />, color: "var(--ivani-teal)" },
+        ].map((kpi, idx) => (
+          <PremiumCard 
+            key={kpi.label} 
+            className="p-8 group relative overflow-hidden"
+          >
+             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                {(kpi.icon as any) && React.cloneElement(kpi.icon as React.ReactElement<any>, { size: 48, strokeWidth: 1.5 })}
+             </div>
+            <div className="flex items-center justify-between mb-6">
+               <div 
+                 className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm border border-current/10"
+                 style={{ background: `color-mix(in srgb, ${kpi.color} 10%, transparent)`, color: kpi.color }}
+               >
+                 {kpi.icon}
+               </div>
+               <div className="text-[9px] font-black uppercase tracking-widest text-[var(--ivani-muted)] opacity-30">Contábil</div>
+            </div>
+            <p className="text-[10px] font-black text-[var(--ivani-muted)] uppercase tracking-widest mb-1.5 opacity-60">{kpi.label}</p>
+            <p className="text-2xl font-black text-[var(--ivani-text)] tracking-tight">{kpi.value}</p>
+          </PremiumCard>
+        ))}
+      </div>
+
+      <AnimatePresence>
+        {error && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="mb-10">
+            <PremiumCard className="p-5 bg-red-50/50 border-red-100 flex items-center gap-4">
+              <AlertCircle className="text-red-500 shrink-0" size={20} />
+              <p className="text-sm font-black text-red-700">{error}</p>
+              <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600"><X size={18} /></button>
+            </PremiumCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence mode="wait">
+        {loading && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-[var(--ivani-text)]/20 backdrop-blur-md flex items-center justify-center"
+          >
+             <div className="flex flex-col items-center gap-6 p-12 bg-white rounded-[3rem] shadow-2xl border border-[var(--ivani-border)]">
+                <Loader2 className="text-[var(--ivani-primary)] animate-spin" size={48} />
+                <div className="text-center">
+                  <p className="text-[12px] font-black uppercase tracking-[0.3em] text-[var(--ivani-text)]">Processando Finanças</p>
+                  <p className="text-[10px] font-bold text-[var(--ivani-muted)] mt-2 opacity-60">Conciliando registros com o servidor...</p>
                 </div>
-              )}
-            </motion.div>
-          ) : (
-            <motion.div key="list" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-              {faturamentos.length === 0 ? (
-                <AppCard>
-                  <EmptyState 
-                    icon={<Receipt size={48} />}
-                    title="Nenhum faturamento"
-                    description="As saídas faturadas aparecerão aqui."
-                  />
-                </AppCard>
-              ) : (
-                <AppCard noPadding>
-                  <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-                    <table className="w-full min-w-[700px] text-left">
-                      <thead>
-                        <tr className="bg-brand-sand/50 border-b border-brand-mirage/5">
-                          <th className="px-6 py-4 text-[10px] font-black text-brand-mirage/50 uppercase tracking-widest">Modelo / Data Saída</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-brand-mirage/50 uppercase tracking-widest">Valor Total</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-brand-mirage/50 uppercase tracking-widest">Parcela 1 (30d)</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-brand-mirage/50 uppercase tracking-widest">Parcela 2 (60d)</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-brand-mirage/50 uppercase tracking-widest">Status Geral</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-brand-mirage/5">
-                        {faturamentos.map((fat) => {
-                          const p1 = fat.parcelas.find(p => p.numero_parcela === 1);
-                          const p2 = fat.parcelas.find(p => p.numero_parcela === 2);
-                          const hoje = new Date();
+             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-                          const getParcelaStyle = (p?: Parcela) => {
-                            if (!p) return "";
-                            if (p.status === 'ok') return "bg-green-50 text-green-600 border-green-100";
-                            if (new Date(p.data_vencimento) < hoje) return "bg-red-50 text-red-600 border-red-100";
-                            return "bg-brand-orange/10 text-brand-orange border-brand-orange/20";
-                          };
-
-                          return (
-                            <tr key={fat.id} className="hover:bg-brand-sand/30 transition-colors group">
-                              <td className="px-6 py-4">
-                                <div className="flex flex-col">
-                                  <span className="text-sm font-black text-brand-mirage">{fat.modelo_pallet.nome}</span>
-                                  <span className="text-[10px] font-bold text-brand-mirage/40 uppercase mt-1">
-                                    {fat.quantidade} un em {new Date(fat.data_saida).toLocaleDateString('pt-BR')}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4">
-                                <span className="text-sm font-black text-brand-teal">
-                                  R$ {Number(fat.valor_total_estimado).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                </span>
-                              </td>
-                              {[p1, p2].map((p, idx) => (
-                                <td key={idx} className="px-6 py-4">
-                                  {p ? (
-                                    <div className="flex items-center gap-3">
-                                      <div className={`px-2 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-tight flex flex-col ${getParcelaStyle(p)}`}>
-                                        <span>Venc: {new Date(p.data_vencimento).toLocaleDateString('pt-BR')}</span>
-                                        <span>R$ {Number(p.valor_estimado).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                                      </div>
-                                      {p.status !== 'ok' && (
-                                        <button 
-                                          onClick={() => handleMarcarOk(p)}
-                                          className="w-8 h-8 rounded-lg bg-[#FAFAFA] text-brand-mirage/20 hover:bg-brand-teal hover:text-white transition-all flex items-center justify-center border border-brand-mirage/5"
-                                          title="Marcar como Pago"
-                                        >
-                                          <Check size={16} />
-                                        </button>
-                                      )}
-                                    </div>
-                                  ) : '-'}
-                                </td>
-                              ))}
-                              <td className="px-6 py-4">
-                                <div className="flex items-center gap-2">
-                                  <div className={`w-1.5 h-1.5 rounded-full ${fat.parcelas.every(p => p.status === 'ok') ? 'bg-green-500' : 'bg-brand-teal animate-pulse'}`} />
-                                  <span className="text-[10px] font-black uppercase tracking-widest text-brand-mirage/60">
-                                    {fat.parcelas.filter(p => p.status === 'ok').length} / 2 Parcelas
-                                  </span>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+      <AnimatePresence mode="wait">
+        {activeTab === 'pendentes' ? (
+          <motion.div 
+            key="pend" 
+            initial={{ opacity: 0, y: 15 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            exit={{ opacity: 0, y: -15 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          >
+            {saidasPendentes.map((saida, idx) => (
+              <PremiumCard key={saida.id} className="group flex flex-col hover:border-[var(--ivani-primary)]/40 hover:shadow-xl transition-all duration-500">
+                <div className="p-8 pb-0 flex justify-between items-start mb-10">
+                  <div className="w-14 h-14 bg-[var(--ivani-bg)] rounded-2xl flex items-center justify-center text-[var(--ivani-muted)] group-hover:bg-[#DD5C36]/10 group-hover:text-[#DD5C36] transition-all duration-500">
+                    <Layers size={28} strokeWidth={1.5} />
                   </div>
-                </AppCard>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      )}
-    </PageShell>
+                  <PremiumButton 
+                    onClick={() => handleGerarFaturamento(saida)}
+                    icon={<Receipt size={14} />}
+                    className="!py-2.5 !px-5 shadow-sm"
+                  >
+                    Faturar
+                  </PremiumButton>
+                </div>
+
+                <div className="px-8 mb-8 flex-1">
+                  <h3 className="text-xl font-black text-[var(--ivani-text)] tracking-tighter mb-4 leading-tight group-hover:text-[var(--ivani-primary)] transition-colors">{saida.modelo_pallet.nome}</h3>
+                  <div className="flex items-center gap-3">
+                     <Calendar size={12} className="text-[var(--ivani-muted)] opacity-30" />
+                     <p className="text-[10px] font-black text-[var(--ivani-muted)] uppercase tracking-widest opacity-60">Expedido em {fmtDate(saida.created_at)}</p>
+                  </div>
+                </div>
+
+                <div className="px-8 pb-8">
+                  <div className="bg-[var(--ivani-bg)]/40 rounded-[2rem] p-6 border border-[var(--ivani-border)]/50 group-hover:bg-white transition-all duration-500 flex justify-between items-center shadow-sm">
+                    <span className="text-[9px] font-black text-[var(--ivani-muted)] uppercase tracking-[0.3em] opacity-50">Volume Total</span>
+                    <div className="flex items-baseline gap-2">
+                       <span className="text-3xl font-black text-[var(--ivani-text)] tracking-tighter">{saida.quantidade}</span>
+                       <span className="text-[10px] font-black text-[var(--ivani-muted)] uppercase opacity-30">un</span>
+                    </div>
+                  </div>
+                </div>
+              </PremiumCard>
+            ))}
+            {saidasPendentes.length === 0 && (
+              <div className="col-span-full py-32 editorial-card flex flex-col items-center border-dashed border-2 opacity-60">
+                 <div className="w-24 h-24 rounded-[2.5rem] bg-[var(--ivani-bg)] flex items-center justify-center text-[var(--ivani-teal)] mb-8 hand-drawn-border opacity-40">
+                    <CheckCircle2 size={40} strokeWidth={1.5} />
+                 </div>
+                 <h3 className="text-xl font-black text-[var(--ivani-text)] mb-3 tracking-tight">Conciliação Concluída</h3>
+                 <p className="text-sm text-[var(--ivani-muted)] font-medium max-w-sm text-center">Não há saídas de estoque aguardando processamento financeiro no momento.</p>
+              </div>
+            )}
+          </motion.div>
+        ) : (
+          <motion.div 
+            key="list" 
+            initial={{ opacity: 0, x: 20 }} 
+            animate={{ opacity: 1, x: 0 }} 
+            exit={{ opacity: 0, x: -20 }}
+            className="editorial-card overflow-hidden"
+          >
+            {faturamentos.length === 0 ? (
+              <div className="py-32 flex flex-col items-center opacity-40">
+                 <Receipt size={48} className="text-[var(--ivani-muted)] mb-6 opacity-30" strokeWidth={1.5} />
+                 <p className="text-[10px] font-black text-[var(--ivani-muted)] uppercase tracking-[0.3em]">Nenhum Faturamento Registrado</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="table-premium min-w-[1000px]">
+                  <thead>
+                    <tr>
+                      <th>Especificação / Data</th>
+                      <th>Valor Contábil</th>
+                      <th>Parcela 01 (30d)</th>
+                      <th>Parcela 02 (60d)</th>
+                      <th className="text-right">Audit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {faturamentos.map((fat, idx) => {
+                      const p1 = fat.parcelas.find(p => p.numero_parcela === 1);
+                      const p2 = fat.parcelas.find(p => p.numero_parcela === 2);
+                      const hoje = new Date();
+
+                      return (
+                        <tr key={fat.id} className="hover:bg-[var(--ivani-bg)]/20 transition-colors group">
+                          <td>
+                            <div className="flex items-center gap-5">
+                               <div className="w-11 h-11 rounded-2xl bg-white border border-[var(--ivani-border)] flex items-center justify-center text-[var(--ivani-muted)] shadow-sm group-hover:scale-110 transition-transform"><Package size={20} strokeWidth={1.5} /></div>
+                               <div className="flex flex-col">
+                                 <span className="text-[15px] font-black text-[var(--ivani-text)] tracking-tight">{fat.modelo_pallet.nome}</span>
+                                 <span className="text-[10px] font-black text-[var(--ivani-primary)] uppercase tracking-widest opacity-60">
+                                   {fat.quantidade} UN em {fmtDate(fat.data_saida)}
+                                 </span>
+                               </div>
+                            </div>
+                          </td>
+                          <td>
+                            <span className="text-lg font-black text-[var(--ivani-primary)] tracking-tighter">
+                              {fmtMoney(fat.valor_total_estimado)}
+                            </span>
+                          </td>
+                          {[p1, p2].map((p, pIdx) => (
+                            <td key={pIdx}>
+                              {p ? (
+                                <div className="flex items-center gap-3">
+                                  <div className={`px-5 py-3 rounded-2xl border flex flex-col gap-1 shadow-sm transition-all group-hover:shadow-md ${
+                                    p.status === 'ok' 
+                                      ? "bg-emerald-50/50 text-emerald-700 border-emerald-100" 
+                                      : (new Date(p.data_vencimento) < hoje ? "bg-red-50 text-red-600 border-red-100" : "bg-amber-50/50 text-amber-700 border-amber-100")
+                                  }`}>
+                                    <span className="text-[8px] font-black uppercase tracking-widest opacity-50">Venc: {fmtDate(p.data_vencimento)}</span>
+                                    <span className="text-[11px] font-black tracking-tight">{fmtMoney(p.valor_estimado)}</span>
+                                  </div>
+                                  {p.status !== 'ok' && (
+                                    <PremiumButton
+                                      variant="secondary"
+                                      onClick={() => handleMarcarOk(p)}
+                                      icon={<Check size={14} />}
+                                      className="!p-3 !rounded-xl !bg-white hover:!bg-[var(--ivani-primary)] hover:!text-white border-[var(--ivani-border)]"
+                                    />
+                                  )}
+                                </div>
+                              ) : <span className="text-[10px] font-bold text-[var(--ivani-muted)] opacity-20">—</span>}
+                            </td>
+                          ))}
+                          <td className="text-right">
+                             <div className="inline-flex items-center gap-3 px-4 py-2 bg-[var(--ivani-bg)] border border-[var(--ivani-border)]/50 rounded-2xl">
+                                <div className={`w-2 h-2 rounded-full ${fat.parcelas.every(p => p.status === 'ok') ? 'bg-[var(--ivani-teal)] shadow-[0_0_8px_var(--ivani-teal)]' : 'bg-amber-500 animate-pulse shadow-[0_0_8px_orange]'}`} />
+                                <span className="text-[9px] font-black uppercase tracking-widest text-[var(--ivani-muted)] opacity-70">
+                                  {fat.parcelas.filter(p => p.status === 'ok').length} / 2 Recebido
+                                </span>
+                             </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="px-8 py-6 border-t border-[var(--ivani-border)]/50 bg-[var(--ivani-bg)]/10 flex items-center justify-between">
+               <p className="text-[10px] font-black text-[var(--ivani-muted)] uppercase tracking-widest opacity-40">Ledger Operacional Financeiro</p>
+               <div className="flex items-center gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                  <span className="text-[11px] font-black text-[var(--ivani-muted)] uppercase tracking-widest ml-2 opacity-60">Status de Liquidação</span>
+               </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

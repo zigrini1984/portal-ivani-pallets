@@ -14,3 +14,5 @@ export default async function AdminRelatoriosPage() {
 
   return <AdminRelatoriosClient initialTriagens={triagens || []} />;
 }
+
+

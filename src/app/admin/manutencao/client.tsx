@@ -3,13 +3,19 @@
 import React, { useState, useMemo } from "react";
 import {
   Wrench, AlertCircle, CheckCircle2, Loader2, Search,
-  Play, ChevronDown, Calendar, Clock, Package, Inbox,
-  RefreshCw, Check, ClipboardList, Hammer, Zap, Trash2
+  Play, ChevronDown, Package, Inbox,
+  RefreshCw, Check, ClipboardList, Hammer, Zap, Trash2,
+  Calendar, ArrowRight, History
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { 
+  BicPenBanner, 
+  PremiumCard, 
+  PremiumButton, 
+  PremiumBadge 
+} from "@/components/ui/editorial";
 import { iniciarManutencao, concluirManutencao, sincronizarManutencoesPendentes, limparRegistrosInvalidos } from "@/app/actions/manutencao";
-import { PageShell, KPIGrid, KPICard, AppCard, StatusBadge, EmptyState, AppButton } from "@/components/ui/tropical";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -17,9 +23,12 @@ interface ModeloPallet { id: string; nome: string; codigo: string; medidas: stri
 
 interface Manutencao {
   id: string; triagem_id?: string; coleta_id?: string; cliente_id?: string;
-  modelo_id?: string; modelo_nome_snapshot: string;
+  modelo_id?: string; modelo_pallet_id?: string; modelo_nome_snapshot: string;
   tipo_servico: "reforma" | "remanufatura";
-  quantidade: number; status: "pendente" | "em_andamento" | "concluida";
+  quantidade: number;
+  quantidade_entrada: number;
+  quantidade_concluida?: number;
+  status: "pendente" | "em_andamento" | "concluida";
   data_entrada: string; data_inicio: string | null; data_conclusao: string | null;
   observacao?: string | null;
 }
@@ -30,12 +39,28 @@ interface Props {
   serverError?: string | null;
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Status helpers ───────────────────────────────────────────────────────────
 
-export function AdminManutencaoClient({ 
-  initialManutencoes = [], 
-  initialModelos = [], 
-  serverError = null 
+function statusConfig(s: string) {
+  switch (s) {
+    case "concluida":   return { label: "Concluído",   variant: "teal" as const };
+    case "em_andamento":return { label: "Em Reparo",   variant: "blue" as const };
+    default:            return { label: "Pendente",    variant: "orange" as const };
+  }
+}
+
+function tipoConfig(t: string) {
+  if (t === "reforma")       return { label: "Reforma",       variant: "orange" as const, icon: <Hammer size={12} /> };
+  if (t === "remanufatura")  return { label: "Remanufatura",  variant: "blue" as const, icon: <History size={12} /> };
+  return                            { label: t,               variant: "default" as const, icon: <Package size={12} /> };
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export function AdminManutencaoClient({
+  initialManutencoes = [],
+  initialModelos = [],
+  serverError = null
 }: Props) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,45 +68,31 @@ export function AdminManutencaoClient({
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // 1. Filtragem de dados válidos para KPIs e Tabela
   const manutencoesValidas = useMemo(() => {
     if (!Array.isArray(initialManutencoes)) return [];
     return initialManutencoes.filter(item => {
-      const qty = Number(item.quantidade || 0);
+      const qty = Number(item.quantidade || item.quantidade_entrada || 0);
       const tipo = String(item.tipo_servico || "").toLowerCase();
       return qty > 0 && ["reforma", "remanufatura"].includes(tipo);
     });
   }, [initialManutencoes]);
 
-  // 2. Cálculo dos KPIs
   const stats = useMemo(() => {
+    const sum = (list: Manutencao[]) => list.reduce((acc, curr) => acc + Number(curr.quantidade || curr.quantidade_entrada || 0), 0);
     return {
-      totalGeral: manutencoesValidas.reduce((acc, curr) => acc + Number(curr.quantidade || 0), 0),
-      pendentes: manutencoesValidas
-        .filter(i => i.status === "pendente")
-        .reduce((acc, curr) => acc + Number(curr.quantidade || 0), 0),
-      emAndamento: manutencoesValidas
-        .filter(i => i.status === "em_andamento")
-        .reduce((acc, curr) => acc + Number(curr.quantidade || 0), 0),
-      concluidas: manutencoesValidas
-        .filter(i => i.status === "concluida")
-        .reduce((acc, curr) => acc + Number(curr.quantidade || 0), 0),
-      reforma: manutencoesValidas
-        .filter(i => i.tipo_servico === "reforma")
-        .reduce((acc, curr) => acc + Number(curr.quantidade || 0), 0),
-      remanufatura: manutencoesValidas
-        .filter(i => i.tipo_servico === "remanufatura")
-        .reduce((acc, curr) => acc + Number(curr.quantidade || 0), 0),
+      totalGeral:   sum(manutencoesValidas),
+      pendentes:    sum(manutencoesValidas.filter(i => i.status === "pendente")),
+      emAndamento:  sum(manutencoesValidas.filter(i => i.status === "em_andamento")),
+      concluidas:   sum(manutencoesValidas.filter(i => i.status === "concluida")),
+      reforma:      sum(manutencoesValidas.filter(i => i.tipo_servico === "reforma")),
+      remanufatura: sum(manutencoesValidas.filter(i => i.tipo_servico === "remanufatura")),
     };
   }, [manutencoesValidas]);
 
-  // 3. Filtragem de Busca/Filtro
   const filteredList = useMemo(() => {
     return manutencoesValidas.filter(m => {
       const name = m?.modelo_nome_snapshot?.toLowerCase() || "";
-      const matchSearch = name.includes(searchTerm.toLowerCase());
-      const matchStatus = filterStatus === "todos" || m.status === filterStatus;
-      return matchSearch && matchStatus;
+      return name.includes(searchTerm.toLowerCase()) && (filterStatus === "todos" || m.status === filterStatus);
     });
   }, [manutencoesValidas, searchTerm, filterStatus]);
 
@@ -93,9 +104,7 @@ export function AdminManutencaoClient({
       router.refresh();
     } catch (err: any) {
       alert("Erro: " + err.message);
-    } finally {
-      setLoadingId(null);
-    }
+    } finally { setLoadingId(null); }
   }
 
   async function handleSync() {
@@ -103,183 +112,241 @@ export function AdminManutencaoClient({
     try {
       const res = await sincronizarManutencoesPendentes();
       if (!res.success) throw new Error(res.error);
-      
-      const msg = `Sincronização concluída!\n\n` +
-                  `Triagens verificadas: ${res.verificadas}\n` +
-                  `Itens criados: ${res.criados}\n` +
-                  (res.motivos && res.motivos.length > 0 ? `\nObservações:\n- ${res.motivos.slice(0,3).join('\n- ')}` : "");
-      
-      alert(msg);
+      alert(`Sincronização concluída!\nTriagens: ${res.triagensVerificadas}\nItens: ${res.itensCriados}`);
       router.refresh();
     } catch (err: any) {
       alert("Erro ao sincronizar: " + err.message);
-    } finally {
-      setIsSyncing(false);
-    }
+    } finally { setIsSyncing(false); }
   }
 
   async function handleClean() {
-      if(!confirm("Deseja remover registros zerados ou inválidos?")) return;
-      try {
-          const res = await limparRegistrosInvalidos();
-          if(res.success) {
-              alert("Limpeza concluída!");
-              router.refresh();
-          } else {
-              throw new Error(res.error);
-          }
-      } catch(err: any) {
-          alert("Erro na limpeza: " + err.message);
-      }
+    if (!confirm("Deseja remover registros zerados ou inválidos?")) return;
+    try {
+      const res = await limparRegistrosInvalidos();
+      if (res.success) { alert("Limpeza concluída!"); router.refresh(); }
+      else throw new Error(res.error);
+    } catch (err: any) { alert("Erro na limpeza: " + err.message); }
   }
 
   return (
-    <PageShell hideHeader={true} 
-      title="Manutenção e Reparos" 
-      subtitle="Gerencie itens em reforma ou remanufatura vindos da triagem."
-      actions={
-        <div className="flex items-center gap-2">
-          <AppButton onClick={handleClean} variant="danger" icon={<Trash2 size={16} />} title="Limpar inválidos" className="p-3">
-             <span className="sr-only">Limpar</span>
-          </AppButton>
-          <AppButton onClick={handleSync} disabled={isSyncing} icon={isSyncing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}>
-             Sincronizar Triagens
-          </AppButton>
-        </div>
-      }
-    >
-        <KPIGrid>
-          <KPICard title="Pendentes" value={stats.pendentes} icon={<Clock size={24} />} colorVariant="orange" />
-          <KPICard title="Em Andamento" value={stats.emAndamento} icon={<Zap size={24} />} colorVariant="aqua" />
-          <KPICard title="Concluídos" value={stats.concluidas} icon={<CheckCircle2 size={24} />} colorVariant="jasmine" />
-          <KPICard title="Total Geral" value={stats.totalGeral} icon={<ClipboardList size={24} />} colorVariant="default" />
-        </KPIGrid>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-          <AppCard className="p-4 flex items-center gap-4">
-             <div className="p-3 rounded-2xl bg-brand-orange/10 text-brand-orange"><Hammer size={20} /></div>
-             <div>
-               <p className="text-[10px] font-black uppercase tracking-widest text-brand-mirage/60">Total Reforma</p>
-               <p className="text-2xl font-black text-brand-mirage">{stats.reforma} <span className="text-[10px] font-bold text-brand-mirage/40 uppercase">un</span></p>
+    <div className="max-w-[1200px] mx-auto pb-20">
+      <BicPenBanner 
+        title="Manutenção e Reparos" 
+        subtitle="Gestão operacional de itens em reforma ou remanufatura vindos da triagem."
+        image="/branding/banner-operacao.png"
+        hueRotate="240deg"
+      />
+
+      <div className="flex justify-end items-center gap-3 mb-10">
+        <PremiumButton
+          variant="secondary"
+          onClick={handleClean}
+          icon={<Trash2 size={16} />}
+          className="!p-4"
+        />
+        <PremiumButton
+          onClick={handleSync}
+          loading={isSyncing}
+          icon={<RefreshCw size={18} />}
+        >
+          Sincronizar Operação
+        </PremiumButton>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        {[
+          { label: "Pendentes", value: stats.pendentes, icon: <ClipboardList size={20} />, color: "#F59E0B" },
+          { label: "Em Reparo", value: stats.emAndamento, icon: <Zap size={20} />, color: "var(--ivani-blue)" },
+          { label: "Concluídos", value: stats.concluidas, icon: <CheckCircle2 size={20} />, color: "var(--ivani-teal)" },
+          { label: "Total Geral", value: stats.totalGeral, icon: <Package size={20} />, color: "var(--ivani-primary)" },
+        ].map((kpi, idx) => (
+          <PremiumCard key={kpi.label} className="p-6 relative group overflow-hidden">
+             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                {(kpi.icon as any) && React.cloneElement(kpi.icon as React.ReactElement<any>, { size: 48, strokeWidth: 1.5 })}
              </div>
-          </AppCard>
-          <AppCard className="p-4 flex items-center gap-4">
-             <div className="p-3 rounded-2xl bg-brand-mirage/5 text-brand-mirage"><Wrench size={20} /></div>
-             <div>
-               <p className="text-[10px] font-black uppercase tracking-widest text-brand-mirage/60">Total Remanufatura</p>
-               <p className="text-2xl font-black text-brand-mirage">{stats.remanufatura} <span className="text-[10px] font-bold text-brand-mirage/40 uppercase">un</span></p>
-             </div>
-          </AppCard>
+            <div className="flex items-center justify-between mb-4">
+               <div 
+                 className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-sm border border-current/10"
+                 style={{ background: `color-mix(in srgb, ${kpi.color} 10%, transparent)`, color: kpi.color }}
+               >
+                 {kpi.icon}
+               </div>
+               <div className="text-[9px] font-black uppercase tracking-widest text-[var(--ivani-muted)] opacity-40">Status</div>
+            </div>
+            <p className="text-[10px] font-black text-[var(--ivani-muted)] uppercase tracking-widest mb-1 opacity-60">{kpi.label}</p>
+            <p className="text-3xl font-black text-[var(--ivani-text)] tracking-tight">{kpi.value}</p>
+          </PremiumCard>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        {[
+          { label: "Linha de Reforma", value: stats.reforma, icon: <Hammer size={24} />, color: "#DD5C36", desc: "Recuperação estrutural técnica" },
+          { label: "Linha de Remanufatura", value: stats.remanufatura, icon: <History size={24} />, color: "var(--ivani-purple)", desc: "Reutilização de componentes para novos ciclos" },
+        ].map((k, idx) => (
+          <PremiumCard 
+            key={k.label} 
+            className="p-8 flex items-center gap-6 group relative overflow-hidden"
+          >
+            <div 
+              className="w-16 h-16 rounded-[1.5rem] flex items-center justify-center flex-shrink-0 shadow-sm transition-transform group-hover:scale-110"
+              style={{ background: `color-mix(in srgb, ${k.color} 8%, transparent)`, color: k.color }}
+            >
+              {k.icon}
+            </div>
+            <div className="relative z-10">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--ivani-muted)] mb-1.5 opacity-50">{k.label}</p>
+              <p className="text-3xl font-black text-[var(--ivani-text)] tracking-tighter">
+                {k.value} <span className="text-[10px] font-black text-[var(--ivani-muted)] uppercase ml-1 opacity-40">unidades</span>
+              </p>
+              <p className="text-[11px] font-bold text-[var(--ivani-muted)] mt-2 opacity-60">{k.desc}</p>
+            </div>
+          </PremiumCard>
+        ))}
+      </div>
+
+      <PremiumCard className="p-4 mb-8 flex flex-col md:flex-row items-center gap-4">
+        <div className="relative flex-1 w-full group">
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--ivani-muted)] transition-colors group-focus-within:text-[var(--ivani-primary)]" size={18} />
+          <input
+            type="text"
+            placeholder="Pesquisar por modelo de pallet..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-14 pr-6 py-4 bg-[var(--ivani-bg)]/40 border border-transparent rounded-2xl text-sm font-bold text-[var(--ivani-text)] outline-none focus:bg-white focus:border-[var(--ivani-primary)]/20 focus:ring-8 focus:ring-[var(--ivani-primary)]/5 transition-all placeholder:text-[var(--ivani-muted)]/30"
+          />
         </div>
-
-        {serverError && (
-          <div className="mb-6 bg-red-50 border border-red-100 rounded-3xl p-4 flex items-center gap-3">
-            <AlertCircle className="text-red-500 shrink-0" size={20} />
-            <p className="text-sm text-red-700 font-bold">{serverError}</p>
-          </div>
-        )}
-
-        {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="relative flex-1 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-mirage/30 group-focus-within:text-brand-orange transition-colors" size={20} />
-            <input type="text" placeholder="Buscar modelo de pallet..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-white border border-brand-mirage/10 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-brand-orange/10 transition-all shadow-sm font-medium text-brand-mirage" />
-          </div>
-          
-          <div className="relative min-w-[200px]">
-            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-              className="w-full appearance-none pl-4 pr-12 py-4 bg-white border border-brand-mirage/10 rounded-2xl text-sm font-bold outline-none cursor-pointer focus:border-brand-orange shadow-sm transition-all text-brand-mirage">
-              <option value="todos">Todos Status</option>
-              <option value="pendente">Pendentes</option>
-              <option value="em_andamento">Iniciados</option>
-              <option value="concluida">Concluídos</option>
-            </select>
-            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-mirage/30 pointer-events-none" size={18} />
-          </div>
+        <div className="relative min-w-[200px] w-full md:w-auto">
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="w-full appearance-none pl-5 pr-12 py-4 bg-white border border-[var(--ivani-border)] rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer focus:border-[var(--ivani-primary)]/40 transition-all text-[var(--ivani-text)] shadow-sm"
+          >
+            <option value="todos">Todos os Status</option>
+            <option value="pendente">Pendentes</option>
+            <option value="em_andamento">Em Andamento</option>
+            <option value="concluida">Concluídos</option>
+          </select>
+          <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-[var(--ivani-muted)] pointer-events-none" size={16} />
         </div>
+      </PremiumCard>
 
-        {/* List/Table */}
-        <AppCard>
-          {filteredList.length === 0 ? (
-            <EmptyState 
-              icon={<Inbox size={48} />}
-              title={manutencoesValidas.length === 0 ? "Nenhum item em manutenção" : "Nenhum resultado"}
-              description={manutencoesValidas.length === 0 ? "Conclua uma triagem com reforma ou remanufatura." : "Tente limpar os filtros."}
-            />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[800px]">
-                <thead>
-                  <tr className="bg-brand-sand/50 border-b border-brand-mirage/5">
-                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-brand-mirage/50">Modelo / Origem</th>
-                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-brand-mirage/50 text-center">Quantidade</th>
-                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-brand-mirage/50">Status / Tipo</th>
-                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-brand-mirage/50 text-right">Ações Operacionais</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-brand-mirage/5">
-                  <AnimatePresence>
-                    {filteredList.map((item) => (
-                      <motion.tr key={item.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="hover:bg-brand-sand/30 transition-colors group">
-                        <td className="px-6 py-5">
+      <PremiumCard className="overflow-hidden">
+        {filteredList.length === 0 ? (
+          <div className="py-32 flex flex-col items-center text-center px-6">
+            <div className="w-24 h-24 rounded-[2.5rem] bg-[var(--ivani-bg)] flex items-center justify-center text-[var(--ivani-muted)] mb-8 hand-drawn-border border-dashed opacity-40">
+              <Wrench size={40} strokeWidth={1.5} />
+            </div>
+            <h3 className="text-xl font-black text-[var(--ivani-text)] mb-3">Linha de montagem vazia</h3>
+            <p className="text-sm text-[var(--ivani-muted)] max-w-sm font-medium leading-relaxed opacity-60">
+              Não há pallets aguardando ou em processo de reparo para os filtros atuais.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="table-premium min-w-[900px]">
+              <thead>
+                <tr>
+                  <th>Modelo e Origem</th>
+                  <th>Quantidade</th>
+                  <th>Status Operacional</th>
+                  <th>Tipo de Processo</th>
+                  <th className="text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <AnimatePresence mode="popLayout">
+                  {filteredList.map((item, i) => {
+                    const sc = statusConfig(item.status);
+                    const tc = tipoConfig(item.tipo_servico);
+                    return (
+                      <motion.tr
+                        key={item.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: i * 0.02 }}
+                        className={`${i % 2 === 0 ? "" : "zebra-row"} group`}
+                      >
+                        <td>
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-brand-teal/10 flex items-center justify-center text-brand-teal group-hover:scale-110 transition-transform">
-                              <Package size={24} />
+                            <div className="w-10 h-10 rounded-2xl bg-white border border-[var(--ivani-border)]/60 flex items-center justify-center text-[var(--ivani-muted)] shadow-sm group-hover:scale-110 transition-transform">
+                              <Package size={18} strokeWidth={1.5} />
                             </div>
                             <div>
-                              <p className="text-sm font-black text-brand-mirage">{item.modelo_nome_snapshot || "Modelo não informado"}</p>
-                              <p className="text-[10px] text-brand-mirage/50 font-bold uppercase tracking-widest mt-0.5">Triagem #{item.triagem_id?.split('-')[0]}</p>
+                              <p className="text-sm font-black text-[var(--ivani-text)] tracking-tight">{item.modelo_nome_snapshot || "Modelo não informado"}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[9px] font-black text-[var(--ivani-muted)] uppercase opacity-30 tracking-widest">TRIAGEM</span>
+                                <span className="text-[10px] font-black text-[var(--ivani-primary)]">#{item.triagem_id?.split("-")[0]}</span>
+                              </div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-5 text-center">
-                          <span className="text-xl font-black text-brand-mirage">{item.quantidade}</span>
-                          <span className="text-[10px] font-bold text-brand-mirage/30 ml-1.5 uppercase tracking-widest">un</span>
+                        <td>
+                           <div className="flex items-baseline gap-1.5">
+                             <span className="text-lg font-black text-[var(--ivani-text)] tracking-tighter">{item.quantidade || item.quantidade_entrada}</span>
+                             <span className="text-[9px] font-black text-[var(--ivani-muted)] uppercase tracking-widest opacity-40">UN</span>
+                           </div>
                         </td>
-                        <td className="px-6 py-5">
-                          <div className="flex flex-col gap-2 items-start">
-                            <StatusBadge 
-                              variant={item.status === 'concluida' ? 'success' : item.status === 'em_andamento' ? 'info' : 'warning'} 
-                            >
-                              {item.status}
-                            </StatusBadge>
-                            <StatusBadge 
-                              variant={item.tipo_servico === 'reforma' ? 'warning' : 'default'} 
-                            >
-                              {item.tipo_servico}
-                            </StatusBadge>
-                          </div>
+                        <td>
+                          <PremiumBadge variant={sc.variant}>
+                            {sc.label}
+                          </PremiumBadge>
                         </td>
-                        <td className="px-6 py-5 text-right">
-                          <div className="flex justify-end gap-2">
-                            {item.status === "pendente" && (
-                              <AppButton onClick={() => handleAction(item.id, "iniciar")} disabled={loadingId === item.id} icon={loadingId === item.id ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}>
-                                Iniciar
-                              </AppButton>
-                            )}
-                            
-                            {item.status === "em_andamento" && (
-                              <AppButton onClick={() => handleAction(item.id, "concluir")} variant="secondary" disabled={loadingId === item.id} icon={loadingId === item.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}>
-                                Concluir
-                              </AppButton>
-                            )}
-
-                            {item.status === "concluida" && (
-                              <div className="flex items-center gap-2 px-4 py-3 bg-brand-mirage/5 text-brand-mirage/40 rounded-2xl text-[10px] font-black uppercase tracking-widest">
-                                <CheckCircle2 size={16} className="text-emerald-500" /> No Estoque
-                              </div>
-                            )}
-                          </div>
+                        <td>
+                           <div className="inline-flex items-center gap-2">
+                              {(tc.icon as any) && React.cloneElement(tc.icon as React.ReactElement<any>, { size: 14, className: "opacity-40" })}
+                              <span className="text-[10px] font-black uppercase tracking-widest text-[var(--ivani-text)]">{tc.label}</span>
+                           </div>
+                        </td>
+                        <td className="text-right">
+                           <div className="flex items-center justify-end gap-3">
+                              {item.status === "pendente" && (
+                                <PremiumButton
+                                  onClick={() => handleAction(item.id, "iniciar")}
+                                  loading={loadingId === item.id}
+                                  icon={<Play size={14} />}
+                                  className="!px-4 !py-2 !text-[9px] shadow-sm"
+                                >
+                                  Iniciar
+                                </PremiumButton>
+                              )}
+                              {item.status === "em_andamento" && (
+                                <PremiumButton
+                                  variant="primary"
+                                  onClick={() => handleAction(item.id, "concluir")}
+                                  loading={loadingId === item.id}
+                                  icon={<Check size={14} />}
+                                  className="!px-4 !py-2 !text-[9px] shadow-sm"
+                                >
+                                  Concluir
+                                </PremiumButton>
+                              )}
+                              {item.status === "concluida" && (
+                                <div className="h-9 px-4 bg-[var(--ivani-bg)] text-[var(--ivani-muted)] rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-[var(--ivani-border)]/50 cursor-default">
+                                  <CheckCircle2 size={14} className="text-[var(--ivani-teal)]" />
+                                  Concluído
+                                </div>
+                              )}
+                           </div>
                         </td>
                       </motion.tr>
-                    ))}
-                  </AnimatePresence>
-                </tbody>
-              </table>
-            </div>
-          )}
-        </AppCard>
-    </PageShell>
+                    );
+                  })}
+                </AnimatePresence>
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div className="px-8 py-6 border-t border-[var(--ivani-border)]/50 bg-[var(--ivani-bg)]/30 flex items-center justify-between">
+           <div className="flex items-center gap-3">
+             <div className="w-2 h-2 rounded-full bg-[var(--ivani-primary)] animate-pulse shadow-[0_0_8px_var(--ivani-primary)]" />
+             <p className="text-[10px] font-black text-[var(--ivani-muted)] uppercase tracking-[0.2em] opacity-60">Linha de Reparo Monitorada</p>
+           </div>
+           <p className="text-[11px] font-black text-[var(--ivani-muted)] uppercase tracking-widest opacity-60">
+             Total de <span className="text-[var(--ivani-text)]">{filteredList.length}</span> ordens de serviço
+           </p>
+        </div>
+      </PremiumCard>
+    </div>
   );
 }

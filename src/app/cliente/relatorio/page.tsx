@@ -34,6 +34,7 @@ import { LoadingPage } from "@/components/ui/loading-screen";
 import { registrarAcesso } from "@/lib/utils/monitoramento";
 import { fetchDashboardKPIs, DashboardKPIs } from "@/lib/kpis";
 import { ClientNav } from "@/components/dashboard/client-nav";
+import { BicPenBanner } from "@/components/ui/editorial";
 
 const PrintSectionTitle = ({ title, icon: Icon }: { title: string, icon: any }) => (
   <div className="flex items-center gap-3 mb-6 border-b border-neutral-100 pb-2 print:border-neutral-300">
@@ -122,26 +123,22 @@ export default function RelatorioExecutivoPCE() {
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-neutral-900 print:bg-white print:text-black">
       
-      {/* 1. NAVEGAÇÃO & HEADER (OCULTO NA IMPRESSÃO) */}
-      <header className="bg-white border-b border-neutral-200 sticky top-0 z-40 shadow-sm no-print">
-        <div className="max-w-7xl mx-auto px-6 py-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-             <div className="flex flex-col">
-               <h1 className="text-lg font-bold tracking-tight">Relatório Estratégico</h1>
-               <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-0.5">Visão Executiva PCE</span>
-             </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={handlePrint}
-              className="flex items-center gap-2 px-6 py-3 bg-neutral-900 text-white rounded-2xl text-xs font-bold hover:bg-neutral-800 transition-all shadow-lg shadow-neutral-200"
-            >
-              <Printer size={16} /> Imprimir Relatório
-            </button>
-            <ClientNav />
-          </div>
+      <div className="max-w-4xl mx-auto px-6 pt-10 no-print">
+        <div className="flex justify-between items-center mb-6">
+          <button 
+            onClick={handlePrint}
+            className="flex items-center gap-2 px-6 py-3 bg-neutral-900 text-white rounded-2xl text-xs font-bold hover:bg-neutral-800 transition-all shadow-lg shadow-neutral-200"
+          >
+            <Printer size={16} /> Imprimir Relatório
+          </button>
+          <ClientNav />
         </div>
-      </header>
+        <BicPenBanner 
+          title="Relatório Executivo"
+          subtitle="Visão estratégica consolidada da operação de ativos e impacto ESG."
+          image="/branding/banner-esg.png"
+        />
+      </div>
 
       <main className="max-w-4xl mx-auto px-6 pt-12 pb-24 print:p-0 print:max-w-full">
         
@@ -195,7 +192,7 @@ export default function RelatorioExecutivoPCE() {
                 <div className="bg-neutral-50 border border-neutral-100 p-6 rounded-3xl print:border-neutral-200">
                   <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-2">Circularidade</p>
                   <p className="text-3xl font-black text-neutral-900 tracking-tighter">{formatPercent(kpis.eficiencia.taxa_reaproveitamento)}</p>
-                  <p className="text-[10px] font-bold text-brand-teal uppercase mt-2">Taxa de Reuso</p>
+                  <p className="text-[10px] font-bold text-[#327039] uppercase mt-2">Taxa de Reuso</p>
                 </div>
               </div>
             </section>
@@ -224,7 +221,7 @@ export default function RelatorioExecutivoPCE() {
                   <PrintStatRow label="Investimento em Manutenção" value={formatCurrency(kpis.financeiro.valor_recuperado)} icon={Clock} />
                   <PrintStatRow label="Economia Média por Pallet" value={formatCurrency(kpis.financeiro.economia_por_pallet)} icon={Scale} />
                   <PrintStatRow label="Custo Médio de Recuperação" value={formatCurrency(kpis.financeiro.custo_medio_pallet)} icon={TrendingUp} />
-                  <PrintStatRow label="ROI Operacional Bruto" value={formatPercent(kpis.financeiro.roi_operacao)} icon={BarChart3} colorClass="text-brand-teal" />
+                  <PrintStatRow label="ROI Operacional Bruto" value={formatPercent(kpis.financeiro.roi_operacao)} icon={BarChart3} colorClass="text-[#327039]" />
                 </div>
               </section>
 
@@ -250,7 +247,7 @@ export default function RelatorioExecutivoPCE() {
                 </div>
                 <div className="p-5 border border-neutral-100 rounded-2xl print:border-neutral-200">
                   <div className="flex items-center gap-2 mb-3">
-                    <Recycle size={16} className="text-brand-teal" />
+                    <Recycle size={16} className="text-[#327039]" />
                     <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Madeira Reutilizada</span>
                   </div>
                   <p className="text-xl font-bold">{formatKgToTon(kpis.esg.madeira_reutilizada)} <span className="text-xs text-neutral-400">ton</span></p>
@@ -345,3 +342,5 @@ const BarChart3 = ({ size, className }: { size?: number, className?: string }) =
     <path d="M8 17v-3" />
   </svg>
 );
+
+

@@ -35,7 +35,7 @@ export default async function AdminTriagemPage() {
     const { data: itensData } = await supabase
       .from("triagem_itens")
       .select(
-        "id, triagem_id, modelo_pallet_id, quantidade_reforma, quantidade_remanufatura, quantidade_compra_ivani"
+        "id, triagem_id, modelo_pallet_id, quantidade_reforma, quantidade_remanufatura, quantidade_compra_ivani, quantidade_sucateado"
       )
       .in("triagem_id", triagemIds);
 
@@ -55,3 +55,5 @@ export default async function AdminTriagemPage() {
     />
   );
 }
+
+

@@ -1,15 +1,11 @@
 import type { Metadata } from "next";
-import { Inter, Outfit } from "next/font/google";
+import { Poppins } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
+const poppins = Poppins({
+  weight: ["300", "400", "500", "600", "700"],
   subsets: ["latin"],
-  variable: "--font-inter",
-});
-
-const outfit = Outfit({
-  subsets: ["latin"],
-  variable: "--font-outfit",
+  variable: "--font-poppins",
 });
 
 export const metadata: Metadata = {
@@ -23,8 +19,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${inter.variable} ${outfit.variable}`}>
-      <body className="antialiased">{children}</body>
+    <html lang="pt-BR" className={`${poppins.variable}`}>
+      <body className="antialiased min-h-screen">
+        {children}
+      </body>
     </html>
   );
 }
+
+

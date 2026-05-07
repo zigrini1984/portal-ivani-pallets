@@ -15,6 +15,7 @@ import { registrarAcesso } from "@/lib/utils/monitoramento";
 import { LoadingPage } from "@/components/ui/loading-screen";
 import { ClientNav } from "@/components/dashboard/client-nav";
 import { KpiCard } from "@/components/dashboard/KpiCard";
+import { BicPenBanner } from "@/components/ui/editorial";
 import { motion, AnimatePresence } from "framer-motion";
 
 const TableHeader = ({ children }: { children?: React.ReactNode }) => (
@@ -29,7 +30,7 @@ const Badge = ({ children, variant = "neutral" }: { children: React.ReactNode, v
     success: "bg-emerald-50 text-emerald-700 border-emerald-100",
     warning: "bg-amber-50 text-amber-700 border-amber-100",
     error: "bg-rose-50 text-rose-700 border-rose-100",
-    brand: "bg-brand-teal/10 text-brand-teal border-brand-teal/20",
+    brand: "bg-[#327039]/10 text-[#327039] border-[#327039]/20",
   };
 
   return (
@@ -131,21 +132,16 @@ export default function CentralOperacoesPCE() {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-neutral-900 pb-24">
-      {/* 1. HEADER */}
-      <header className="bg-white border-b border-neutral-200 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div>
-              <div className="flex items-center gap-2.5 mb-2">
-                <Badge variant="success">Operação em tempo real</Badge>
-              </div>
-              <h1 className="text-3xl font-bold tracking-tight">Central de Operações PCE</h1>
-              <p className="text-sm text-neutral-500 mt-1 font-medium">Acompanhamento detalhado das cargas, triagem, estoque e saídas.</p>
-            </div>
-            <ClientNav />
-          </div>
+      <div className="max-w-7xl mx-auto px-6 pt-10">
+        <div className="flex justify-end mb-6">
+          <ClientNav />
         </div>
-      </header>
+        <BicPenBanner 
+          title="Central de Operações PCE"
+          subtitle="Acompanhamento detalhado das cargas, triagem, estoque e saídas em tempo real."
+          image="/branding/banner-operacao.png"
+        />
+      </div>
 
       <main className="max-w-7xl mx-auto px-6 pt-10 space-y-10">
         
@@ -164,7 +160,7 @@ export default function CentralOperacoesPCE() {
             <input 
               type="text" 
               placeholder="Buscar por lote ou carga..."
-              className="w-full pl-12 pr-4 py-3 bg-neutral-50 border border-neutral-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal/20 transition-all"
+              className="w-full pl-12 pr-4 py-3 bg-neutral-50 border border-neutral-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#327039]/20 transition-all"
               value={filters.busca}
               onChange={(e) => setFilters({...filters, busca: e.target.value})}
             />
@@ -238,7 +234,7 @@ export default function CentralOperacoesPCE() {
                           <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Triado: {formatNumber(triagem?.quantidade_total || 0)}</span>
                           <div className="w-24 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
                             <div 
-                              className="h-full bg-brand-teal" 
+                              className="h-full bg-[#327039]" 
                               style={{ width: `${Math.min(100, ((triagem?.quantidade_total || 0) / (c.quantidade_material_bruto || 1)) * 100)}%` }}
                             />
                           </div>
@@ -297,7 +293,7 @@ export default function CentralOperacoesPCE() {
                   <div className="space-y-3 mb-6">
                     {[
                       { label: "Reforma", value: t.quantidade_manutencao, color: "text-emerald-600" },
-                      { label: "Remanufatura", value: t.quantidade_remanufatura, color: "text-brand-teal" },
+                      { label: "Remanufatura", value: t.quantidade_remanufatura, color: "text-[#327039]" },
                       { label: "Compra Ivani", value: t.quantidade_compra_ivani, color: "text-amber-600" },
                       { label: "Sucata", value: Math.max(0, sucata), color: "text-rose-500" }
                     ].map((item, i) => (
@@ -367,7 +363,7 @@ export default function CentralOperacoesPCE() {
                     <tr key={m.id} className="hover:bg-neutral-50/50">
                       <td className="px-6 py-4 text-xs text-neutral-500 font-medium">{new Date(m.created_at).toLocaleDateString("pt-BR")}</td>
                       <td className="px-6 py-4 text-sm font-bold text-neutral-900">{m.modelo?.nome}</td>
-                      <td className="px-6 py-4 text-sm font-black text-brand-teal">{m.quantidade} un</td>
+                      <td className="px-6 py-4 text-sm font-black text-[#327039]">{m.quantidade} un</td>
                       <td className="px-6 py-4">
                         <Badge variant="neutral">Expedição</Badge>
                       </td>
@@ -476,3 +472,5 @@ export default function CentralOperacoesPCE() {
     </div>
   );
 }
+
+

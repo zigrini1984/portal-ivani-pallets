@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+:root {
+  --ivani-bg: #FDFEFA;
+  --ivani-primary: #327039;
+}
+
+body {
+  background-color: var(--ivani-bg);
+}
