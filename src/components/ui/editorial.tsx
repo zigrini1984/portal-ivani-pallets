@@ -13,31 +13,31 @@ interface BicPenBannerProps {
 
 export function BicPenBanner({ title, subtitle, image, accentColor = "var(--ivani-primary)" }: BicPenBannerProps) {
   return (
-    <div className="relative w-full mb-10 overflow-hidden rounded-3xl bg-white border border-[var(--ivani-border)] shadow-sm group">
+    <div className="relative w-full mb-8 overflow-hidden rounded-3xl bg-white border border-[var(--ivani-border)] shadow-sm group">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none paper-texture" />
       
       <div className="flex flex-col md:flex-row items-center">
-        <div className="flex-1 p-10 md:p-14 relative z-10">
+        <div className="flex-1 p-8 md:p-10 lg:pl-12 lg:pr-6 relative z-10">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <div className="flex items-center gap-3 mb-5">
+            <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-[1px] bg-[var(--ivani-primary)] opacity-40" />
               <span className="text-[9px] font-bold uppercase tracking-[0.4em] text-[var(--ivani-primary)] opacity-60">
                 Logística Inteligente
               </span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-[var(--ivani-text)] tracking-tight leading-[1.1] mb-6">
+            <h2 className="text-3xl md:text-4xl font-bold text-[var(--ivani-text)] tracking-tight leading-[1.1] mb-4">
               {title}
             </h2>
-            <p className="text-base text-[var(--ivani-muted)] font-normal max-w-lg leading-relaxed opacity-80">
+            <p className="text-sm md:text-base text-[var(--ivani-muted)] font-normal max-w-lg leading-relaxed opacity-80">
               {subtitle}
             </p>
             
-            <div className="flex items-center gap-8 mt-10">
+            <div className="flex items-center gap-8 mt-6">
                <div className="flex flex-col gap-1.5">
                   <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[var(--ivani-primary)] opacity-50">Industrial Premium</span>
                   <div className="flex gap-2 text-[var(--ivani-primary)] opacity-70">
@@ -58,7 +58,7 @@ export function BicPenBanner({ title, subtitle, image, accentColor = "var(--ivan
           </motion.div>
         </div>
 
-        <div className="w-full md:w-[50%] h-[32rem] md:h-[40rem] relative overflow-hidden bg-white flex items-center justify-center">
+        <div className="w-full md:w-[45%] h-64 md:h-80 relative overflow-hidden bg-white flex items-center justify-center">
           <motion.div 
             initial={{ opacity: 0, scale: 1.05 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -68,7 +68,7 @@ export function BicPenBanner({ title, subtitle, image, accentColor = "var(--ivan
             <img 
               src={image} 
               alt="Operational Sketch"
-              className="w-full h-full object-contain opacity-100 group-hover:scale-[1.05] transition-transform duration-1000 p-0 bg-white"
+              className="w-full h-full object-contain opacity-100 group-hover:scale-[1.05] transition-transform duration-1000 p-2 bg-white"
               style={{ 
                 filter: 'contrast(1.1) brightness(1.05) saturate(1.1)',
                 mixBlendMode: 'multiply'
