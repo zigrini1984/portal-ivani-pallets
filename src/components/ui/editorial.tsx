@@ -58,17 +58,17 @@ export function BicPenBanner({ title, subtitle, image, accentColor = "var(--ivan
           </motion.div>
         </div>
 
-        <div className="w-full md:w-[45%] h-64 md:h-80 relative overflow-hidden bg-white flex items-center justify-center">
+        <div className="w-full md:w-[48%] h-72 md:h-80 relative overflow-hidden bg-white flex items-center justify-center">
           <motion.div 
-            initial={{ opacity: 0, scale: 1.05 }}
+            initial={{ opacity: 0, scale: 1.1 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.5 }}
-            className="w-full h-full relative"
+            className="w-full h-full relative flex items-center justify-center"
           >
             <img 
               src={image} 
               alt="Operational Sketch"
-              className="w-full h-full object-contain opacity-100 group-hover:scale-[1.05] transition-transform duration-1000 p-2 bg-white"
+              className="w-full h-full object-contain opacity-100 group-hover:scale-[1.05] transition-transform duration-1000 bg-white scale-[1.35]"
               style={{ 
                 filter: 'contrast(1.1) brightness(1.05) saturate(1.1)',
                 mixBlendMode: 'multiply'
@@ -76,7 +76,7 @@ export function BicPenBanner({ title, subtitle, image, accentColor = "var(--ivan
             />
           </motion.div>
           {/* Edge fade to blend with text area */}
-          <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-white to-transparent z-10" />
+          <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-white via-white/80 to-transparent z-10" />
         </div>
       </div>
       
