@@ -1,21 +1,17 @@
-"use client";
-
-export const dynamic = "force-dynamic";
-
-import React, { useState, useEffect, useMemo } from "react";
+import React from "react";
 import { 
   Package, Recycle, DollarSign, TrendingUp, Wind, Trees, 
   Zap, AlertCircle, ShieldCheck, Activity, BarChart3, Clock, 
   Truck, RotateCw, Hammer, Trash2, Banknote, Scale, Leaf, Globe,
   CheckCircle2, ArrowRight
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { registrarAcesso } from "@/lib/utils/monitoramento";
-import { LoadingPage } from "@/components/ui/loading-screen";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchDashboardKPIs, DashboardKPIs } from "@/lib/kpis";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { ClientNav } from "@/components/dashboard/client-nav";
-import { BicPenBanner } from "@/components/ui/editorial";
+import { BicPenBanner, PremiumCard } from "@/components/ui/editorial";
+
+export const dynamic = "force-dynamic";
 
 const SimpleKpiRow = ({ label, value, icon: Icon, isWarning = false, isSuccess = false }: { label: string, value: string | number, icon: any, isWarning?: boolean, isSuccess?: boolean }) => (
   <div className="group flex justify-between items-center py-4 border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50 px-2 -mx-2 rounded-xl transition-colors cursor-default">
@@ -42,33 +38,37 @@ const SectionTitle = ({ title, icon: Icon }: { title: string, icon?: any }) => (
   </div>
 );
 
-export default function ClienteDashboardPCE() {
-  const [kpis, setKpis] = useState<DashboardKPIs | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
+export default async function ClienteDashboardPCE() {
+  const supabase = createAdminClient();
+  const clienteId = "pce";
 
-  const supabase = useMemo(() => createClient(), []);
+  let kpis: DashboardKPIs;
+  let timeline: any[] = [];
+  let error = null;
 
-  useEffect(() => {
-    setMounted(true);
-    fetchData();
-    registrarAcesso("cliente/dashboard");
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const kpiData = await fetchDashboardKPIs("pce", supabase);
-      if (kpiData) setKpis(kpiData);
-    } catch (err: any) {
-      console.error("Dashboard Error:", err);
-      setError("Não foi possível carregar os dados. Verifique sua conexão.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    kpis = await fetchDashboardKPIs(clienteId, supabase);
+    
+    // Timeline recente
+    const { data: movs } = await supabase
+      .from("estoque_movimentacoes")
+      .select("id, tipo, quantidade, created_at, modelo:modelos_pallets(nome)")
+      .eq("cliente_id", clienteId)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    
+    timeline = movs || [];
+  } catch (err) {
+    console.error("Dashboard Server Error:", err);
+    error = "Falha ao carregar dados operacionais.";
+    kpis = {
+      operacao: { total_coletado: 0, total_processado: 0, total_estoque: 0, total_entregue: 0, volume_mensal: 0, numero_coletas: 0, tempo_medio_ciclo: "---" },
+      eficiencia: { taxa_reaproveitamento: 0, taxa_sucata: 0, taxa_reforma: 0, taxa_remanufatura: 0, eficiencia_recuperacao: 0, perda_operacional: 0 },
+      financeiro: { economia_total: 0, custo_evitar_novo: 0, valor_recuperado: 0, custo_medio_pallet: 0, economia_por_pallet: 0, roi_operacao: 0 },
+      esg: { arvores_preservadas: 0, co2_evitado: 0, madeira_reutilizada: 0, residuos_evitar: 0 },
+      performance: { crescimento_mensal: 0, tendencia_volume: "stable", indice_performance: 0 }
+    };
+  }
 
   const formatCurrency = (val: number | undefined | null) => 
     (val ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -84,71 +84,50 @@ export default function ClienteDashboardPCE() {
     return (kg / 1000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   };
 
-  // --- LÓGICA DE INSIGHTS ---
-  const insight = useMemo(() => {
-    if (!kpis) return null;
+  const getInsight = () => {
     const { eficiencia, financeiro } = kpis;
     
-    if ((eficiencia?.taxa_reaproveitamento || 0) > 85) {
+    if (eficiencia.taxa_reaproveitamento > 85) {
       return {
-        type: "success",
         title: "Excelência em Circularidade",
-        message: "A operação mantém um índice excepcional de reaproveitamento, demonstrando maturidade na gestão de logística reversa e alto impacto ESG.",
+        message: "A operação mantém um índice excepcional de reaproveitamento, demonstrando maturidade na gestão de ativos.",
         icon: ShieldCheck,
         colorClass: "text-emerald-700 bg-emerald-50 border-emerald-200"
       };
     }
-    if ((eficiencia?.taxa_sucata || 0) > 15) {
+    if (eficiencia.taxa_sucata > 15) {
       return {
-        type: "warning",
         title: "Oportunidade de Melhoria",
-        message: "O volume de sucata está acima do ideal. Uma revisão nos processos de manuseio interno na planta pode reduzir perdas e otimizar custos.",
+        message: "O volume de sucata está acima do ideal. Recomendamos revisão dos processos de manuseio interno.",
         icon: AlertCircle,
         colorClass: "text-amber-700 bg-amber-50 border-amber-200"
       };
     }
-    if ((financeiro?.roi_operacao || 0) > 150) {
-      return {
-        type: "info",
-        title: "Alto Retorno Operacional",
-        message: "A recuperação de ativos está gerando um ROI altamente positivo. O orçamento logístico está sendo preservado com eficiência.",
-        icon: TrendingUp,
-        colorClass: "text-[#327039] bg-[#327039]/10 border-[#327039]/20"
-      };
-    }
     return {
-      type: "neutral",
       title: "Operação Estabilizada",
-      message: "O fluxo de triagem e manutenção segue com índices estáveis. O monitoramento contínuo garante a previsibilidade do estoque.",
+      message: "O fluxo de triagem e manutenção segue com índices estáveis e previsibilidade de estoque.",
       icon: Activity,
       colorClass: "text-neutral-700 bg-white border-neutral-200"
     };
-  }, [kpis]);
+  };
 
-  if (!mounted) return <div className="min-h-screen bg-[#FAFAFA]" />;
-  if (loading) return <LoadingPage />;
+  const insight = getInsight();
+  const totalRecuperado = kpis.operacao.total_processado - (kpis.operacao.total_processado * (kpis.eficiencia.taxa_sucata / 100));
 
-  if (error) {
+  if (error && kpis.operacao.numero_coletas === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-6 text-center">
-        <div className="max-w-md w-full bg-white p-10 rounded-3xl border border-neutral-200 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
+        <div className="max-w-md w-full bg-white p-10 rounded-3xl border border-neutral-200 shadow-sm">
           <AlertCircle size={48} className="text-rose-500 mx-auto mb-6" strokeWidth={1.5} />
-          <h2 className="text-2xl font-bold text-neutral-900 tracking-tight mb-3">Falha no Carregamento</h2>
-          <p className="text-sm text-neutral-500 leading-relaxed mb-8">{error}</p>
-          <button onClick={() => fetchData()} className="w-full py-3.5 bg-neutral-900 text-white rounded-xl text-sm font-semibold hover:bg-neutral-800 transition-colors">
-            Tentar Novamente
-          </button>
+          <h2 className="text-2xl font-bold text-neutral-900 tracking-tight mb-3">Nenhuma operação encontrada</h2>
+          <p className="text-sm text-neutral-500 leading-relaxed mb-8">Não existem dados registrados para o cliente PCE no momento.</p>
         </div>
       </div>
     );
   }
 
-  const mesAno = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  const totalRecuperado = (kpis?.operacao?.total_processado ?? 0) - ((kpis?.operacao?.total_processado ?? 0) * ((kpis?.eficiencia?.taxa_sucata ?? 0) / 100));
-
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-neutral-900 font-sans selection:bg-neutral-200 selection:text-neutral-900 pb-24">
-      
+    <div className="min-h-screen bg-[#FAFAFA] text-neutral-900 font-sans pb-24">
       <div className="max-w-6xl mx-auto px-6 pt-10">
         <div className="flex justify-end mb-6">
           <ClientNav />
@@ -156,16 +135,15 @@ export default function ClienteDashboardPCE() {
         <BicPenBanner 
           title="Painel Executivo PCE"
           subtitle="Acompanhamento estratégico: economia, eficiência e impacto sustentável."
-          image="/branding/banner-dashboard.png"
+          image="/media__1778175575898.png"
         />
       </div>
 
       <main className="max-w-6xl mx-auto px-6 pt-10 md:pt-12 space-y-10 md:space-y-12">
         
-        {/* 2. CARD PRINCIPAL DE DESTAQUE (HERO) */}
+        {/* CARD PRINCIPAL DE ECONOMIA */}
         <section className="bg-white rounded-3xl border border-neutral-200 shadow-[0_4px_24px_rgba(0,0,0,0.02)] p-8 md:p-12 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-8">
-          {/* Detalhe lateral verde discreto */}
-          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-emerald-500" />
+          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#327039]" />
           
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-6">
@@ -175,10 +153,10 @@ export default function ClienteDashboardPCE() {
               <span className="text-sm font-bold text-emerald-700 uppercase tracking-widest">Economia Gerada</span>
             </div>
             <h2 className="text-5xl md:text-7xl font-bold text-neutral-900 tracking-tighter mb-4">
-              {formatCurrency(kpis?.financeiro?.economia_total)}
+              {formatCurrency(kpis.financeiro.economia_total)}
             </h2>
             <p className="text-base text-neutral-500 font-medium max-w-md leading-relaxed">
-              Valor estimado preservado pela recuperação e reaproveitamento logístico.
+              Valor estimado preservado pela recuperação e reaproveitamento logístico de ativos.
             </p>
           </div>
           
@@ -187,35 +165,35 @@ export default function ClienteDashboardPCE() {
           </div>
         </section>
 
-        {/* 3. LINHA DE 4 MINI CARDS */}
+        {/* KPIs SECUNDÁRIOS */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
           <KpiCard 
             titulo="Pallets Processados" 
-            valor={formatNumber(kpis?.operacao?.total_processado)} 
+            valor={formatNumber(kpis.operacao.total_processado)} 
             icone={Package} 
             cor="neutral" 
           />
           <KpiCard 
             titulo="Eficiência Operacional" 
-            valor={formatPercent(kpis?.eficiencia?.taxa_reaproveitamento)} 
+            valor={formatPercent(kpis.eficiencia.taxa_reaproveitamento)} 
             icone={Recycle} 
             cor="brand" 
           />
           <KpiCard 
             titulo="CO₂ Evitado" 
-            valor={`${formatKgToTon(kpis?.esg?.co2_evitado)} t`} 
+            valor={`${formatKgToTon(kpis.esg.co2_evitado)} t`} 
             icone={Wind} 
             cor="success" 
           />
           <KpiCard 
             titulo="Madeira Poupada" 
-            valor={`${formatKgToTon(kpis?.esg?.madeira_reutilizada)} t`} 
+            valor={`${formatKgToTon(kpis.esg.madeira_reutilizada)} t`} 
             icone={Trees} 
             cor="success" 
           />
         </section>
 
-        {/* 4. LEITURA EXECUTIVA (CARD BRANCO COM LISTA) */}
+        {/* LEITURA EXECUTIVA */}
         <section className="bg-white rounded-3xl border border-neutral-200 shadow-[0_2px_12px_rgba(0,0,0,0.01)] p-8 md:p-10">
           <div className="flex items-center gap-3 mb-10">
             <div className="w-10 h-10 bg-neutral-100 rounded-2xl flex items-center justify-center border border-neutral-200">
@@ -241,7 +219,7 @@ export default function ClienteDashboardPCE() {
                 <span className="text-[11px] font-bold uppercase tracking-widest text-[#327039]">Eficiência</span>
               </div>
               <p className="text-sm font-medium text-neutral-500 leading-relaxed">
-                A eficiência de reaproveitamento atingiu sólidos <span className="font-bold text-neutral-900">{formatPercent(kpis?.eficiencia?.taxa_reaproveitamento)}</span>, fortalecendo a circularidade logística.
+                A eficiência de reaproveitamento atingiu sólidos <span className="font-bold text-neutral-900">{formatPercent(kpis.eficiencia.taxa_reaproveitamento)}</span>, fortalecendo a circularidade logística.
               </p>
             </div>
 
@@ -251,77 +229,70 @@ export default function ClienteDashboardPCE() {
                 <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600">ESG</span>
               </div>
               <p className="text-sm font-medium text-neutral-500 leading-relaxed">
-                Foram evitados aproximadamente <span className="font-bold text-neutral-900">{formatKgToTon(kpis?.esg?.co2_evitado)} toneladas</span> de CO₂ no período através do reuso da madeira.
+                Foram evitados aproximadamente <span className="font-bold text-neutral-900">{formatKgToTon(kpis.esg.co2_evitado)} toneladas</span> de CO₂ através do reuso inteligente da madeira.
               </p>
             </div>
           </div>
         </section>
 
-        {/* 5. BLOCOS SECUNDÁRIOS EM LISTA */}
+        {/* BLOCOS SECUNDÁRIOS */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
           
-          {/* Operação */}
           <div className="bg-white rounded-3xl border border-neutral-200 shadow-[0_2px_12px_rgba(0,0,0,0.01)] p-8">
             <SectionTitle title="Operação & Fluxo" icon={Truck} />
             <div className="flex flex-col">
-              <SimpleKpiRow label="Volume Coletado" value={formatNumber(kpis?.operacao?.total_coletado)} icon={Package} />
-              <SimpleKpiRow label="Volume Entregue" value={formatNumber(kpis?.operacao?.total_entregue)} icon={RotateCw} />
-              <SimpleKpiRow label="Saldo em Estoque" value={formatNumber(kpis?.operacao?.total_estoque)} icon={BarChart3} />
-              <SimpleKpiRow label="Tempo Médio Ciclo" value={kpis?.operacao?.tempo_medio_ciclo || "---"} icon={Clock} />
-              <SimpleKpiRow label="Taxa de Reforma" value={formatPercent(kpis?.eficiencia?.taxa_reforma)} icon={Hammer} />
-              <SimpleKpiRow label="Taxa de Sucata" value={formatPercent(kpis?.eficiencia?.taxa_sucata)} icon={Trash2} isWarning={(kpis?.eficiencia?.taxa_sucata ?? 0) > 15} />
+              <SimpleKpiRow label="Volume Coletado" value={formatNumber(kpis.operacao.total_coletado)} icon={Package} />
+              <SimpleKpiRow label="Volume Entregue" value={formatNumber(kpis.operacao.total_entregue)} icon={RotateCw} />
+              <SimpleKpiRow label="Saldo em Estoque" value={formatNumber(kpis.operacao.total_estoque)} icon={BarChart3} />
+              <SimpleKpiRow label="Tempo Médio Ciclo" value={kpis.operacao.tempo_medio_ciclo} icon={Clock} />
+              <SimpleKpiRow label="Taxa de Reforma" value={formatPercent(kpis.eficiencia.taxa_reforma)} icon={Hammer} />
+              <SimpleKpiRow label="Taxa de Sucata" value={formatPercent(kpis.eficiencia.taxa_sucata)} icon={Trash2} isWarning={kpis.eficiencia.taxa_sucata > 15} />
             </div>
           </div>
 
-          {/* Financeiro */}
           <div className="bg-white rounded-3xl border border-neutral-200 shadow-[0_2px_12px_rgba(0,0,0,0.01)] p-8">
             <SectionTitle title="Métricas Financeiras" icon={Banknote} />
             <div className="flex flex-col">
-              <SimpleKpiRow label="Custo Evitado Novo" value={formatCurrency(kpis?.financeiro?.custo_evitar_novo)} icon={DollarSign} isSuccess />
-              <SimpleKpiRow label="Investimento Reparo" value={formatCurrency(kpis?.financeiro?.valor_recuperado)} icon={TrendingUp} />
-              <SimpleKpiRow label="Economia por Pallet" value={formatCurrency(kpis?.financeiro?.economia_por_pallet)} icon={Scale} />
-              <SimpleKpiRow label="Custo Médio Pallet" value={formatCurrency(kpis?.financeiro?.custo_medio_pallet)} icon={Banknote} />
-              <SimpleKpiRow label="ROI da Operação" value={formatPercent(kpis?.financeiro?.roi_operacao)} icon={BarChart3} />
-              <SimpleKpiRow label="Índice Crescimento" value={formatPercent(kpis?.performance?.crescimento_mensal)} icon={Activity} />
+              <SimpleKpiRow label="Custo Evitado Novo" value={formatCurrency(kpis.financeiro.custo_evitar_novo)} icon={DollarSign} isSuccess />
+              <SimpleKpiRow label="Investimento Reparo" value={formatCurrency(kpis.financeiro.valor_recuperado)} icon={TrendingUp} />
+              <SimpleKpiRow label="Economia por Pallet" value={formatCurrency(kpis.financeiro.economia_por_pallet)} icon={Scale} />
+              <SimpleKpiRow label="Custo Médio Pallet" value={formatCurrency(kpis.financeiro.custo_medio_pallet)} icon={Banknote} />
+              <SimpleKpiRow label="ROI da Operação" value={formatPercent(kpis.financeiro.roi_operacao)} icon={BarChart3} />
+              <SimpleKpiRow label="Índice Crescimento" value={formatPercent(kpis.performance.crescimento_mensal)} icon={Activity} />
             </div>
           </div>
 
-          {/* ESG */}
           <div className="bg-white rounded-3xl border border-neutral-200 shadow-[0_2px_12px_rgba(0,0,0,0.01)] p-8">
             <SectionTitle title="Sustentabilidade" icon={Leaf} />
             <div className="flex flex-col">
-              <SimpleKpiRow label="Árvores Preservadas" value={formatNumber(kpis?.esg?.arvores_preservadas)} icon={Trees} isSuccess />
-              <SimpleKpiRow label="Madeira Reutilizada" value={`${formatKgToTon(kpis?.esg?.madeira_reutilizada)} t`} icon={Leaf} />
-              <SimpleKpiRow label="CO₂ Evitado" value={`${formatKgToTon(kpis?.esg?.co2_evitado)} t`} icon={Wind} />
-              <SimpleKpiRow label="Resíduos Desviados" value={`${formatKgToTon(kpis?.esg?.residuos_evitar)} t`} icon={Trash2} />
-              <SimpleKpiRow label="Score Operacional" value={(kpis?.performance?.indice_performance ?? 0).toFixed(1)} icon={ShieldCheck} />
+              <SimpleKpiRow label="Árvores Preservadas" value={formatNumber(kpis.esg.arvores_preservadas)} icon={Trees} isSuccess />
+              <SimpleKpiRow label="Madeira Reutilizada" value={`${formatKgToTon(kpis.esg.madeira_reutilizada)} t`} icon={Leaf} />
+              <SimpleKpiRow label="CO₂ Evitado" value={`${formatKgToTon(kpis.esg.co2_evitado)} t`} icon={Wind} />
+              <SimpleKpiRow label="Resíduos Desviados" value={`${formatKgToTon(kpis.esg.residuos_evitar)} t`} icon={Trash2} />
+              <SimpleKpiRow label="Score Operacional" value={kpis.performance.indice_performance.toFixed(1)} icon={ShieldCheck} />
               <SimpleKpiRow label="Rating Circular" value="AAA" icon={CheckCircle2} />
             </div>
           </div>
 
         </section>
 
-        {/* 6. CARD RESUMO IVANI */}
-        {insight && (
-          <section className={`rounded-3xl border p-8 flex flex-col md:flex-row items-start gap-6 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.02)] ${insight.colorClass}`}>
-            <div className="p-4 rounded-2xl bg-white border shadow-sm shrink-0">
-               <insight.icon size={28} strokeWidth={2} />
-            </div>
-            <div>
-               <div className="flex items-center gap-3 mb-2">
-                 <h3 className="text-lg font-bold tracking-tight">{insight.title}</h3>
-                 <span className="px-2.5 py-0.5 rounded-full bg-white border text-[10px] font-bold uppercase tracking-widest opacity-80">
-                   Resumo Ivani
-                 </span>
-               </div>
-               <p className="text-sm font-medium leading-relaxed opacity-90">{insight.message}</p>
-            </div>
-          </section>
-        )}
+        {/* INSIGHT FINAL */}
+        <section className={`rounded-3xl border p-8 flex flex-col md:flex-row items-start gap-6 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.02)] ${insight.colorClass}`}>
+          <div className="p-4 rounded-2xl bg-white border shadow-sm shrink-0">
+             <insight.icon size={28} strokeWidth={2} />
+          </div>
+          <div>
+             <div className="flex items-center gap-3 mb-2">
+               <h3 className="text-lg font-bold tracking-tight">{insight.title}</h3>
+               <span className="px-2.5 py-0.5 rounded-full bg-white border text-[10px] font-bold uppercase tracking-widest opacity-80">
+                 Resumo Ivani
+               </span>
+             </div>
+             <p className="text-sm font-medium leading-relaxed opacity-90">{insight.message}</p>
+          </div>
+        </section>
 
       </main>
     </div>
   );
 }
-
-
