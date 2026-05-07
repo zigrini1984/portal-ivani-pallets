@@ -20,7 +20,7 @@ export function ClientNav() {
 
   const navItems = [
     {
-      name: "Dashboard",
+      name: "Visão Geral",
       href: "/cliente/dashboard",
       icon: LayoutDashboard
     },

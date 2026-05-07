@@ -64,7 +64,7 @@ export async function sendStatusUpdateEmail({
             <p style="margin: 5px 0;"><strong>Data da Alteração:</strong> ${dataAlteracao}</p>
           </div>
           
-          <p>Para acompanhar o progresso detalhado, acesse seu dashboard no portal.</p>
+          <p>Para acompanhar o progresso detalhado, acesse sua visão geral no portal.</p>
           
           <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
           <p style="font-size: 11px; color: #999; text-align: center;">

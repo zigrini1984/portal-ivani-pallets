@@ -227,7 +227,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   const menuItems = [
-    { label: "Dashboard", href: "/admin/dashboard", icon: <LayoutDashboard size={20} /> },
+    { label: "Visão Geral", href: "/admin/dashboard", icon: <LayoutDashboard size={20} /> },
     { label: "Coletas", href: "/admin/coleta", icon: <Truck size={20} /> },
     { label: "Triagem", href: "/admin/triagem", icon: <ClipboardList size={20} /> },
     { label: "Manutenção", href: "/admin/manutencao", icon: <Wrench size={20} /> },
@@ -254,7 +254,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                </div>
                <div>
                   <h1 className="text-lg font-black text-[var(--ivani-text)] tracking-tighter leading-none">IVANI</h1>
-                  <span className="text-[9px] font-black uppercase tracking-[0.3em] text-[var(--ivani-muted)] opacity-50">Industrial Premium</span>
+                  <span className="text-[9px] font-black uppercase tracking-[0.3em] text-[var(--ivani-muted)] opacity-50">Premium Industrial</span>
                </div>
             </div>
             <div className="w-full h-[1px] bg-[var(--ivani-border)] opacity-40 mt-6" />
