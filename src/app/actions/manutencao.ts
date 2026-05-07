@@ -5,49 +5,57 @@ import { revalidatePath } from "next/cache";
 
 /**
  * Gera registros de manutenção para uma triagem finalizada.
- * Filtra apenas itens classificados como 'reforma' ou 'remanufatura'.
+ * Regras:
+ * - Apenas 'reforma' e 'remanufatura'.
+ * - Ignora 'compra' e 'sucata'.
+ * - Evita duplicidade (triagem_id + tipo_servico + modelo).
  */
 export async function gerarManutencoesDaTriagem(triagemId: string) {
   try {
     const supabase = createAdminClient();
+    const motivos: string[] = [];
+    let itensCriados = 0;
+    let itensIgnorados = 0;
 
-    // 1. Buscar a triagem
-    const { data: triagens, error: triError } = await supabase
+    // 1. Buscar a triagem (totais e metadados)
+    const { data: triData, error: triError } = await supabase
       .from("triagens")
-      .select("id, coleta_id, cliente_id, status, quantidade_manutencao, quantidade_remanufatura")
+      .select("id, coleta_id, cliente_id, status, quantidade_manutencao, quantidade_remanufatura, quantidade_sucata, quantidade_compra_ivani")
       .eq("id", triagemId);
 
     if (triError) throw triError;
-    const triagem = triagens?.[0];
+    const triagem = triData?.[0];
     if (!triagem) return { success: false, error: "Triagem não encontrada." };
 
     // 2. Buscar itens triados por modelo
     const { data: itens, error: itensError } = await supabase
       .from("triagem_itens")
       .select(`
+        id,
         modelo_pallet_id,
         quantidade_reforma,
         quantidade_remanufatura,
-        modelos_pallets ( id, nome )
+        modelos_pallets:modelo_pallet_id ( id, nome )
       `)
       .eq("triagem_id", triagemId);
 
-    if (itensError) throw itensError;
+    if (itensError) {
+       console.warn(`[gerarManutencoesDaTriagem] Erro ao buscar itens:`, itensError.message);
+    }
 
-    const manutItems: any[] = [];
     const clienteId = triagem.cliente_id || "pce";
-    const motivos: string[] = [];
-    let itensIgnorados = 0;
+    const manutItems: any[] = [];
 
-    // 3. Mapear itens para manutenção
+    // 3. Processar Itens por Modelo
     if (itens && itens.length > 0) {
-      for (const item of itens) {
-        const modelo = (item.modelos_pallets as any);
-        const modeloId = modelo?.id || item.modelo_pallet_id;
-        const modeloNome = modelo?.nome || "Modelo não identificado";
+      for (const it of itens) {
+        // Supabase returns relationship as object or array depending on config
+        const modeloData = Array.isArray(it.modelos_pallets) ? it.modelos_pallets[0] : it.modelos_pallets;
+        const modeloId = modeloData?.id || it.modelo_pallet_id;
+        const modeloNome = modeloData?.nome || "Modelo não identificado";
 
-        // Caso: Reforma
-        if ((item.quantidade_reforma || 0) > 0) {
+        // Caso Reforma
+        if ((it.quantidade_reforma || 0) > 0) {
           manutItems.push({
             triagem_id: triagemId,
             coleta_id: triagem.coleta_id,
@@ -55,13 +63,12 @@ export async function gerarManutencoesDaTriagem(triagemId: string) {
             modelo_id: modeloId,
             modelo_nome_snapshot: modeloNome,
             tipo_servico: "reforma",
-            quantidade: item.quantidade_reforma,
-            status: "pendente"
+            quantidade: it.quantidade_reforma
           });
         }
 
-        // Caso: Remanufatura
-        if ((item.quantidade_remanufatura || 0) > 0) {
+        // Caso Remanufatura
+        if ((it.quantidade_remanufatura || 0) > 0) {
           manutItems.push({
             triagem_id: triagemId,
             coleta_id: triagem.coleta_id,
@@ -69,13 +76,14 @@ export async function gerarManutencoesDaTriagem(triagemId: string) {
             modelo_id: modeloId,
             modelo_nome_snapshot: modeloNome,
             tipo_servico: "remanufatura",
-            quantidade: item.quantidade_remanufatura,
-            status: "pendente"
+            quantidade: it.quantidade_remanufatura
           });
         }
       }
-    } else {
-      // Fallback: usar totais da triagem se não houver itens detalhados
+    }
+
+    // 4. Fallback: Se não houve itens por modelo, mas a triagem tem totais, cria registros genéricos
+    if (manutItems.length === 0) {
       if ((triagem.quantidade_manutencao || 0) > 0) {
         manutItems.push({
           triagem_id: triagemId,
@@ -83,8 +91,7 @@ export async function gerarManutencoesDaTriagem(triagemId: string) {
           cliente_id: clienteId,
           modelo_nome_snapshot: "Modelo Geral (Reforma)",
           tipo_servico: "reforma",
-          quantidade: triagem.quantidade_manutencao,
-          status: "pendente"
+          quantidade: triagem.quantidade_manutencao
         });
       }
       if ((triagem.quantidade_remanufatura || 0) > 0) {
@@ -94,18 +101,19 @@ export async function gerarManutencoesDaTriagem(triagemId: string) {
           cliente_id: clienteId,
           modelo_nome_snapshot: "Modelo Geral (Remanufatura)",
           tipo_servico: "remanufatura",
-          quantidade: triagem.quantidade_remanufatura,
-          status: "pendente"
+          quantidade: triagem.quantidade_remanufatura
         });
+      }
+      
+      if (manutItems.length === 0) {
+          motivos.push(`Triagem ${triagemId.substring(0,8)} não possui quantidades de reforma ou remanufatura.`);
       }
     }
 
-    let itensCriados = 0;
-
-    // 4. Inserir evitando duplicidade
+    // 5. Inserir no Banco com Verificação de Duplicidade
     for (const mItem of manutItems) {
-      // Verificar se já existe manutenção para este modelo + serviço nesta triagem
-      const { data: exist, error: existError } = await supabase
+      // Verifica se já existe exatamente esse item para essa triagem
+      const { data: exist, error: exError } = await supabase
         .from("manutencoes")
         .select("id")
         .eq("triagem_id", triagemId)
@@ -113,27 +121,29 @@ export async function gerarManutencoesDaTriagem(triagemId: string) {
         .eq("modelo_nome_snapshot", mItem.modelo_nome_snapshot)
         .limit(1);
 
-      if (existError) {
-        motivos.push(`Erro ao verificar duplicidade: ${existError.message}`);
-        continue;
+      if (exError) {
+          motivos.push(`Erro ao verificar duplicidade para ${mItem.modelo_nome_snapshot}: ${exError.message}`);
+          continue;
       }
 
       if (exist && exist.length > 0) {
         itensIgnorados++;
-        motivos.push(`Item '${mItem.modelo_nome_snapshot}' (${mItem.tipo_servico}) já existe.`);
+        motivos.push(`Item '${mItem.modelo_nome_snapshot}' (${mItem.tipo_servico}) já sincronizado.`);
         continue;
       }
 
+      // Inserção
       const { error: insError } = await supabase
         .from("manutencoes")
         .insert({
           ...mItem,
+          status: "pendente",
           data_entrada: new Date().toISOString(),
           created_at: new Date().toISOString()
         });
 
       if (insError) {
-        motivos.push(`Erro ao inserir item '${mItem.modelo_nome_snapshot}': ${insError.message}`);
+        motivos.push(`Erro ao criar manutenção para ${mItem.modelo_nome_snapshot}: ${insError.message}`);
       } else {
         itensCriados++;
       }
@@ -141,12 +151,69 @@ export async function gerarManutencoesDaTriagem(triagemId: string) {
 
     return {
       success: true,
+      triagemId,
       itensCriados,
       itensIgnorados,
       motivos
     };
   } catch (err: any) {
-    console.error("[gerarManutencoesDaTriagem] Erro:", err.message);
+    console.error("[gerarManutencoesDaTriagem] Falha fatal:", err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Sincroniza manutenções pendentes de triagens concluídas/finalizadas.
+ */
+export async function sincronizarManutencoesPendentes() {
+  try {
+    const supabase = createAdminClient();
+
+    // 1. Buscar triagens que podem ter manutenções (finalizada ou concluida)
+    const { data: triagens, error: triError } = await supabase
+      .from("triagens")
+      .select("id, status")
+      .in("status", ["finalizada", "concluida"])
+      .order("created_at", { ascending: false })
+      .limit(50); // Limite de segurança para evitar timeout
+
+    if (triError) throw triError;
+    if (!triagens || triagens.length === 0) {
+        return { success: true, triagensVerificadas: 0, itensCriados: 0, itensIgnorados: 0, motivos: ["Nenhuma triagem finalizada encontrada."] };
+    }
+
+    let totalCriados = 0;
+    let totalIgnorados = 0;
+    let triagensVerificadas = 0;
+    const todosMotivos: string[] = [];
+
+    // 2. Processar cada triagem
+    for (const tri of triagens) {
+      triagensVerificadas++;
+      const res = await gerarManutencoesDaTriagem(tri.id);
+      
+      if (res.success) {
+        totalCriados += (res.itensCriados || 0);
+        totalIgnorados += (res.itensIgnorados || 0);
+        if (res.motivos) {
+            todosMotivos.push(...res.motivos);
+        }
+      } else {
+        todosMotivos.push(`Erro Crítico na Triagem ${tri.id.substring(0,8)}: ${res.error}`);
+      }
+    }
+
+    revalidatePath("/admin/manutencao");
+    
+    return { 
+      success: true, 
+      triagensVerificadas, 
+      itensCriados: totalCriados, 
+      itensIgnorados: totalIgnorados,
+      motivos: Array.from(new Set(todosMotivos)) // Remove duplicados
+    };
+  } catch (err: any) {
+    console.error("[sincronizarManutencoesPendentes] Erro:", err.message);
     return { success: false, error: err.message };
   }
 }
@@ -159,17 +226,16 @@ export async function concluirManutencao(manutencaoId: string) {
     const supabase = createAdminClient();
 
     // 1. Buscar manutenção
-    const { data: manutencoes, error: fetchError } = await supabase
+    const { data: manutData, error: fetchError } = await supabase
       .from("manutencoes")
-      .select("id, triagem_id, coleta_id, cliente_id, modelo_id, modelo_nome_snapshot, tipo_servico, quantidade, status")
+      .select("id, cliente_id, modelo_id, modelo_nome_snapshot, tipo_servico, quantidade, status")
       .eq("id", manutencaoId);
 
     if (fetchError) throw fetchError;
-    const manut = manutencoes?.[0];
+    const manut = manutData?.[0];
 
     if (!manut) return { success: false, error: "Manutenção não encontrada." };
-    if (manut.status === "concluida") return { success: false, error: "Manutenção já está concluída." };
-    if ((manut.quantidade || 0) <= 0) return { success: false, error: "Quantidade inválida para conclusão." };
+    if (manut.status === "concluida") return { success: false, error: "Este item já foi enviado ao estoque." };
 
     // 2. Atualizar status da manutenção
     const { error: updError } = await supabase
@@ -183,39 +249,37 @@ export async function concluirManutencao(manutencaoId: string) {
 
     if (updError) throw updError;
 
-    // 3. Atualizar Estoque Acumulado
+    // 3. Atualizar Estoque Acumulado (estoque_pallets)
     const clienteId = manut.cliente_id || "pce";
     
-    // Tenta encontrar estoque existente
-    const query = supabase
+    // Tenta encontrar estoque existente por modelo
+    let query = supabase
       .from("estoque_pallets")
       .select("id, quantidade")
       .eq("cliente_id", clienteId);
 
     if (manut.modelo_id) {
-      query.eq("modelo_id", manut.modelo_id);
+      query = query.eq("modelo_id", manut.modelo_id);
     } else {
-      query.eq("modelo_nome_snapshot", manut.modelo_nome_snapshot);
+      query = query.eq("modelo_nome_snapshot", manut.modelo_nome_snapshot);
     }
 
-    const { data: estoqueData, error: estError } = await query.limit(1);
+    const { data: estData, error: estError } = await query.limit(1);
     if (estError) throw estError;
 
-    const estoqueExistente = estoqueData?.[0];
+    const estoqueExistente = estData?.[0];
 
     if (estoqueExistente) {
-      // Atualiza
       const { error: saveError } = await supabase
         .from("estoque_pallets")
         .update({
-          quantidade: (estoqueExistente.quantidade || 0) + manut.quantidade,
+          quantidade: (estoqueExistente.quantidade || 0) + (manut.quantidade || 0),
           updated_at: new Date().toISOString()
         })
         .eq("id", estoqueExistente.id);
       
       if (saveError) throw saveError;
     } else {
-      // Cria novo
       const { error: insError } = await supabase
         .from("estoque_pallets")
         .insert({
@@ -223,7 +287,6 @@ export async function concluirManutencao(manutencaoId: string) {
           modelo_id: manut.modelo_id,
           modelo_nome_snapshot: manut.modelo_nome_snapshot,
           quantidade: manut.quantidade,
-          created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
       
@@ -233,7 +296,7 @@ export async function concluirManutencao(manutencaoId: string) {
     revalidatePath("/admin/manutencao");
     revalidatePath("/admin/estoque");
     
-    return { success: true, message: "Manutenção concluída e estoque atualizado." };
+    return { success: true };
   } catch (err: any) {
     console.error("[concluirManutencao] Erro:", err.message);
     return { success: false, error: err.message };
@@ -241,7 +304,7 @@ export async function concluirManutencao(manutencaoId: string) {
 }
 
 /**
- * Inicia o processo de manutenção (status 'em_andamento').
+ * Inicia a manutenção (pendente -> em_andamento).
  */
 export async function iniciarManutencao(id: string) {
   try {
@@ -254,6 +317,7 @@ export async function iniciarManutencao(id: string) {
         updated_at: new Date().toISOString() 
       })
       .eq("id", id);
+      
     if (error) throw error;
     revalidatePath("/admin/manutencao");
     return { success: true };
@@ -263,7 +327,7 @@ export async function iniciarManutencao(id: string) {
 }
 
 /**
- * Limpa registros inválidos (quantidade 0).
+ * Remove registros inválidos ou zerados.
  */
 export async function limparRegistrosInvalidos() {
   try {
@@ -271,54 +335,11 @@ export async function limparRegistrosInvalidos() {
     const { error } = await supabase
       .from("manutencoes")
       .delete()
-      .eq("quantidade", 0);
+      .or("quantidade.eq.0,quantidade.is.null");
     
     if (error) throw error;
     revalidatePath("/admin/manutencao");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
-}
-
-/**
- * Sincroniza manutenções pendentes de triagens já concluídas.
- */
-export async function sincronizarManutencoesPendentes() {
-  try {
-    const supabase = createAdminClient();
-
-    const { data: triagens, error: triError } = await supabase
-      .from("triagens")
-      .select("id, status")
-      .in("status", ["concluida", "finalizada"]);
-
-    if (triError) throw triError;
-
-    let totalCriados = 0;
-    let totalIgnorados = 0;
-    let triagensVerificadas = 0;
-    const todosMotivos: string[] = [];
-
-    for (const tri of (triagens || [])) {
-      triagensVerificadas++;
-      const res = await gerarManutencoesDaTriagem(tri.id);
-      if (res.success) {
-        totalCriados += (res.itensCriados || 0);
-        totalIgnorados += (res.itensIgnorados || 0);
-      } else {
-        todosMotivos.push(`Erro na triagem ${tri.id}: ${res.error}`);
-      }
-    }
-
-    revalidatePath("/admin/manutencao");
-    return { 
-      success: true, 
-      triagensVerificadas, 
-      itensCriados: totalCriados, 
-      itensIgnorados: totalIgnorados,
-      motivos: todosMotivos 
-    };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
