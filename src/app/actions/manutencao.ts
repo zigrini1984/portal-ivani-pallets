@@ -35,7 +35,12 @@ export async function gerarManutencoesDaTriagem(triagemId: string) {
         modelo_pallet_id,
         quantidade_reforma,
         quantidade_remanufatura,
-        modelos_pallets(id, nome)
+        modelos_pallets (
+          id,
+          nome,
+          codigo,
+          medidas
+        )
       `)
       .eq("triagem_id", triagemId);
 
@@ -51,20 +56,19 @@ export async function gerarManutencoesDaTriagem(triagemId: string) {
     if (itens && itens.length > 0) {
       for (const it of itens) {
         // Supabase returns relationship as object (1-1) or array (1-n)
-        const modeloData: any = it.modelos_pallets;
-        const modelo = Array.isArray(modeloData) ? modeloData[0] : modeloData;
-        const modeloId = modelo?.id || it.modelo_pallet_id;
-        const modeloNome = modelo?.nome || "Modelo não identificado";
+        const modelo: any = Array.isArray(it.modelos_pallets) ? it.modelos_pallets[0] : it.modelos_pallets;
+        const modeloPalletId = it.modelo_pallet_id;
+        const modeloNome = modelo?.nome || "Modelo não informado";
 
         // Caso Reforma
-        if ((it.quantidade_reforma || 0) > 0) {
-          const qty = it.quantidade_reforma;
+        if (Number(it.quantidade_reforma || 0) > 0) {
+          const qty = Number(it.quantidade_reforma);
           manutItems.push({
             triagem_id: triagemId,
             coleta_id: triagem.coleta_id,
             cliente_id: clienteId,
-            modelo_id: modeloId,
-            modelo_pallet_id: modeloId,
+            modelo_id: modeloPalletId,
+            modelo_pallet_id: modeloPalletId,
             modelo_nome_snapshot: modeloNome,
             tipo_servico: "reforma",
             quantidade: qty,
@@ -74,14 +78,14 @@ export async function gerarManutencoesDaTriagem(triagemId: string) {
         }
 
         // Caso Remanufatura
-        if ((it.quantidade_remanufatura || 0) > 0) {
-          const qty = it.quantidade_remanufatura;
+        if (Number(it.quantidade_remanufatura || 0) > 0) {
+          const qty = Number(it.quantidade_remanufatura);
           manutItems.push({
             triagem_id: triagemId,
             coleta_id: triagem.coleta_id,
             cliente_id: clienteId,
-            modelo_id: modeloId,
-            modelo_pallet_id: modeloId,
+            modelo_id: modeloPalletId,
+            modelo_pallet_id: modeloPalletId,
             modelo_nome_snapshot: modeloNome,
             tipo_servico: "remanufatura",
             quantidade: qty,
@@ -283,10 +287,12 @@ export async function concluirManutencao(manutencaoId: string) {
     const qtyFinal = Number(manut.quantidade || manut.quantidade_entrada || 0);
 
     if (estoqueExistente) {
+      const novaQuantidade = Number(estoqueExistente.quantidade || 0) + qtyFinal;
       const { error: saveError } = await supabase
         .from("estoque_pallets")
         .update({
-          quantidade: (estoqueExistente.quantidade || 0) + qtyFinal,
+          quantidade: novaQuantidade,
+          quantidade_disponivel: novaQuantidade, // Sincroniza ambos na entrada
           updated_at: new Date().toISOString()
         })
         .eq("id", estoqueExistente.id);
@@ -297,10 +303,11 @@ export async function concluirManutencao(manutencaoId: string) {
         .from("estoque_pallets")
         .insert({
           cliente_id: clienteId,
-          modelo_id: manut.modelo_id || manut.modelo_pallet_id,
+          modelo_id: manut.modelo_pallet_id || manut.modelo_id,
           modelo_pallet_id: manut.modelo_pallet_id || manut.modelo_id,
           modelo_nome_snapshot: manut.modelo_nome_snapshot,
           quantidade: qtyFinal,
+          quantidade_disponivel: qtyFinal,
           updated_at: new Date().toISOString()
         });
       

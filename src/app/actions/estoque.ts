@@ -16,14 +16,14 @@ export async function reprocessarEstoque() {
     const { data: manutData, error: manutError } = await supabase
       .from("manutencoes")
       .select(
-        "id, cliente_id, modelo_id, modelo_pallet_id, modelo_nome_snapshot, tipo_servico, quantidade, quantidade_entrada, status"
+        "id, cliente_id, modelo_id, modelo_pallet_id, modelo_nome_snapshot, tipo_servico, quantidade, quantidade_entrada, quantidade_concluida, status"
       )
       .eq("cliente_id", clienteId)
       .eq("status", "concluida");
 
     if (manutError) throw manutError;
 
-    // 2. Agrupar saldos por chave de modelo
+    // 2. Agrupar saldos por chave de modelo (modelo_pallet_id)
     const saldos: Record<
       string,
       {
@@ -35,17 +35,16 @@ export async function reprocessarEstoque() {
     > = {};
 
     for (const m of manutData ?? []) {
-      const qty = Number(m.quantidade || m.quantidade_entrada || 0);
+      const qty = Number(m.quantidade_concluida || m.quantidade || m.quantidade_entrada || 0);
       if (qty <= 0) continue;
       if (!["reforma", "remanufatura"].includes(m.tipo_servico ?? "")) continue;
 
-      // Chave de agrupamento: preferir modelo_pallet_id, depois modelo_id, depois nome
-      const key =
-        m.modelo_pallet_id ?? m.modelo_id ?? m.modelo_nome_snapshot ?? "sem_modelo";
+      // Chave de agrupamento: usar obrigatoriamente modelo_pallet_id
+      const key = m.modelo_pallet_id ?? "sem_modelo";
 
       if (!saldos[key]) {
         saldos[key] = {
-          modelo_id: m.modelo_id ?? null,
+          modelo_id: m.modelo_id ?? m.modelo_pallet_id ?? null,
           modelo_pallet_id: m.modelo_pallet_id ?? null,
           modelo_nome_snapshot: m.modelo_nome_snapshot ?? "Modelo não informado",
           total: 0,
@@ -54,7 +53,7 @@ export async function reprocessarEstoque() {
       saldos[key].total += qty;
     }
 
-    // 3. Abater saídas manuais
+    // 3. Abater saídas manuais registradas em estoque_movimentacoes
     const { data: movSaidas } = await supabase
       .from("estoque_movimentacoes")
       .select("modelo_pallet_id, quantidade")
@@ -76,21 +75,13 @@ export async function reprocessarEstoque() {
       const s = saldos[key];
       if (s.total < 0) continue;
 
-      // Verificar se já existe
-      let query = supabase
+      // Verificar se já existe registro deste modelo para este cliente
+      const { data: existing } = await supabase
         .from("estoque_pallets")
-        .select("id, quantidade")
-        .eq("cliente_id", clienteId);
-
-      if (s.modelo_pallet_id) {
-        query = query.eq("modelo_pallet_id", s.modelo_pallet_id);
-      } else if (s.modelo_id) {
-        query = query.eq("modelo_id", s.modelo_id);
-      } else {
-        query = query.eq("modelo_nome_snapshot", s.modelo_nome_snapshot);
-      }
-
-      const { data: existing } = await query.limit(1);
+        .select("id, quantidade, quantidade_disponivel")
+        .eq("cliente_id", clienteId)
+        .eq("modelo_pallet_id", s.modelo_pallet_id)
+        .limit(1);
 
       const payload = {
         cliente_id: clienteId,
@@ -148,7 +139,7 @@ export async function registrarSaidaEstoque(input: {
       return { success: false, error: "Dados inválidos para saída." };
     }
 
-    // 1. Buscar saldo atual
+    // 1. Buscar saldo atual (explicitamente)
     const { data: estData, error: estError } = await supabase
       .from("estoque_pallets")
       .select("id, cliente_id, modelo_pallet_id, quantidade, quantidade_disponivel")
@@ -159,37 +150,40 @@ export async function registrarSaidaEstoque(input: {
     const item = estData?.[0];
     if (!item) return { success: false, error: "Item de estoque não encontrado." };
 
-    const saldoAtual = Number(item.quantidade || item.quantidade_disponivel || 0);
-    if (quantidadeSaida > saldoAtual) {
+    const saldoDisponivel = Number(item.quantidade_disponivel || item.quantidade || 0);
+    if (quantidadeSaida > saldoDisponivel) {
       return {
         success: false,
-        error: `Saldo insuficiente. Disponível: ${saldoAtual} unidades.`,
+        error: `Saldo insuficiente. Disponível: ${saldoDisponivel} unidades.`,
       };
     }
 
-    const novoSaldo = saldoAtual - quantidadeSaida;
+    const novoSaldoDisponivel = saldoDisponivel - quantidadeSaida;
+    const novoSaldoTotal = Math.max(0, Number(item.quantidade || 0) - quantidadeSaida);
 
-    // 2. Atualizar saldo
+    // 2. Atualizar saldo (total e disponível)
     const { error: updError } = await supabase
       .from("estoque_pallets")
       .update({
-        quantidade: novoSaldo,
-        quantidade_disponivel: novoSaldo,
+        quantidade: novoSaldoTotal,
+        quantidade_disponivel: novoSaldoDisponivel,
         updated_at: new Date().toISOString(),
       })
       .eq("id", estoqueId);
 
     if (updError) throw updError;
 
-    // 3. Registrar movimentação (best-effort; ignora se tabela não existir)
+    // 3. Registrar movimentação em estoque_movimentacoes
     await supabase.from("estoque_movimentacoes").insert([
       {
         cliente_id: item.cliente_id,
         modelo_pallet_id: item.modelo_pallet_id,
-        origem: "saida_manual",
+        origem: "estoque",
+        origem_id: estoqueId,
         tipo: "saida",
         quantidade: quantidadeSaida,
         descricao: observacao || "Saída manual de estoque",
+        created_at: new Date().toISOString()
       },
     ]);
 

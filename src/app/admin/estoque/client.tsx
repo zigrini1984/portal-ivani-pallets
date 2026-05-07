@@ -79,8 +79,11 @@ export function AdminEstoqueClient({
   pageError,
 }: AdminEstoqueClientProps) {
   const router = useRouter();
-  const [estoque] = useState<EstoqueItem[]>(initialEstoque);
-  const [movimentacoes] = useState<Movimentacao[]>(initialMovimentacoes);
+  
+  // Use props directly for reactivity with router.refresh()
+  const estoque = initialEstoque;
+  const movimentacoes = initialMovimentacoes;
+  
   const [syncing, setSyncing] = useState(false);
   const [activeTab, setActiveTab] = useState<"cards" | "historico">("cards");
   const [error, setError] = useState<PageError | null>(pageError ?? null);
@@ -103,17 +106,17 @@ export function AdminEstoqueClient({
   const handleSync = async () => {
     try {
       setSyncing(true);
+      setError(null);
       const result = await reprocessarEstoque();
       if (!result.success) {
-        alert("Erro ao reprocessar: " + result.error);
+        setError({ message: "Erro ao reprocessar: " + result.error });
         return;
       }
-      alert(
-        `✅ Estoque reprocessado!\n\nModelos: ${result.modelosAtualizados}\nPallets: ${result.quantidadeTotal}\nItens processados: ${result.itensProcessados}`
-      );
+      // Sucesso! O router.refresh() vai atualizar as props
       router.refresh();
+      alert(`✅ Estoque reprocessado com sucesso!\nModelos: ${result.modelosAtualizados}\nTotal: ${result.quantidadeTotal} pallets`);
     } catch (err: any) {
-      alert("Erro inesperado: " + err.message);
+      setError({ message: "Erro inesperado: " + err.message });
     } finally {
       setSyncing(false);
     }
@@ -158,6 +161,7 @@ export function AdminEstoqueClient({
         return;
       }
 
+      // Sucesso!
       closeSaidaModal();
       router.refresh();
     } catch (err: any) {
