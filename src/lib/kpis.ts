@@ -44,31 +44,50 @@ export interface DashboardKPIs {
   };
 }
 
-export async function fetchDashboardKPIs(clienteId: string = "pce", supabaseParam?: any): Promise<DashboardKPIs> {
+async function safeQuery(label: string, queryPromise: any) {
   try {
-    const supabase = supabaseParam || await getSupabase();
+    const { data, error } = await queryPromise;
+    if (error) {
+      console.error(`[KPIs] ${label}:`, {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
+      return [];
+    }
+    return data || [];
+  } catch (error) {
+    console.error(`[KPIs] ${label} exception:`, error);
+    return [];
+  }
+}
 
-    // 1. Fetch data from Supabase
-    const [
-      { data: coletas },
-      { data: triagens },
-      { data: estoque },
-      { data: movimentacoes },
-      { data: modelos }
-    ] = await Promise.all([
-      supabase.from("coletas").select("id, cliente_id, quantidade_material_bruto, data_coleta").eq("cliente_id", clienteId),
-      supabase.from("triagens").select("id, cliente_id, coleta_id, quantidade_total, quantidade_manutencao, quantidade_remanufatura, quantidade_compra_ivani, created_at, modelo_pallet_id").eq("cliente_id", clienteId),
-      supabase.from("estoque_pallets").select("id, cliente_id, quantidade_disponivel").eq("cliente_id", clienteId),
-      supabase.from("estoque_movimentacoes").select("id, cliente_id, tipo, quantidade").eq("cliente_id", clienteId),
-      supabase.from("modelos_pallets").select("id, cliente_id, preco_pallet_novo, preco_reforma, preco_remanufatura").eq("cliente_id", clienteId)
-    ]);
+export async function fetchDashboardKPIs(clienteId: string = "pce", supabaseParam?: any): Promise<DashboardKPIs> {
+  const supabase = supabaseParam || await getSupabase();
 
-    const coletasArr = coletas || [];
-    const triagensArr = triagens || [];
-    const estoqueArr = estoque || [];
-    const movimentacoesArr = movimentacoes || [];
-    const modelosArr = modelos || [];
+  // 1. Fetch data from Supabase using safeQuery
+  const coletasArr = await safeQuery("coletas", 
+    supabase.from("coletas").select("id, cliente_id, quantidade_material_bruto, data_coleta").eq("cliente_id", clienteId)
+  );
+  
+  const triagensArr = await safeQuery("triagens", 
+    supabase.from("triagens").select("id, cliente_id, coleta_id, quantidade_total, quantidade_manutencao, quantidade_remanufatura, quantidade_compra_ivani, created_at, modelo_pallet_id").eq("cliente_id", clienteId)
+  );
 
+  const estoqueArr = await safeQuery("estoque_pallets", 
+    supabase.from("estoque_pallets").select("id, cliente_id, quantidade_disponivel").eq("cliente_id", clienteId)
+  );
+
+  const movimentacoesArr = await safeQuery("estoque_movimentacoes", 
+    supabase.from("estoque_movimentacoes").select("id, cliente_id, tipo, quantidade").eq("cliente_id", clienteId)
+  );
+
+  const modelosArr = await safeQuery("modelos_pallets", 
+    supabase.from("modelos_pallets").select("id, cliente_id, preco_pallet_novo, preco_reforma, preco_remanufatura").eq("cliente_id", clienteId)
+  );
+
+  try {
     // --- CÁLCULOS BASE ---
     const total_coletado = coletasArr.reduce((acc: number, c: any) => acc + (c.quantidade_material_bruto || 0), 0);
     const total_processado = triagensArr.reduce((acc: number, t: any) => acc + (t.quantidade_total || 0), 0);
@@ -178,13 +197,13 @@ export async function fetchDashboardKPIs(clienteId: string = "pce", supabasePara
       performance: { crescimento_mensal, tendencia_volume, indice_performance }
     };
   } catch (error) {
-    console.error("fetchDashboardKPIs Error:", error);
+    console.error("fetchDashboardKPIs Calculation Error:", error);
     return {
       operacao: { total_coletado: 0, total_processado: 0, total_estoque: 0, total_entregue: 0, volume_mensal: 0, numero_coletas: 0, tempo_medio_ciclo: "---" },
       eficiencia: { taxa_reaproveitamento: 0, taxa_sucata: 0, taxa_reforma: 0, taxa_remanufatura: 0, eficiencia_recuperacao: 0, perda_operacional: 0 },
       financeiro: { economia_total: 0, custo_evitar_novo: 0, valor_recuperado: 0, custo_medio_pallet: 0, economia_por_pallet: 0, roi_operacao: 0 },
       esg: { arvores_preservadas: 0, co2_evitado: 0, madeira_reutilizada: 0, residuos_evitar: 0 },
-      performance: { crescimento_mensal: 0, tendencia_volume: "stable", indice_performance: 0 }
+      performance: { crescimento_mensal: 0, tendencia_volume: "stable" as const, indice_performance: 0 }
     };
   }
 }

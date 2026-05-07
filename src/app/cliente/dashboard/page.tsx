@@ -38,6 +38,25 @@ const SectionTitle = ({ title, icon: Icon }: { title: string, icon?: any }) => (
   </div>
 );
 
+async function safeQuery(label: string, queryPromise: any) {
+  try {
+    const { data, error } = await queryPromise;
+    if (error) {
+      console.error(`[ClienteDashboard] ${label}:`, {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
+      return [];
+    }
+    return data || [];
+  } catch (error) {
+    console.error(`[ClienteDashboard] ${label} exception:`, error);
+    return [];
+  }
+}
+
 export default async function ClienteDashboardPCE() {
   const supabase = createAdminClient();
   const clienteId = "pce";
@@ -49,24 +68,24 @@ export default async function ClienteDashboardPCE() {
   try {
     kpis = await fetchDashboardKPIs(clienteId, supabase);
     
-    // Timeline recente
-    const { data: movs } = await supabase
-      .from("estoque_movimentacoes")
-      .select("id, tipo, quantidade, created_at, modelo:modelos_pallets(nome)")
-      .eq("cliente_id", clienteId)
-      .order("created_at", { ascending: false })
-      .limit(5);
-    
-    timeline = movs || [];
+    // Timeline recente segura
+    timeline = await safeQuery("timeline", 
+      supabase
+        .from("estoque_movimentacoes")
+        .select("id, tipo, quantidade, created_at, modelo:modelos_pallets(nome)")
+        .eq("cliente_id", clienteId)
+        .order("created_at", { ascending: false })
+        .limit(5)
+    );
   } catch (err) {
     console.error("Dashboard Server Error:", err);
-    error = "Falha ao carregar dados operacionais.";
+    error = "Falha ao processar visão estratégica.";
     kpis = {
       operacao: { total_coletado: 0, total_processado: 0, total_estoque: 0, total_entregue: 0, volume_mensal: 0, numero_coletas: 0, tempo_medio_ciclo: "---" },
       eficiencia: { taxa_reaproveitamento: 0, taxa_sucata: 0, taxa_reforma: 0, taxa_remanufatura: 0, eficiencia_recuperacao: 0, perda_operacional: 0 },
       financeiro: { economia_total: 0, custo_evitar_novo: 0, valor_recuperado: 0, custo_medio_pallet: 0, economia_por_pallet: 0, roi_operacao: 0 },
       esg: { arvores_preservadas: 0, co2_evitado: 0, madeira_reutilizada: 0, residuos_evitar: 0 },
-      performance: { crescimento_mensal: 0, tendencia_volume: "stable", indice_performance: 0 }
+      performance: { crescimento_mensal: 0, tendencia_volume: "stable" as const, indice_performance: 0 }
     };
   }
 
