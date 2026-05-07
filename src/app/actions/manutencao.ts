@@ -35,12 +35,13 @@ export async function gerarManutencoesDaTriagem(triagemId: string) {
         modelo_pallet_id,
         quantidade_reforma,
         quantidade_remanufatura,
-        modelos_pallets:modelo_pallet_id ( id, nome )
+        modelos_pallets(id, nome)
       `)
       .eq("triagem_id", triagemId);
 
     if (itensError) {
        console.warn(`[gerarManutencoesDaTriagem] Erro ao buscar itens:`, itensError.message);
+       motivos.push(`Erro ao buscar itens detalhados: ${itensError.message}`);
     }
 
     const clienteId = triagem.cliente_id || "pce";
@@ -49,59 +50,74 @@ export async function gerarManutencoesDaTriagem(triagemId: string) {
     // 3. Processar Itens por Modelo
     if (itens && itens.length > 0) {
       for (const it of itens) {
-        // Supabase returns relationship as object or array depending on config
-        const modeloData = Array.isArray(it.modelos_pallets) ? it.modelos_pallets[0] : it.modelos_pallets;
-        const modeloId = modeloData?.id || it.modelo_pallet_id;
-        const modeloNome = modeloData?.nome || "Modelo não identificado";
+        // Supabase returns relationship as object (1-1) or array (1-n)
+        const modeloData: any = it.modelos_pallets;
+        const modelo = Array.isArray(modeloData) ? modeloData[0] : modeloData;
+        const modeloId = modelo?.id || it.modelo_pallet_id;
+        const modeloNome = modelo?.nome || "Modelo não identificado";
 
         // Caso Reforma
         if ((it.quantidade_reforma || 0) > 0) {
+          const qty = it.quantidade_reforma;
           manutItems.push({
             triagem_id: triagemId,
             coleta_id: triagem.coleta_id,
             cliente_id: clienteId,
             modelo_id: modeloId,
+            modelo_pallet_id: modeloId,
             modelo_nome_snapshot: modeloNome,
             tipo_servico: "reforma",
-            quantidade: it.quantidade_reforma
+            quantidade: qty,
+            quantidade_entrada: qty,
+            quantidade_concluida: 0
           });
         }
 
         // Caso Remanufatura
         if ((it.quantidade_remanufatura || 0) > 0) {
+          const qty = it.quantidade_remanufatura;
           manutItems.push({
             triagem_id: triagemId,
             coleta_id: triagem.coleta_id,
             cliente_id: clienteId,
             modelo_id: modeloId,
+            modelo_pallet_id: modeloId,
             modelo_nome_snapshot: modeloNome,
             tipo_servico: "remanufatura",
-            quantidade: it.quantidade_remanufatura
+            quantidade: qty,
+            quantidade_entrada: qty,
+            quantidade_concluida: 0
           });
         }
       }
     }
 
-    // 4. Fallback: Se não houve itens por modelo, mas a triagem tem totais, cria registros genéricos
+    // 4. Fallback
     if (manutItems.length === 0) {
       if ((triagem.quantidade_manutencao || 0) > 0) {
+        const qty = triagem.quantidade_manutencao;
         manutItems.push({
           triagem_id: triagemId,
           coleta_id: triagem.coleta_id,
           cliente_id: clienteId,
           modelo_nome_snapshot: "Modelo Geral (Reforma)",
           tipo_servico: "reforma",
-          quantidade: triagem.quantidade_manutencao
+          quantidade: qty,
+          quantidade_entrada: qty,
+          quantidade_concluida: 0
         });
       }
       if ((triagem.quantidade_remanufatura || 0) > 0) {
+        const qty = triagem.quantidade_remanufatura;
         manutItems.push({
           triagem_id: triagemId,
           coleta_id: triagem.coleta_id,
           cliente_id: clienteId,
           modelo_nome_snapshot: "Modelo Geral (Remanufatura)",
           tipo_servico: "remanufatura",
-          quantidade: triagem.quantidade_remanufatura
+          quantidade: qty,
+          quantidade_entrada: qty,
+          quantidade_concluida: 0
         });
       }
       
@@ -110,9 +126,8 @@ export async function gerarManutencoesDaTriagem(triagemId: string) {
       }
     }
 
-    // 5. Inserir no Banco com Verificação de Duplicidade
+    // 5. Inserir
     for (const mItem of manutItems) {
-      // Verifica se já existe exatamente esse item para essa triagem
       const { data: exist, error: exError } = await supabase
         .from("manutencoes")
         .select("id")
@@ -121,18 +136,12 @@ export async function gerarManutencoesDaTriagem(triagemId: string) {
         .eq("modelo_nome_snapshot", mItem.modelo_nome_snapshot)
         .limit(1);
 
-      if (exError) {
-          motivos.push(`Erro ao verificar duplicidade para ${mItem.modelo_nome_snapshot}: ${exError.message}`);
-          continue;
-      }
-
       if (exist && exist.length > 0) {
         itensIgnorados++;
         motivos.push(`Item '${mItem.modelo_nome_snapshot}' (${mItem.tipo_servico}) já sincronizado.`);
         continue;
       }
 
-      // Inserção
       const { error: insError } = await supabase
         .from("manutencoes")
         .insert({
@@ -148,6 +157,8 @@ export async function gerarManutencoesDaTriagem(triagemId: string) {
         itensCriados++;
       }
     }
+
+    console.log(`[gerarManutencoesDaTriagem] Triagem ${triagemId}: ${itensCriados} criados, ${itensIgnorados} ignorados.`);
 
     return {
       success: true,
@@ -228,20 +239,21 @@ export async function concluirManutencao(manutencaoId: string) {
     // 1. Buscar manutenção
     const { data: manutData, error: fetchError } = await supabase
       .from("manutencoes")
-      .select("id, cliente_id, modelo_id, modelo_nome_snapshot, tipo_servico, quantidade, status")
+      .select("id, cliente_id, modelo_id, modelo_pallet_id, modelo_nome_snapshot, tipo_servico, quantidade, quantidade_entrada, status")
       .eq("id", manutencaoId);
 
     if (fetchError) throw fetchError;
     const manut = manutData?.[0];
 
     if (!manut) return { success: false, error: "Manutenção não encontrada." };
-    if (manut.status === "concluida") return { success: false, error: "Este item já foi enviado ao estoque." };
+    if (manut.status === "concluida") return { success: false, error: "Este item já foi concluído." };
 
     // 2. Atualizar status da manutenção
     const { error: updError } = await supabase
       .from("manutencoes")
       .update({
         status: "concluida",
+        quantidade_concluida: manut.quantidade || manut.quantidade_entrada,
         data_conclusao: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -258,8 +270,8 @@ export async function concluirManutencao(manutencaoId: string) {
       .select("id, quantidade")
       .eq("cliente_id", clienteId);
 
-    if (manut.modelo_id) {
-      query = query.eq("modelo_id", manut.modelo_id);
+    if (manut.modelo_id || manut.modelo_pallet_id) {
+      query = query.or(`modelo_id.eq.${manut.modelo_id},modelo_pallet_id.eq.${manut.modelo_pallet_id || manut.modelo_id}`);
     } else {
       query = query.eq("modelo_nome_snapshot", manut.modelo_nome_snapshot);
     }
@@ -268,12 +280,13 @@ export async function concluirManutencao(manutencaoId: string) {
     if (estError) throw estError;
 
     const estoqueExistente = estData?.[0];
+    const qtyFinal = Number(manut.quantidade || manut.quantidade_entrada || 0);
 
     if (estoqueExistente) {
       const { error: saveError } = await supabase
         .from("estoque_pallets")
         .update({
-          quantidade: (estoqueExistente.quantidade || 0) + (manut.quantidade || 0),
+          quantidade: (estoqueExistente.quantidade || 0) + qtyFinal,
           updated_at: new Date().toISOString()
         })
         .eq("id", estoqueExistente.id);
@@ -284,9 +297,10 @@ export async function concluirManutencao(manutencaoId: string) {
         .from("estoque_pallets")
         .insert({
           cliente_id: clienteId,
-          modelo_id: manut.modelo_id,
+          modelo_id: manut.modelo_id || manut.modelo_pallet_id,
+          modelo_pallet_id: manut.modelo_pallet_id || manut.modelo_id,
           modelo_nome_snapshot: manut.modelo_nome_snapshot,
-          quantidade: manut.quantidade,
+          quantidade: qtyFinal,
           updated_at: new Date().toISOString()
         });
       
@@ -335,7 +349,7 @@ export async function limparRegistrosInvalidos() {
     const { error } = await supabase
       .from("manutencoes")
       .delete()
-      .or("quantidade.eq.0,quantidade.is.null");
+      .or("quantidade.eq.0,quantidade_entrada.eq.0,quantidade_entrada.is.null");
     
     if (error) throw error;
     revalidatePath("/admin/manutencao");

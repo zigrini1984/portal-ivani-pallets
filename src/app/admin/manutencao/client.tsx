@@ -17,9 +17,12 @@ interface ModeloPallet { id: string; nome: string; codigo: string; medidas: stri
 
 interface Manutencao {
   id: string; triagem_id?: string; coleta_id?: string; cliente_id?: string;
-  modelo_id?: string; modelo_nome_snapshot: string;
+  modelo_id?: string; modelo_pallet_id?: string; modelo_nome_snapshot: string;
   tipo_servico: "reforma" | "remanufatura";
-  quantidade: number; status: "pendente" | "em_andamento" | "concluida";
+  quantidade: number;
+  quantidade_entrada: number; 
+  quantidade_concluida?: number;
+  status: "pendente" | "em_andamento" | "concluida";
   data_entrada: string; data_inicio: string | null; data_conclusao: string | null;
   observacao?: string | null;
 }
@@ -47,7 +50,7 @@ export function AdminManutencaoClient({
   const manutencoesValidas = useMemo(() => {
     if (!Array.isArray(initialManutencoes)) return [];
     return initialManutencoes.filter(item => {
-      const qty = Number(item.quantidade || 0);
+      const qty = Number(item.quantidade || item.quantidade_entrada || 0);
       const tipo = String(item.tipo_servico || "").toLowerCase();
       return qty > 0 && ["reforma", "remanufatura"].includes(tipo);
     });
@@ -55,23 +58,15 @@ export function AdminManutencaoClient({
 
   // 2. Cálculo dos KPIs
   const stats = useMemo(() => {
+    const sum = (list: Manutencao[]) => list.reduce((acc, curr) => acc + Number(curr.quantidade || curr.quantidade_entrada || 0), 0);
+    
     return {
-      totalGeral: manutencoesValidas.reduce((acc, curr) => acc + Number(curr.quantidade || 0), 0),
-      pendentes: manutencoesValidas
-        .filter(i => i.status === "pendente")
-        .reduce((acc, curr) => acc + Number(curr.quantidade || 0), 0),
-      emAndamento: manutencoesValidas
-        .filter(i => i.status === "em_andamento")
-        .reduce((acc, curr) => acc + Number(curr.quantidade || 0), 0),
-      concluidas: manutencoesValidas
-        .filter(i => i.status === "concluida")
-        .reduce((acc, curr) => acc + Number(curr.quantidade || 0), 0),
-      reforma: manutencoesValidas
-        .filter(i => i.tipo_servico === "reforma")
-        .reduce((acc, curr) => acc + Number(curr.quantidade || 0), 0),
-      remanufatura: manutencoesValidas
-        .filter(i => i.tipo_servico === "remanufatura")
-        .reduce((acc, curr) => acc + Number(curr.quantidade || 0), 0),
+      totalGeral: sum(manutencoesValidas),
+      pendentes: sum(manutencoesValidas.filter(i => i.status === "pendente")),
+      emAndamento: sum(manutencoesValidas.filter(i => i.status === "em_andamento")),
+      concluidas: sum(manutencoesValidas.filter(i => i.status === "concluida")),
+      reforma: sum(manutencoesValidas.filter(i => i.tipo_servico === "reforma")),
+      remanufatura: sum(manutencoesValidas.filter(i => i.tipo_servico === "remanufatura")),
     };
   }, [manutencoesValidas]);
 
@@ -234,7 +229,7 @@ export function AdminManutencaoClient({
                           </div>
                         </td>
                         <td className="px-6 py-5 text-center">
-                          <span className="text-xl font-black text-[#133020]">{item.quantidade}</span>
+                          <span className="text-xl font-black text-[#133020]">{item.quantidade || item.quantidade_entrada}</span>
                           <span className="text-[10px] font-bold text-[#133020]/30 ml-1.5 uppercase tracking-widest">un</span>
                         </td>
                         <td className="px-6 py-5">
@@ -264,7 +259,7 @@ export function AdminManutencaoClient({
                                 Concluir
                               </AppButton>
                             )}
-
+ 
                             {item.status === "concluida" && (
                               <div className="flex items-center gap-2 px-4 py-3 bg-[#133020]/5 text-[#133020]/40 rounded-2xl text-[10px] font-black uppercase tracking-widest">
                                 <CheckCircle2 size={16} className="text-emerald-500" /> No Estoque

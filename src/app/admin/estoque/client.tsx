@@ -23,15 +23,17 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { sincronizarEstoqueOperacional } from "@/lib/services/estoque";
 import { PageShell, AppCard, AppButton, StatusBadge, EmptyState } from "@/components/ui/tropical";
+import { reprocessarEstoque } from "@/app/actions/estoque";
 
 
 interface EstoqueItem {
   id: string;
   modelo_id: string;
+  modelo_pallet_id?: string;
   cliente_id: string;
   quantidade: number;
+  quantidade_disponivel?: number;
   modelo_nome_snapshot: string;
   updated_at: string;
   modelo_pallet?: {
@@ -56,15 +58,21 @@ interface Movimentacao {
 interface AdminEstoqueClientProps {
   initialEstoque: EstoqueItem[];
   initialMovimentacoes: Movimentacao[];
+  error?: {
+    message: string;
+    details?: string;
+    code?: string;
+    hint?: string;
+  } | null;
 }
 
-export function AdminEstoqueClient({ initialEstoque, initialMovimentacoes }: AdminEstoqueClientProps) {
+export function AdminEstoqueClient({ initialEstoque, initialMovimentacoes, error: initialError }: AdminEstoqueClientProps) {
   const supabase = createClient();
   const [estoque, setEstoque] = useState<EstoqueItem[]>(initialEstoque);
   const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>(initialMovimentacoes);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<any>(initialError);
   const [activeTab, setActiveTab] = useState<'cards' | 'historico'>('cards');
   
   // Saída
@@ -78,7 +86,7 @@ export function AdminEstoqueClient({ initialEstoque, initialMovimentacoes }: Adm
       const { data: estData, error: estError } = await supabase
         .from("estoque_pallets")
         .select(`
-          id, cliente_id, modelo_id, modelo_nome_snapshot, quantidade, updated_at,
+          id, cliente_id, modelo_id, modelo_pallet_id, modelo_nome_snapshot, quantidade, quantidade_disponivel, updated_at,
           modelo_pallet:modelos_pallets(nome, codigo, medidas)
         `)
         .eq("cliente_id", "pce");
@@ -109,9 +117,14 @@ export function AdminEstoqueClient({ initialEstoque, initialMovimentacoes }: Adm
 
       setEstoque(mappedEstoque);
       setMovimentacoes(mappedMovimentacoes);
+      setError(null);
     } catch (err: any) {
       console.error(err);
-      setError("Falha ao carregar estoque.");
+      setError({
+        message: "Falha ao carregar estoque.",
+        details: err.message,
+        code: err.code
+      });
     }
   };
 
@@ -122,12 +135,17 @@ export function AdminEstoqueClient({ initialEstoque, initialMovimentacoes }: Adm
   const handleSync = async () => {
     try {
       setSyncing(true);
-      await sincronizarEstoqueOperacional();
+      const result = await reprocessarEstoque();
+      
+      if (!result.success) throw result;
+
       await fetchData();
-      alert("Estoque reprocessado com sucesso!");
+      
+      const { details } = result as any;
+      alert(`Estoque reprocessado com sucesso!\n\nModelos: ${details.modelosAtualizados}\nTotal: ${details.totalQuantidade} pallets`);
     } catch (err: any) {
       console.error(err);
-      alert("Erro ao sincronizar: " + err.message);
+      alert("Erro ao sincronizar: " + (err.error || err.message || "Erro desconhecido"));
     } finally {
       setSyncing(false);
     }
@@ -208,9 +226,29 @@ export function AdminEstoqueClient({ initialEstoque, initialMovimentacoes }: Adm
              <p className="text-sm text-[#133020]/50 mt-1">Ivani Pallets — Inventário em Tempo Real</p>
           </div>
         ) : error ? (
-          <div className="py-20 text-center bg-white rounded-[2rem] border border-red-100">
-            <AlertCircle className="mx-auto text-red-400 mb-4" size={48} />
-            <h3 className="text-lg font-bold text-red-600">{error}</h3>
+          <div className="py-20 px-8 text-center bg-white rounded-[2rem] border border-red-100 shadow-xl shadow-red-500/5">
+            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <AlertCircle className="text-red-500" size={40} />
+            </div>
+            <h3 className="text-2xl font-black text-[#133020] mb-2">{error.message || "Erro Inesperado"}</h3>
+            <p className="text-sm text-[#133020]/60 max-w-md mx-auto mb-8">
+              Ocorreu um problema ao tentar carregar os dados de inventário. Por favor, tente reprocessar o estoque.
+            </p>
+            
+            {error.details && (
+              <div className="bg-red-50/50 p-4 rounded-2xl text-left mb-8 max-w-lg mx-auto border border-red-100">
+                <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-2">Detalhes do Erro</p>
+                <code className="text-xs text-red-600 block break-all font-mono">
+                  {error.details}
+                  {error.code && ` (Code: ${error.code})`}
+                  {error.hint && `\nHint: ${error.hint}`}
+                </code>
+              </div>
+            )}
+
+            <AppButton onClick={() => setError(null)} variant="secondary">
+              Tentar Novamente
+            </AppButton>
           </div>
         ) : (
           <AnimatePresence mode="wait">
@@ -222,6 +260,18 @@ export function AdminEstoqueClient({ initialEstoque, initialMovimentacoes }: Adm
                 exit={{ opacity: 0, y: -10 }}
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
               >
+                {estoque.length === 0 && (
+                   <div className="col-span-full py-20 bg-white rounded-3xl border border-[#133020]/10 flex flex-col items-center">
+                     <EmptyState 
+                       icon={<Package size={48} />}
+                       title="Nenhum pallet em estoque"
+                       description="Não encontramos registros de pallets disponíveis para o cliente PCE no momento."
+                     />
+                     <AppButton onClick={handleSync} icon={<RefreshCcw size={16} />} className="mt-4">
+                       Reprocessar Agora
+                     </AppButton>
+                   </div>
+                )}
                 {estoque.map((item) => (
                   <div key={item.id} className="bg-white rounded-3xl border border-[#133020]/10 p-6 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
                     <div className="flex justify-between items-start mb-6">
@@ -248,7 +298,10 @@ export function AdminEstoqueClient({ initialEstoque, initialMovimentacoes }: Adm
                     <div className="grid grid-cols-1 gap-3">
                       <div className="bg-[#327039]/10 rounded-2xl p-4 border border-[#327039]/20">
                         <span className="text-[10px] font-bold text-[#327039] uppercase tracking-widest block mb-1">Disponível</span>
-                        <div className="text-3xl font-black text-[#133020]">{item.quantidade} <span className="text-xs opacity-50 font-bold">un</span></div>
+                        <div className="text-3xl font-black text-[#133020]">
+                          {Number(item.quantidade || item.quantidade_disponivel || 0)} 
+                          <span className="text-xs opacity-50 font-bold ml-1.5">un</span>
+                        </div>
                       </div>
                       <div className="text-[9px] font-bold text-[#133020]/30 uppercase tracking-widest ml-1">
                         Última atualização: {new Date(item.updated_at).toLocaleString('pt-BR')}
