@@ -9,7 +9,12 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { BicPenBanner } from "@/components/ui/editorial";
+import { 
+  BicPenBanner, 
+  PremiumCard, 
+  PremiumButton, 
+  PremiumBadge 
+} from "@/components/ui/editorial";
 import { iniciarManutencao, concluirManutencao, sincronizarManutencoesPendentes, limparRegistrosInvalidos } from "@/app/actions/manutencao";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -38,16 +43,16 @@ interface Props {
 
 function statusConfig(s: string) {
   switch (s) {
-    case "concluida":   return { label: "Concluído",   dot: "bg-[var(--ivani-teal)]",  text: "text-[var(--ivani-teal)]",  bg: "bg-[var(--ivani-teal)]/8" };
-    case "em_andamento":return { label: "Em Reparo",   dot: "bg-[var(--ivani-blue)]",  text: "text-[var(--ivani-blue)]",  bg: "bg-[var(--ivani-blue)]/8" };
-    default:            return { label: "Pendente",    dot: "bg-amber-500",            text: "text-amber-700",            bg: "bg-amber-50" };
+    case "concluida":   return { label: "Concluído",   variant: "teal" as const };
+    case "em_andamento":return { label: "Em Reparo",   variant: "blue" as const };
+    default:            return { label: "Pendente",    variant: "orange" as const };
   }
 }
 
 function tipoConfig(t: string) {
-  if (t === "reforma")       return { label: "Reforma",       bg: "bg-orange-50", text: "text-orange-700", icon: <Hammer size={12} /> };
-  if (t === "remanufatura")  return { label: "Remanufatura",  bg: "bg-[var(--ivani-purple)]/8", text: "text-[var(--ivani-purple)]", icon: <History size={12} /> };
-  return                            { label: t,               bg: "bg-[var(--ivani-bg)]",       text: "text-[var(--ivani-muted)]", icon: <Package size={12} /> };
+  if (t === "reforma")       return { label: "Reforma",       variant: "orange" as const, icon: <Hammer size={12} /> };
+  if (t === "remanufatura")  return { label: "Remanufatura",  variant: "blue" as const, icon: <History size={12} /> };
+  return                            { label: t,               variant: "default" as const, icon: <Package size={12} /> };
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -63,7 +68,6 @@ export function AdminManutencaoClient({
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // ─── Data (logic preserved) ───────────────────────────────────────────────
   const manutencoesValidas = useMemo(() => {
     if (!Array.isArray(initialManutencoes)) return [];
     return initialManutencoes.filter(item => {
@@ -92,7 +96,6 @@ export function AdminManutencaoClient({
     });
   }, [manutencoesValidas, searchTerm, filterStatus]);
 
-  // ─── Handlers (logic preserved) ──────────────────────────────────────────
   async function handleAction(id: string, action: "iniciar" | "concluir") {
     setLoadingId(id);
     try {
@@ -109,8 +112,7 @@ export function AdminManutencaoClient({
     try {
       const res = await sincronizarManutencoesPendentes();
       if (!res.success) throw new Error(res.error);
-      const msg = `Sincronização concluída!\n\nTriagens verificadas: ${res.triagensVerificadas}\nItens criados: ${res.itensCriados}`;
-      alert(msg);
+      alert(`Sincronização concluída!\nTriagens: ${res.triagensVerificadas}\nItens: ${res.itensCriados}`);
       router.refresh();
     } catch (err: any) {
       alert("Erro ao sincronizar: " + err.message);
@@ -126,9 +128,8 @@ export function AdminManutencaoClient({
     } catch (err: any) { alert("Erro na limpeza: " + err.message); }
   }
 
-  // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="max-w-[1200px] mx-auto">
+    <div className="max-w-[1200px] mx-auto pb-20">
       <BicPenBanner 
         title="Manutenção e Reparos" 
         subtitle="Gestão operacional de itens em reforma ou remanufatura vindos da triagem."
@@ -137,224 +138,193 @@ export function AdminManutencaoClient({
       />
 
       <div className="flex justify-end items-center gap-3 mb-10">
-        <button
+        <PremiumButton
+          variant="secondary"
           onClick={handleClean}
-          title="Limpar registros inválidos"
-          className="p-3.5 border border-[var(--ivani-border)] rounded-2xl text-[var(--ivani-muted)] hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all active:scale-95 shadow-sm bg-white"
-        >
-          <Trash2 size={18} />
-        </button>
-        <button
+          icon={<Trash2 size={16} />}
+          className="!p-4"
+        />
+        <PremiumButton
           onClick={handleSync}
-          disabled={isSyncing}
-          className="group relative inline-flex items-center gap-3 px-6 py-3.5 bg-[var(--ivani-primary)] text-white rounded-2xl text-sm font-bold overflow-hidden transition-all hover:shadow-[0_8px_25px_-5px_rgba(31,92,63,0.4)] active:scale-[0.98] disabled:opacity-60"
+          loading={isSyncing}
+          icon={<RefreshCw size={18} />}
         >
-          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-          {isSyncing ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
-          Sincronizar Triagens
-        </button>
+          Sincronizar Operação
+        </PremiumButton>
       </div>
 
-      {/* ── KPI Grid ─────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         {[
-          { label: "Pendentes", value: stats.pendentes, icon: <ClipboardList size={18} />, color: "#F59E0B" },
-          { label: "Em Reparo", value: stats.emAndamento, icon: <Zap size={18} />, color: "var(--ivani-blue)" },
-          { label: "Concluídos", value: stats.concluidas, icon: <CheckCircle2 size={18} />, color: "var(--ivani-teal)" },
-          { label: "Total Geral", value: stats.totalGeral, icon: <Package size={18} />, color: "var(--ivani-primary)" },
+          { label: "Pendentes", value: stats.pendentes, icon: <ClipboardList size={20} />, color: "#F59E0B" },
+          { label: "Em Reparo", value: stats.emAndamento, icon: <Zap size={20} />, color: "var(--ivani-blue)" },
+          { label: "Concluídos", value: stats.concluidas, icon: <CheckCircle2 size={20} />, color: "var(--ivani-teal)" },
+          { label: "Total Geral", value: stats.totalGeral, icon: <Package size={20} />, color: "var(--ivani-primary)" },
         ].map((kpi, idx) => (
-          <motion.div 
-            key={kpi.label} 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.05 }}
-            className="editorial-card p-5 relative overflow-hidden group"
-          >
-            <div className="absolute top-0 left-0 right-0 h-0.5 opacity-20" style={{ background: kpi.color }} />
-            <div className="flex items-center justify-between mb-3">
-               <p className="text-[10px] font-black text-[var(--ivani-muted)] uppercase tracking-widest">{kpi.label}</p>
+          <PremiumCard key={kpi.label} className="p-6 relative group overflow-hidden">
+             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                {(kpi.icon as any) && React.cloneElement(kpi.icon as React.ReactElement<any>, { size: 48, strokeWidth: 1.5 })}
+             </div>
+            <div className="flex items-center justify-between mb-4">
                <div 
-                 className="w-8 h-8 rounded-lg flex items-center justify-center transition-transform group-hover:rotate-12"
+                 className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-sm border border-current/10"
                  style={{ background: `color-mix(in srgb, ${kpi.color} 10%, transparent)`, color: kpi.color }}
                >
                  {kpi.icon}
                </div>
+               <div className="text-[9px] font-black uppercase tracking-widest text-[var(--ivani-muted)] opacity-40">Status</div>
             </div>
-            <p className="text-2xl font-black text-[var(--ivani-text)] tracking-tight">{kpi.value}</p>
-          </motion.div>
+            <p className="text-[10px] font-black text-[var(--ivani-muted)] uppercase tracking-widest mb-1 opacity-60">{kpi.label}</p>
+            <p className="text-3xl font-black text-[var(--ivani-text)] tracking-tight">{kpi.value}</p>
+          </PremiumCard>
         ))}
       </div>
 
-      {/* ── Type Breakdown Breakdown ────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
         {[
-          { label: "Processo de Reforma", value: stats.reforma, icon: <Hammer size={20} />, color: "#DD5C36", desc: "Recuperação de peças e estrutura original" },
-          { label: "Processo de Remanufatura", value: stats.remanufatura, icon: <History size={20} />, color: "var(--ivani-purple)", desc: "Reutilização de componentes para novos pallets" },
+          { label: "Linha de Reforma", value: stats.reforma, icon: <Hammer size={24} />, color: "#DD5C36", desc: "Recuperação estrutural técnica" },
+          { label: "Linha de Remanufatura", value: stats.remanufatura, icon: <History size={24} />, color: "var(--ivani-purple)", desc: "Reutilização de componentes para novos ciclos" },
         ].map((k, idx) => (
-          <motion.div 
+          <PremiumCard 
             key={k.label} 
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 + idx * 0.1 }}
-            className="editorial-card p-6 flex items-center gap-5 bg-white group hover:border-[var(--ivani-primary)]/30 transition-all"
+            className="p-8 flex items-center gap-6 group relative overflow-hidden"
           >
             <div 
-              className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm"
+              className="w-16 h-16 rounded-[1.5rem] flex items-center justify-center flex-shrink-0 shadow-sm transition-transform group-hover:scale-110"
               style={{ background: `color-mix(in srgb, ${k.color} 8%, transparent)`, color: k.color }}
             >
               {k.icon}
             </div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-[var(--ivani-muted)] mb-1">{k.label}</p>
-              <p className="text-2xl font-black text-[var(--ivani-text)] tracking-tight">
-                {k.value} <span className="text-xs font-bold text-[var(--ivani-muted)] uppercase ml-1">unidades</span>
+            <div className="relative z-10">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--ivani-muted)] mb-1.5 opacity-50">{k.label}</p>
+              <p className="text-3xl font-black text-[var(--ivani-text)] tracking-tighter">
+                {k.value} <span className="text-[10px] font-black text-[var(--ivani-muted)] uppercase ml-1 opacity-40">unidades</span>
               </p>
-              <p className="text-[11px] font-medium text-[var(--ivani-muted)] mt-1 opacity-70">{k.desc}</p>
+              <p className="text-[11px] font-bold text-[var(--ivani-muted)] mt-2 opacity-60">{k.desc}</p>
             </div>
-          </motion.div>
+          </PremiumCard>
         ))}
       </div>
 
-      {/* ── Error Banner ─────────────────────────────────────────────────── */}
-      {serverError && (
-        <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-3">
-          <AlertCircle className="text-red-500 shrink-0" size={18} />
-          <p className="text-sm font-bold text-red-700">{serverError}</p>
-        </div>
-      )}
-
-      {/* ── Filter Bar ───────────────────────────────────────────────────── */}
-      <div className="editorial-card p-4 mb-6 flex flex-col md:flex-row items-center gap-4 border-dashed border-2">
-        <div className="relative flex-1 w-full">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--ivani-muted)]" size={18} />
+      <PremiumCard className="p-4 mb-8 flex flex-col md:flex-row items-center gap-4">
+        <div className="relative flex-1 w-full group">
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--ivani-muted)] transition-colors group-focus-within:text-[var(--ivani-primary)]" size={18} />
           <input
             type="text"
             placeholder="Pesquisar por modelo de pallet..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-[var(--ivani-bg)]/50 border border-transparent rounded-xl text-sm font-semibold outline-none focus:bg-white focus:border-[var(--ivani-primary)] focus:ring-4 focus:ring-[var(--ivani-primary)]/5 transition-all"
+            className="w-full pl-14 pr-6 py-4 bg-[var(--ivani-bg)]/40 border border-transparent rounded-2xl text-sm font-bold text-[var(--ivani-text)] outline-none focus:bg-white focus:border-[var(--ivani-primary)]/20 focus:ring-8 focus:ring-[var(--ivani-primary)]/5 transition-all placeholder:text-[var(--ivani-muted)]/30"
           />
         </div>
         <div className="relative min-w-[200px] w-full md:w-auto">
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="w-full appearance-none pl-4 pr-10 py-3 bg-white border border-[var(--ivani-border)] rounded-xl text-xs font-black uppercase tracking-widest outline-none cursor-pointer focus:border-[var(--ivani-primary)] transition-all text-[var(--ivani-text)]"
+            className="w-full appearance-none pl-5 pr-12 py-4 bg-white border border-[var(--ivani-border)] rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer focus:border-[var(--ivani-primary)]/40 transition-all text-[var(--ivani-text)] shadow-sm"
           >
             <option value="todos">Todos os Status</option>
             <option value="pendente">Pendentes</option>
             <option value="em_andamento">Em Andamento</option>
             <option value="concluida">Concluídos</option>
           </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ivani-muted)] pointer-events-none" size={16} />
+          <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-[var(--ivani-muted)] pointer-events-none" size={16} />
         </div>
-      </div>
+      </PremiumCard>
 
-      {/* ── Table Container ─────────────────────────────────────────────── */}
-      <div className="editorial-card overflow-hidden">
+      <PremiumCard className="overflow-hidden">
         {filteredList.length === 0 ? (
-          <div className="py-24 flex flex-col items-center text-center px-6">
-            <div className="w-20 h-20 rounded-3xl bg-[var(--ivani-bg)] flex items-center justify-center text-[var(--ivani-muted)] mb-6 hand-drawn-border border-dashed">
-              <Inbox size={32} />
+          <div className="py-32 flex flex-col items-center text-center px-6">
+            <div className="w-24 h-24 rounded-[2.5rem] bg-[var(--ivani-bg)] flex items-center justify-center text-[var(--ivani-muted)] mb-8 hand-drawn-border border-dashed opacity-40">
+              <Wrench size={40} strokeWidth={1.5} />
             </div>
-            <h3 className="text-lg font-black text-[var(--ivani-text)] mb-2">Nenhum item em manutenção</h3>
-            <p className="text-sm text-[var(--ivani-muted)] max-w-sm font-medium">
-              {manutencoesValidas.length === 0 
-                ? "Conclua uma triagem operacional para gerar novos registros de manutenção." 
-                : "Não encontramos resultados para os filtros selecionados."}
+            <h3 className="text-xl font-black text-[var(--ivani-text)] mb-3">Linha de montagem vazia</h3>
+            <p className="text-sm text-[var(--ivani-muted)] max-w-sm font-medium leading-relaxed opacity-60">
+              Não há pallets aguardando ou em processo de reparo para os filtros atuais.
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[900px]">
+            <table className="table-premium min-w-[900px]">
               <thead>
-                <tr className="bg-[var(--ivani-bg)]/40 border-b border-[var(--ivani-border)]">
-                  <th className="px-6 py-5 text-[10px] font-black text-[var(--ivani-muted)] uppercase tracking-[0.2em]">Modelo / Origem</th>
-                  <th className="px-6 py-5 text-[10px] font-black text-[var(--ivani-muted)] uppercase tracking-[0.2em]">Qtd.</th>
-                  <th className="px-6 py-5 text-[10px] font-black text-[var(--ivani-muted)] uppercase tracking-[0.2em]">Status</th>
-                  <th className="px-6 py-5 text-[10px] font-black text-[var(--ivani-muted)] uppercase tracking-[0.2em]">Tipo</th>
-                  <th className="px-6 py-5 text-[10px] font-black text-[var(--ivani-muted)] uppercase tracking-[0.2em] text-right">Ações</th>
+                <tr>
+                  <th>Modelo e Origem</th>
+                  <th>Quantidade</th>
+                  <th>Status Operacional</th>
+                  <th>Tipo de Processo</th>
+                  <th className="text-right">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--ivani-border)]">
-                <AnimatePresence>
+              <tbody>
+                <AnimatePresence mode="popLayout">
                   {filteredList.map((item, i) => {
                     const sc = statusConfig(item.status);
                     const tc = tipoConfig(item.tipo_servico);
                     return (
                       <motion.tr
                         key={item.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: i * 0.02 }}
-                        className="hover:bg-[var(--ivani-bg)]/30 transition-colors group"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: i * 0.02 }}
+                        className={`${i % 2 === 0 ? "" : "zebra-row"} group`}
                       >
-                        {/* Modelo */}
-                        <td className="px-6 py-5">
+                        <td>
                           <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-white border border-[var(--ivani-border)] flex items-center justify-center text-[var(--ivani-muted)] shadow-sm group-hover:scale-110 transition-transform">
-                              <Package size={16} />
+                            <div className="w-10 h-10 rounded-2xl bg-white border border-[var(--ivani-border)]/60 flex items-center justify-center text-[var(--ivani-muted)] shadow-sm group-hover:scale-110 transition-transform">
+                              <Package size={18} strokeWidth={1.5} />
                             </div>
                             <div>
-                              <p className="text-sm font-black text-[var(--ivani-text)]">{item.modelo_nome_snapshot || "Modelo não informado"}</p>
-                              <p className="text-[10px] font-bold text-[var(--ivani-primary)] uppercase mt-0.5 opacity-60">Triagem #{item.triagem_id?.split("-")[0]}</p>
+                              <p className="text-sm font-black text-[var(--ivani-text)] tracking-tight">{item.modelo_nome_snapshot || "Modelo não informado"}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[9px] font-black text-[var(--ivani-muted)] uppercase opacity-30 tracking-widest">TRIAGEM</span>
+                                <span className="text-[10px] font-black text-[var(--ivani-primary)]">#{item.triagem_id?.split("-")[0]}</span>
+                              </div>
                             </div>
                           </div>
                         </td>
-
-                        {/* Qtd */}
-                        <td className="px-6 py-5">
-                           <div className="flex items-baseline gap-1">
-                             <span className="text-lg font-black text-[var(--ivani-text)]">{item.quantidade || item.quantidade_entrada}</span>
-                             <span className="text-[10px] font-bold text-[var(--ivani-muted)] uppercase">un</span>
+                        <td>
+                           <div className="flex items-baseline gap-1.5">
+                             <span className="text-lg font-black text-[var(--ivani-text)] tracking-tighter">{item.quantidade || item.quantidade_entrada}</span>
+                             <span className="text-[9px] font-black text-[var(--ivani-muted)] uppercase tracking-widest opacity-40">UN</span>
                            </div>
                         </td>
-
-                        {/* Status */}
-                        <td className="px-6 py-5">
-                          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${sc.bg}`}>
-                            <span className={`w-2 h-2 rounded-full ${sc.dot}`} />
-                            <span className={`text-[10px] font-black uppercase tracking-widest ${sc.text}`}>
-                              {sc.label}
-                            </span>
-                          </div>
+                        <td>
+                          <PremiumBadge variant={sc.variant}>
+                            {sc.label}
+                          </PremiumBadge>
                         </td>
-
-                        {/* Tipo */}
-                        <td className="px-6 py-5">
-                           <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-current/10 ${tc.bg} ${tc.text}`}>
-                              {tc.icon}
-                              <span className="text-[10px] font-black uppercase tracking-widest">{tc.label}</span>
+                        <td>
+                           <div className="inline-flex items-center gap-2">
+                              {(tc.icon as any) && React.cloneElement(tc.icon as React.ReactElement<any>, { size: 14, className: "opacity-40" })}
+                              <span className="text-[10px] font-black uppercase tracking-widest text-[var(--ivani-text)]">{tc.label}</span>
                            </div>
                         </td>
-
-                        {/* Actions */}
-                        <td className="px-6 py-5 text-right">
+                        <td className="text-right">
                            <div className="flex items-center justify-end gap-3">
                               {item.status === "pendente" && (
-                                <button
+                                <PremiumButton
                                   onClick={() => handleAction(item.id, "iniciar")}
-                                  disabled={loadingId === item.id}
-                                  className="h-9 px-4 bg-[var(--ivani-primary)] text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:shadow-[0_4px_15px_-3px_rgba(31,92,63,0.3)] transition-all active:scale-95 disabled:opacity-50"
+                                  loading={loadingId === item.id}
+                                  icon={<Play size={14} />}
+                                  className="!px-4 !py-2 !text-[9px] shadow-sm"
                                 >
-                                  {loadingId === item.id ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
                                   Iniciar
-                                </button>
+                                </PremiumButton>
                               )}
                               {item.status === "em_andamento" && (
-                                <button
+                                <PremiumButton
+                                  variant="primary"
                                   onClick={() => handleAction(item.id, "concluir")}
-                                  disabled={loadingId === item.id}
-                                  className="h-9 px-4 bg-[var(--ivani-teal)] text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:shadow-[0_4px_15px_-3px_rgba(51,183,165,0.3)] transition-all active:scale-95 disabled:opacity-50"
+                                  loading={loadingId === item.id}
+                                  icon={<Check size={14} />}
+                                  className="!px-4 !py-2 !text-[9px] shadow-sm"
                                 >
-                                  {loadingId === item.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                                   Concluir
-                                </button>
+                                </PremiumButton>
                               )}
                               {item.status === "concluida" && (
-                                <div className="h-9 px-4 bg-[var(--ivani-bg)] text-[var(--ivani-muted)] rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-[var(--ivani-border)] cursor-default shadow-sm">
+                                <div className="h-9 px-4 bg-[var(--ivani-bg)] text-[var(--ivani-muted)] rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-[var(--ivani-border)]/50 cursor-default">
                                   <CheckCircle2 size={14} className="text-[var(--ivani-teal)]" />
-                                  Em Estoque
+                                  Concluído
                                 </div>
                               )}
                            </div>
@@ -367,16 +337,16 @@ export function AdminManutencaoClient({
             </table>
           </div>
         )}
-        <div className="px-6 py-5 border-t border-[var(--ivani-border)] bg-[var(--ivani-bg)]/20 flex items-center justify-between">
-           <div className="flex items-center gap-2">
-             <div className="w-2 h-2 rounded-full bg-[var(--ivani-purple)]" />
-             <p className="text-[10px] font-bold text-[var(--ivani-muted)] uppercase tracking-widest">Fluxo de Restauração Ativo</p>
+        <div className="px-8 py-6 border-t border-[var(--ivani-border)]/50 bg-[var(--ivani-bg)]/30 flex items-center justify-between">
+           <div className="flex items-center gap-3">
+             <div className="w-2 h-2 rounded-full bg-[var(--ivani-primary)] animate-pulse shadow-[0_0_8px_var(--ivani-primary)]" />
+             <p className="text-[10px] font-black text-[var(--ivani-muted)] uppercase tracking-[0.2em] opacity-60">Linha de Reparo Monitorada</p>
            </div>
-           <p className="text-[11px] font-bold text-[var(--ivani-muted)] uppercase">
-             Exibindo <span className="text-[var(--ivani-text)] font-black">{filteredList.length}</span> registros de manutenção
+           <p className="text-[11px] font-black text-[var(--ivani-muted)] uppercase tracking-widest opacity-60">
+             Total de <span className="text-[var(--ivani-text)]">{filteredList.length}</span> ordens de serviço
            </p>
         </div>
-      </div>
+      </PremiumCard>
     </div>
   );
 }

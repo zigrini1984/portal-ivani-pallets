@@ -9,8 +9,15 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { 
+  BicPenBanner, 
+  PremiumCard, 
+  PremiumButton, 
+  PremiumModal, 
+  PremiumBadge,
+  PremiumInput
+} from "@/components/ui/editorial";
 import { reprocessarEstoque, registrarSaidaEstoque } from "@/app/actions/estoque";
-import { BicPenBanner } from "@/components/ui/editorial";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -60,9 +67,6 @@ export function AdminEstoqueClient({
 }: AdminEstoqueClientProps) {
   const router = useRouter();
   
-  const estoque = initialEstoque;
-  const movimentacoes = initialMovimentacoes;
-  
   const [syncing, setSyncing] = useState(false);
   const [activeTab, setActiveTab] = useState<"cards" | "historico">("cards");
   const [error, setError] = useState<PageError | null>(pageError ?? null);
@@ -74,13 +78,10 @@ export function AdminEstoqueClient({
   const [outflowDesc, setOutflowDesc] = useState("");
   const [submittingSaida, setSubmittingSaida] = useState(false);
 
-  // ─── KPIs ───────────────────────────────────────────────────────────────────
   const totalPallets = useMemo(
-    () => estoque.reduce((acc, item) => acc + getQty(item), 0),
-    [estoque]
+    () => initialEstoque.reduce((acc, item) => acc + getQty(item), 0),
+    [initialEstoque]
   );
-
-  // ─── Handlers (logic preserved) ───────────────────────────────────────────────
 
   const handleSync = async () => {
     try {
@@ -92,8 +93,7 @@ export function AdminEstoqueClient({
         return;
       }
       router.refresh();
-      // Usar feedback visual menos intrusivo no futuro, mas mantendo o alert por agora
-      alert(`✅ Estoque reprocessado com sucesso!\nTotal: ${result.quantidadeTotal} pallets`);
+      alert(`✅ Estoque reprocessado!\nTotal: ${result.quantidadeTotal} pallets`);
     } catch (err: any) {
       setError({ message: "Erro inesperado: " + err.message });
     } finally {
@@ -148,102 +148,91 @@ export function AdminEstoqueClient({
       />
 
       <div className="flex justify-end mb-12">
-        <button
+        <PremiumButton
           onClick={handleSync}
-          disabled={syncing}
-          className="group relative inline-flex items-center gap-3 px-8 py-4 bg-[var(--ivani-primary)] text-white rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest overflow-hidden transition-all hover:shadow-[0_10px_30px_-5px_rgba(31,92,63,0.4)] active:scale-[0.97] disabled:opacity-50"
+          loading={syncing}
+          icon={<RefreshCcw size={18} />}
         >
-          <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-          {syncing ? <Loader2 size={18} className="animate-spin text-[var(--ivani-secondary)]" /> : <RefreshCcw size={18} className="transition-transform group-hover:rotate-180 duration-700 ease-in-out text-[var(--ivani-secondary)]" />}
-          <span className="relative z-10">{syncing ? "Sincronizando..." : "Sincronizar Saldo"}</span>
-        </button>
+          Sincronizar Saldo Real
+        </PremiumButton>
       </div>
 
-      {/* ── Dashboard Stats (Sophisticated KPIs) ─────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
          {[
            { 
              label: "Volume em Pátio", 
              val: totalPallets.toLocaleString("pt-BR"), 
-             sub: "Unidades disponíveis", 
+             sub: "Unidades para expedição", 
              icon: <Package size={20} />, 
              color: "var(--ivani-primary)",
              dark: true 
            },
            { 
              label: "Modelos Ativos", 
-             val: estoque.length, 
-             sub: "Variedades em estoque", 
+             val: initialEstoque.length, 
+             sub: "Variedades em catálogo", 
              icon: <Layers size={20} />, 
              color: "var(--ivani-teal)" 
            },
            { 
              label: "Giro 24h", 
-             val: movimentacoes.filter(m => new Date(m.created_at) > new Date(Date.now() - 86400000)).length, 
-             sub: "Movimentações recentes", 
+             val: initialMovimentacoes.filter(m => new Date(m.created_at) > new Date(Date.now() - 86400000)).length, 
+             sub: "Entradas e saídas recentes", 
              icon: <Activity size={20} />, 
              color: "var(--ivani-blue)" 
            }
          ].map((kpi, i) => (
-           <motion.div 
+           <PremiumCard 
              key={kpi.label} 
-             initial={{ opacity: 0, y: 20 }} 
-             animate={{ opacity: 1, y: 0 }} 
-             transition={{ delay: i * 0.1 }}
-             className={`editorial-card p-6 relative overflow-hidden group ${kpi.dark ? 'bg-[var(--ivani-primary)] text-white border-none shadow-xl' : 'bg-white'}`}
+             className={`p-8 relative group overflow-hidden ${kpi.dark ? 'bg-[var(--ivani-primary)] text-white border-none' : ''}`}
            >
               <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                   <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${kpi.dark ? 'bg-white/15' : 'bg-[var(--ivani-bg)] text-[var(--ivani-primary)]'}`}>
+                <div className="flex items-center justify-between mb-6">
+                   <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${kpi.dark ? 'bg-white/10' : 'bg-[var(--ivani-bg)] text-[var(--ivani-primary)]'}`}>
                      {kpi.icon}
                    </div>
-                   <ArrowUpRight size={14} className={kpi.dark ? 'text-white/40' : 'text-[var(--ivani-muted)]'} />
+                   <ArrowUpRight size={14} className={kpi.dark ? 'text-white/20' : 'text-[var(--ivani-muted)] opacity-30'} />
                 </div>
-                <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${kpi.dark ? 'text-white/60' : 'text-[var(--ivani-muted)]'}`}>
+                <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${kpi.dark ? 'text-white/60' : 'text-[var(--ivani-muted)] opacity-60'}`}>
                   {kpi.label}
                 </p>
-                <p className="text-4xl font-black tracking-tighter mb-1">{kpi.val}</p>
-                <p className={`text-[10px] font-bold uppercase tracking-widest ${kpi.dark ? 'text-white/40' : 'text-[var(--ivani-muted)]/60'}`}>
+                <p className="text-4xl font-black tracking-tighter mb-2">{kpi.val}</p>
+                <p className={`text-[10px] font-bold uppercase tracking-widest ${kpi.dark ? 'text-white/40' : 'text-[var(--ivani-muted)]/40'}`}>
                   {kpi.sub}
                 </p>
               </div>
-              {/* Background Accent */}
-              {!kpi.dark && (
-                <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-[var(--ivani-bg)] rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-              )}
-           </motion.div>
+              <div className={`absolute -right-4 -bottom-4 w-32 h-32 rounded-full opacity-5 group-hover:scale-150 transition-transform duration-700 ${kpi.dark ? 'bg-white' : 'bg-[var(--ivani-primary)]'}`} />
+           </PremiumCard>
          ))}
       </div>
 
-      {/* ── Error Banner ─────────────────────────────────────────────────── */}
       <AnimatePresence>
         {error && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-8 overflow-hidden">
-            <div className="p-5 bg-red-50 border border-red-200 rounded-3xl flex items-start gap-4">
-              <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="mb-10">
+            <PremiumCard className="p-5 bg-red-50/50 border-red-100 flex items-start gap-4">
+              <AlertCircle className="text-red-500 mt-1" size={20} />
               <div className="flex-1">
                 <p className="text-sm font-black text-red-700">{error.message}</p>
                 {error.hint && <p className="text-[10px] font-bold text-red-500 mt-1 uppercase tracking-widest">{error.hint}</p>}
               </div>
-              <button onClick={() => setError(null)} className="p-1.5 hover:bg-red-100 rounded-xl transition-colors text-red-400"><X size={18} /></button>
-            </div>
+              <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 transition-colors"><X size={18} /></button>
+            </PremiumCard>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── Navigation Tabs (Premium Pill) ────────────────────────────────── */}
-      <div className="inline-flex p-1.5 bg-[var(--ivani-bg)]/60 rounded-2xl border border-[var(--ivani-border)] mb-10">
+      <div className="inline-flex p-1.5 bg-[var(--ivani-bg)]/60 rounded-2xl border border-[var(--ivani-border)]/50 mb-10">
         {[
-          { id: "cards", label: "Posição Geral", icon: <LayoutGrid size={16} /> },
-          { id: "historico", label: "Timeline de Fluxo", icon: <List size={16} /> }
+          { id: "cards", label: "Catálogo de Pátio", icon: <LayoutGrid size={16} /> },
+          { id: "historico", label: "Fluxo Cronológico", icon: <List size={16} /> }
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center gap-3 px-7 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+            className={`flex items-center gap-3 px-8 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
               activeTab === tab.id
-                ? "bg-white text-[var(--ivani-primary)] shadow-sm border border-[var(--ivani-border)]"
-                : "text-[var(--ivani-muted)] hover:text-[var(--ivani-text)]"
+                ? "bg-white text-[var(--ivani-text)] shadow-sm border border-[var(--ivani-border)]"
+                : "text-[var(--ivani-muted)] hover:text-[var(--ivani-text)] opacity-60"
             }`}
           >
             {tab.icon}
@@ -252,87 +241,74 @@ export function AdminEstoqueClient({
         ))}
       </div>
 
-      {/* ── Content View ─────────────────────────────────────────────────── */}
       <AnimatePresence mode="wait">
         {activeTab === "cards" ? (
           <motion.div
             key="cards"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            exit={{ opacity: 0, y: -15 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           >
-            {estoque.length === 0 ? (
-              <div className="col-span-full py-28 editorial-card flex flex-col items-center border-dashed border-2">
-                <div className="w-20 h-20 rounded-3xl bg-[var(--ivani-bg)] flex items-center justify-center text-[var(--ivani-muted)] mb-6 hand-drawn-border">
-                  <Package size={32} />
-                </div>
-                <h3 className="text-xl font-black text-[var(--ivani-text)] mb-2 tracking-tight">Inventário não Processado</h3>
-                <p className="text-sm text-[var(--ivani-muted)] max-w-sm text-center font-medium mb-10 leading-relaxed opacity-70">
-                  O saldo em pátio ainda não foi calculado para este período ou o pátio está vazio.
+            {initialEstoque.length === 0 ? (
+              <div className="col-span-full py-32 editorial-card flex flex-col items-center border-dashed border-2 opacity-60">
+                <Package size={48} className="text-[var(--ivani-muted)] mb-8 opacity-30" strokeWidth={1.5} />
+                <h3 className="text-xl font-black text-[var(--ivani-text)] mb-3 tracking-tight">Inventário não Detectado</h3>
+                <p className="text-sm text-[var(--ivani-muted)] max-w-sm text-center font-medium mb-10 leading-relaxed">
+                  O saldo físico do pátio ainda não foi consolidado. Inicie a sincronização para carregar os dados.
                 </p>
-                <button onClick={handleSync} className="inline-flex items-center gap-3 px-8 py-4 bg-[var(--ivani-primary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:shadow-lg transition-all active:scale-95">
-                  <RefreshCcw size={16} /> Iniciar Sincronização
-                </button>
+                <PremiumButton onClick={handleSync} icon={<RefreshCcw size={16} />}>Sincronizar Agora</PremiumButton>
               </div>
             ) : (
-              estoque.map((item, idx) => (
-                <motion.div
+              initialEstoque.map((item, idx) => (
+                <PremiumCard
                   key={item.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.04 }}
-                  whileHover={{ y: -6 }}
-                  className="editorial-card group transition-all flex flex-col hover:border-[var(--ivani-primary)]/20"
+                  className="group flex flex-col hover:border-[var(--ivani-primary)]/40 hover:shadow-xl transition-all duration-500"
                 >
-                  <div className="p-7 pb-0 flex justify-between items-start mb-6">
-                    <div className="w-13 h-13 bg-[var(--ivani-bg)] rounded-2xl flex items-center justify-center text-[var(--ivani-muted)] group-hover:bg-[var(--ivani-primary)]/5 group-hover:text-[var(--ivani-primary)] transition-all">
-                      <Package size={26} />
+                  <div className="p-8 pb-0 flex justify-between items-start mb-10">
+                    <div className="w-14 h-14 bg-[var(--ivani-bg)] rounded-2xl flex items-center justify-center text-[var(--ivani-muted)] group-hover:bg-[var(--ivani-primary)]/10 group-hover:text-[var(--ivani-primary)] transition-all duration-500">
+                      <Package size={28} strokeWidth={1.5} />
                     </div>
-                    <button
+                    <PremiumButton
+                      variant="secondary"
                       onClick={() => openSaidaModal(item)}
-                      className="px-4 py-2.5 bg-white text-red-500 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] border border-red-100 hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-95"
+                      icon={<ArrowRight size={14} />}
+                      className="!py-2 !px-4 !text-[8px] border-red-100 text-red-500 hover:bg-red-500 hover:text-white"
                     >
-                      Registrar Saída
-                    </button>
+                      Expedir
+                    </PremiumButton>
                   </div>
 
-                  <div className="px-7 mb-8 flex-1">
-                    <h3 className="text-xl font-black text-[var(--ivani-text)] tracking-tight mb-3 leading-tight group-hover:text-[var(--ivani-primary)] transition-colors">
+                  <div className="px-8 mb-8 flex-1">
+                    <h3 className="text-2xl font-black text-[var(--ivani-text)] tracking-tighter mb-4 leading-tight group-hover:text-[var(--ivani-primary)] transition-colors">
                       {getNome(item)}
                     </h3>
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-3 flex-wrap">
                       {item.modelo_pallet?.codigo && (
-                        <span className="px-3 py-1.5 bg-[var(--ivani-bg)] text-[var(--ivani-primary)] rounded-lg text-[9px] font-black uppercase tracking-widest border border-[var(--ivani-border)]">
+                        <PremiumBadge variant="default">
                           {item.modelo_pallet.codigo}
-                        </span>
+                        </PremiumBadge>
                       )}
                       {item.modelo_pallet?.medidas && (
-                        <span className="text-[10px] font-black text-[var(--ivani-muted)] opacity-50 uppercase tracking-tighter">
+                        <span className="text-[10px] font-black text-[var(--ivani-muted)] opacity-30 uppercase tracking-[0.2em]">
                            {item.modelo_pallet.medidas}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <div className="px-7 pb-7 mt-auto">
-                    <div className="bg-[var(--ivani-bg)]/40 rounded-3xl p-6 border border-[var(--ivani-border)] group-hover:bg-[var(--ivani-primary)] group-hover:border-[var(--ivani-primary)] transition-all duration-300">
-                      <p className="text-[9px] font-black text-[var(--ivani-muted)] group-hover:text-white/60 uppercase tracking-[0.2em] mb-3">Estoque Disponível</p>
+                  <div className="px-8 pb-8 mt-auto">
+                    <div className="bg-[var(--ivani-bg)]/40 rounded-[2rem] p-8 border border-[var(--ivani-border)]/50 group-hover:bg-[var(--ivani-primary)] transition-all duration-500">
+                      <p className="text-[9px] font-black text-[var(--ivani-muted)] group-hover:text-white/60 uppercase tracking-[0.3em] mb-4 opacity-60">Volume em Pátio</p>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-black text-[var(--ivani-text)] group-hover:text-white tracking-tighter">
+                        <span className="text-5xl font-black text-[var(--ivani-text)] group-hover:text-white tracking-tighter">
                           {getQty(item).toLocaleString("pt-BR")}
                         </span>
-                        <span className="text-xs font-bold text-[var(--ivani-muted)] group-hover:text-white/60 uppercase tracking-widest">unidades</span>
+                        <span className="text-xs font-black text-[var(--ivani-muted)] group-hover:text-white/50 uppercase tracking-widest opacity-40">un</span>
                       </div>
                     </div>
-                    {item.updated_at && (
-                      <div className="flex items-center gap-2 mt-5 text-[9px] font-bold text-[var(--ivani-muted)] uppercase tracking-widest opacity-40">
-                        <Activity size={12} className="text-[var(--ivani-teal)]" />
-                        Refatorado: {fmtDate(item.updated_at)}
-                      </div>
-                    )}
                   </div>
-                </motion.div>
+                </PremiumCard>
               ))
             )}
           </motion.div>
@@ -344,55 +320,51 @@ export function AdminEstoqueClient({
             exit={{ opacity: 0, x: -20 }}
             className="editorial-card overflow-hidden"
           >
-            {movimentacoes.length === 0 ? (
-              <div className="py-28 flex flex-col items-center">
-                 <div className="w-20 h-20 rounded-3xl bg-[var(--ivani-bg)] flex items-center justify-center text-[var(--ivani-muted)] mb-6 hand-drawn-border"><History size={32} /></div>
-                 <p className="text-[11px] font-black text-[var(--ivani-muted)] uppercase tracking-[0.2em]">Nenhum registro de movimentação</p>
+            {initialMovimentacoes.length === 0 ? (
+              <div className="py-32 flex flex-col items-center opacity-40">
+                 <History size={48} className="text-[var(--ivani-muted)] mb-6 opacity-30" strokeWidth={1.5} />
+                 <p className="text-[10px] font-black text-[var(--ivani-muted)] uppercase tracking-[0.3em]">Registro Histórico Vazio</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[850px] text-left border-collapse">
+                <table className="table-premium min-w-[900px]">
                   <thead>
-                    <tr className="bg-[var(--ivani-bg)]/40 border-b border-[var(--ivani-border)]">
-                      {["Data & Hora", "Especificação", "Tipo de Fluxo", "Quantidade", "Justificativa"].map((h) => (
-                        <th key={h} className="px-7 py-6 text-[10px] font-black text-[var(--ivani-muted)] uppercase tracking-[0.2em]">
-                          {h}
-                        </th>
-                      ))}
+                    <tr>
+                      <th>Timeline</th>
+                      <th>Especificação</th>
+                      <th>Fluxo Operacional</th>
+                      <th>Volume</th>
+                      <th>Observações Técnicas</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[var(--ivani-border)]">
-                    {movimentacoes.map((mov) => (
+                  <tbody>
+                    {initialMovimentacoes.map((mov) => (
                       <tr key={mov.id} className="hover:bg-[var(--ivani-bg)]/20 transition-colors group">
-                        <td className="px-7 py-5">
+                        <td>
                            <div className="flex flex-col">
-                              <span className="text-xs font-black text-[var(--ivani-text)]">{new Date(mov.created_at).toLocaleDateString("pt-BR")}</span>
-                              <span className="text-[10px] font-bold text-[var(--ivani-muted)] opacity-60 uppercase">{new Date(mov.created_at).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</span>
+                              <span className="text-sm font-black text-[var(--ivani-text)] tracking-tight">{new Date(mov.created_at).toLocaleDateString("pt-BR")}</span>
+                              <span className="text-[10px] font-bold text-[var(--ivani-muted)] opacity-40 uppercase tracking-widest">{new Date(mov.created_at).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</span>
                            </div>
                         </td>
-                        <td className="px-7 py-5">
+                        <td>
                           <span className="text-xs font-black text-[var(--ivani-text)] uppercase tracking-tight group-hover:text-[var(--ivani-primary)] transition-colors">{mov.modelo_pallet?.nome ?? "—"}</span>
                         </td>
-                        <td className="px-7 py-5">
-                          <div
-                            className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm ${
-                              mov.tipo === "entrada"
-                                ? "bg-emerald-50 text-emerald-600 border-emerald-100"
-                                : "bg-red-50 text-red-600 border-red-100"
-                            }`}
-                          >
-                            {mov.tipo === "entrada" ? <ArrowUpRight size={12} strokeWidth={3} /> : <ArrowDownLeft size={12} strokeWidth={3} />}
-                            {mov.tipo}
-                          </div>
+                        <td>
+                          <PremiumBadge variant={mov.tipo === "entrada" ? "teal" : "orange"}>
+                            <span className="flex items-center gap-2">
+                               {mov.tipo === "entrada" ? <ArrowUpRight size={10} strokeWidth={3} /> : <ArrowDownLeft size={10} strokeWidth={3} />}
+                               {mov.tipo}
+                            </span>
+                          </PremiumBadge>
                         </td>
-                        <td className="px-7 py-5">
-                          <span className={`text-sm font-black tracking-tighter ${mov.tipo === "entrada" ? "text-emerald-600" : "text-red-600"}`}>
+                        <td>
+                          <span className={`text-base font-black tracking-tighter ${mov.tipo === "entrada" ? "text-emerald-600" : "text-red-600"}`}>
                             {mov.tipo === "saida" ? "− " : "+ "}{Number(mov.quantidade).toLocaleString("pt-BR")}
                           </span>
                         </td>
-                        <td className="px-7 py-5 max-w-xs">
-                          <p className="text-[10px] font-medium text-[var(--ivani-muted)] italic leading-relaxed line-clamp-2 group-hover:line-clamp-none transition-all" title={mov.descricao}>
-                            {mov.descricao || "Sem observações registradas."}
+                        <td className="max-w-xs">
+                          <p className="text-[11px] font-medium text-[var(--ivani-muted)] leading-relaxed opacity-60" title={mov.descricao}>
+                            {mov.descricao || "Registro automático via sistema."}
                           </p>
                         </td>
                       </tr>
@@ -401,127 +373,89 @@ export function AdminEstoqueClient({
                 </table>
               </div>
             )}
-            <div className="px-8 py-5 border-t border-[var(--ivani-border)] bg-[var(--ivani-bg)]/10 flex items-center justify-between">
-               <p className="text-[10px] font-black text-[var(--ivani-muted)] uppercase tracking-widest opacity-60">Auditando {movimentacoes.length} registros de fluxo</p>
-               <div className="flex gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                  <div className="w-2 h-2 rounded-full bg-red-400" />
-               </div>
+            <div className="px-8 py-6 border-t border-[var(--ivani-border)]/50 bg-[var(--ivani-bg)]/10 flex items-center justify-between">
+               <p className="text-[10px] font-black text-[var(--ivani-muted)] uppercase tracking-[0.2em] opacity-40">Timeline Auditada: {initialMovimentacoes.length} movimentações</p>
+               <Activity size={16} className="text-[var(--ivani-primary)] opacity-30" />
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ─── Modal de Saída (Redesigned High-Precision) ────────────────── */}
-      <AnimatePresence>
-        {isOutflowModalOpen && selectedItem && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={closeSaidaModal}
-              className="fixed inset-0 z-[100] bg-[var(--ivani-text)]/40 backdrop-blur-md"
+      <PremiumModal
+        isOpen={isOutflowModalOpen}
+        onClose={closeSaidaModal}
+        title="Expedição de Materiais"
+      >
+        <div className="space-y-10">
+          <div className="p-6 bg-[var(--ivani-bg)]/50 border border-[var(--ivani-border)]/50 rounded-3xl flex items-center justify-between">
+             <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-red-500 shadow-sm">
+                   <Truck size={24} strokeWidth={1.5} />
+                </div>
+                <div>
+                   <p className="text-[9px] font-black uppercase tracking-widest text-[var(--ivani-muted)] opacity-50 mb-1">Item Selecionado</p>
+                   <p className="text-sm font-black text-[var(--ivani-text)] tracking-tight">{selectedItem ? getNome(selectedItem) : ""}</p>
+                </div>
+             </div>
+             <div className="text-right">
+                <p className="text-[9px] font-black uppercase tracking-widest text-[var(--ivani-muted)] opacity-50 mb-1">Saldo Atual</p>
+                <p className="text-xl font-black text-[var(--ivani-text)]">{selectedItem ? getQty(selectedItem) : 0} <span className="text-[10px] opacity-40 uppercase">un</span></p>
+             </div>
+          </div>
+
+          <div className="space-y-6">
+            <label className="text-[11px] font-black text-[var(--ivani-muted)] uppercase tracking-[0.2em] ml-1 opacity-60">Volume para Expedição</label>
+            <div className="flex items-center gap-6 p-4 bg-white border-2 border-[var(--ivani-border)]/50 rounded-[2.5rem] focus-within:border-red-500/30 transition-all shadow-sm">
+              <button
+                type="button"
+                onClick={() => setOutflowQty(Math.max(0, outflowQty - 10))}
+                className="w-14 h-14 flex items-center justify-center bg-[var(--ivani-bg)] rounded-2xl text-[var(--ivani-muted)] hover:bg-red-50 hover:text-red-500 transition-all active:scale-90"
+              >
+                <Minus size={20} strokeWidth={3} />
+              </button>
+              <input
+                type="number"
+                min={0}
+                value={outflowQty}
+                onChange={(e) => setOutflowQty(Number(e.target.value))}
+                className="flex-1 bg-transparent border-none text-5xl font-black text-center outline-none text-[var(--ivani-text)] tracking-tighter"
+                placeholder="0"
+              />
+              <button
+                type="button"
+                onClick={() => setOutflowQty(outflowQty + 10)}
+                className="w-14 h-14 flex items-center justify-center bg-[var(--ivani-bg)] rounded-2xl text-[var(--ivani-muted)] hover:bg-emerald-50 hover:text-emerald-600 transition-all active:scale-90"
+              >
+                <Plus size={20} strokeWidth={3} />
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <label className="label-premium">Observações Operacionais (Opcional)</label>
+            <textarea
+              value={outflowDesc}
+              onChange={(e) => setOutflowDesc(e.target.value)}
+              className="input-premium min-h-[120px] py-5 resize-none"
+              placeholder="Ex: Destinado ao Cliente X, Carregamento NF 123..."
             />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 30 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 30 }}
-              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-lg bg-white rounded-[2.5rem] shadow-2xl border border-[var(--ivani-border)] z-[110] overflow-hidden"
+          </div>
+
+          <div className="pt-8 border-t border-[var(--ivani-border)]/50 flex gap-4">
+            <PremiumButton variant="ghost" onClick={closeSaidaModal} disabled={submittingSaida} className="flex-1">
+              Descartar
+            </PremiumButton>
+            <PremiumButton 
+              onClick={handleSaida} 
+              loading={submittingSaida} 
+              disabled={outflowQty <= 0} 
+              className="flex-[2] bg-red-600 hover:bg-red-700 shadow-red-200"
             >
-              <div className="h-2 bg-red-500" />
-              
-              <div className="px-8 pt-9 pb-5 flex items-center justify-between">
-                <div className="flex items-center gap-5">
-                  <div className="w-16 h-16 rounded-[1.5rem] bg-red-50 flex items-center justify-center text-red-600 hand-drawn-border">
-                    <Truck size={28} />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-black text-[var(--ivani-text)] tracking-tight">Expedição / Saída</h3>
-                    <p className="text-[11px] font-black text-[var(--ivani-muted)] uppercase tracking-[0.1em] mt-1 opacity-70">
-                      {getNome(selectedItem)}
-                    </p>
-                  </div>
-                </div>
-                <button onClick={closeSaidaModal} className="p-3.5 text-[var(--ivani-muted)] hover:bg-[var(--ivani-bg)] hover:text-red-500 rounded-2xl transition-all">
-                  <X size={22} />
-                </button>
-              </div>
-
-              <div className="p-9 pt-2 space-y-9">
-                {/* Information Bar */}
-                <div className="bg-[var(--ivani-bg)]/50 border border-[var(--ivani-border)] rounded-2xl p-4 flex items-center justify-between">
-                   <div className="flex items-center gap-2 text-[10px] font-black text-[var(--ivani-muted)] uppercase tracking-widest">
-                      <Package size={14} /> Saldo em Pátio
-                   </div>
-                   <span className="text-lg font-black text-[var(--ivani-text)]">{getQty(selectedItem)} un</span>
-                </div>
-
-                {/* Quantidade Control */}
-                <div className="space-y-4">
-                  <label className="text-[11px] font-black text-[var(--ivani-muted)] uppercase tracking-[0.2em] ml-1 block">Volume de Saída</label>
-                  <div className="flex items-center gap-5 p-3 bg-white border-2 border-[var(--ivani-border)] rounded-[2.5rem] focus-within:border-red-500/30 transition-all">
-                    <button
-                      type="button"
-                      onClick={() => setOutflowQty(Math.max(0, outflowQty - 10))}
-                      className="w-16 h-16 flex items-center justify-center bg-[var(--ivani-bg)] rounded-[1.8rem] text-[var(--ivani-muted)] hover:bg-red-50 hover:text-red-500 transition-all active:scale-90"
-                    >
-                      <Minus size={24} strokeWidth={3} />
-                    </button>
-                    <input
-                      type="number"
-                      min={0}
-                      value={outflowQty}
-                      onChange={(e) => setOutflowQty(Number(e.target.value))}
-                      className="flex-1 bg-transparent border-none text-4xl font-black text-center outline-none text-[var(--ivani-text)]"
-                      placeholder="00"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setOutflowQty(outflowQty + 10)}
-                      className="w-16 h-16 flex items-center justify-center bg-[var(--ivani-bg)] rounded-[1.8rem] text-[var(--ivani-muted)] hover:bg-emerald-50 hover:text-emerald-600 transition-all active:scale-90"
-                    >
-                      <Plus size={24} strokeWidth={3} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Justification Field */}
-                <div className="space-y-4">
-                  <label className="text-[11px] font-black text-[var(--ivani-muted)] uppercase tracking-[0.2em] ml-1 block">Notas de Expedição</label>
-                  <textarea
-                    value={outflowDesc}
-                    onChange={(e) => setOutflowDesc(e.target.value)}
-                    className="w-full bg-[var(--ivani-bg)]/30 border border-[var(--ivani-border)] rounded-[2rem] px-6 py-5 text-[15px] font-medium focus:bg-white focus:border-[var(--ivani-primary)] outline-none transition-all min-h-[140px] resize-none text-[var(--ivani-text)]"
-                    placeholder="Especifique o destino, cliente ou número da nota fiscal..."
-                  />
-                </div>
-
-                {/* Confirm Actions */}
-                <div className="flex gap-4 pb-4">
-                  <button
-                    type="button"
-                    onClick={closeSaidaModal}
-                    disabled={submittingSaida}
-                    className="flex-1 py-5 bg-white border border-[var(--ivani-border)] text-[var(--ivani-muted)] rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[var(--ivani-bg)] transition-all"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSaida}
-                    disabled={submittingSaida || outflowQty <= 0}
-                    className="flex-[2] py-5 bg-red-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:shadow-[0_15px_35px_-8px_rgba(220,38,38,0.4)] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-                  >
-                    {submittingSaida ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                    {submittingSaida ? "Processando..." : "Confirmar Expedição"}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+              Confirmar Expedição
+            </PremiumButton>
+          </div>
+        </div>
+      </PremiumModal>
     </div>
   );
 }

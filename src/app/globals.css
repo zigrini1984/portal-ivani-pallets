@@ -27,7 +27,7 @@ body {
   color: var(--ivani-text);
   font-family: var(--font-poppins), system-ui, sans-serif;
   background-image: 
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3%3Ffilter id='noiseFilter'%3E%3FfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3/filter%3E%3rect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3/svg%3E"),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E"),
     linear-gradient(to bottom, #F7F8F4, #F2F4EE);
   background-attachment: fixed;
 }
@@ -61,9 +61,165 @@ body {
 /* Floating sidebar (light, white) */
 .floating-sidebar {
   background-color: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
   border-right: 1px solid var(--ivani-border);
-  box-shadow: 2px 0 16px rgba(27, 31, 29, 0.03);
+  box-shadow: 4px 0 24px rgba(27, 31, 29, 0.02);
+}
+
+/* ─── Premium Tables ─────────────────────────────────────────── */
+
+.table-premium {
+  width: 100%;
+  border-separate: separate;
+  border-spacing: 0;
+}
+
+.table-premium th {
+  padding: 1.25rem 1.5rem;
+  font-size: 0.625rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--ivani-muted);
+  border-bottom: 1px solid var(--ivani-border);
+  text-align: left;
+  background-color: color-mix(in srgb, var(--ivani-bg), transparent 50%);
+}
+
+.table-premium td {
+  padding: 1.25rem 1.5rem;
+  font-size: 0.875rem;
+  color: var(--ivani-text);
+  border-bottom: 1px solid color-mix(in srgb, var(--ivani-border), transparent 50%);
+  transition: background-color 0.2s ease;
+}
+
+.table-premium tr:last-child td {
+  border-bottom-width: 0;
+}
+
+.table-premium tr:hover td {
+  background-color: color-mix(in srgb, var(--ivani-primary), transparent 98%);
+  cursor: default;
+}
+
+.table-premium tr.zebra-row td {
+  background-color: color-mix(in srgb, var(--ivani-bg), transparent 70%);
+}
+
+/* ─── Premium Buttons ────────────────────────────────────────── */
+
+.btn-premium {
+  position: relative;
+  display: inline-flex;
+  items-center: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 1rem;
+  font-weight: 700;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: all 0.3s ease;
+}
+
+.btn-premium:active {
+  transform: scale(0.97);
+}
+
+.btn-premium:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.btn-premium-primary {
+  background-color: var(--ivani-primary);
+  color: white;
+  box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--ivani-primary), transparent 90%);
+}
+
+.btn-premium-primary:hover {
+  box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--ivani-primary), transparent 80%);
+  transform: translateY(-0.125rem);
+}
+
+.btn-premium-secondary {
+  background-color: white;
+  color: var(--ivani-text);
+  border: 1px solid var(--ivani-border);
+}
+
+.btn-premium-secondary:hover {
+  background-color: var(--ivani-bg);
+  border-color: color-mix(in srgb, var(--ivani-muted), transparent 70%);
+}
+
+.btn-premium-ghost {
+  color: var(--ivani-muted);
+}
+
+.btn-premium-ghost:hover {
+  color: var(--ivani-text);
+  background-color: var(--ivani-bg);
+}
+
+/* ─── Premium Inputs ─────────────────────────────────────────── */
+
+.input-premium {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  background-color: var(--ivani-surface);
+  border: 1px solid var(--ivani-border);
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.input-premium:focus {
+  border-color: var(--ivani-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ivani-primary), transparent 95%);
+}
+
+.label-premium {
+  font-size: 0.625rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--ivani-muted);
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+/* ─── Premium Modals ─────────────────────────────────────────── */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: color-mix(in srgb, var(--ivani-text), transparent 60%);
+  backdrop-filter: blur(12px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .modal-backdrop {
+    padding: 1.5rem;
+  }
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 2rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 42rem;
+  overflow: hidden;
+  position: relative;
 }
 
 /* ─── Bic Pen Styles ──────────────────────────────────────────── */
@@ -98,7 +254,6 @@ body {
   background: linear-gradient(90deg, transparent, var(--ivani-border), transparent);
   margin: 2rem 0;
 }
-
 
 /* Legacy card-shadow used by tropical.tsx components */
 .card-shadow {
