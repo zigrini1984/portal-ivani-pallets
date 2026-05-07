@@ -65,10 +65,8 @@ function LogoBlock() {
         <img 
           src="/branding/logo-handwritten.png" 
           alt="Ivani Pallets" 
-          className="h-12 w-auto object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500"
+          className="h-10 w-auto object-contain mix-blend-multiply transition-transform duration-500"
         />
-        {/* Subtle bic pen underline */}
-        <div className="absolute -bottom-1 left-0 w-full h-[1px] bg-[var(--ivani-primary)] opacity-40 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-700" />
       </div>
     </Link>
   );

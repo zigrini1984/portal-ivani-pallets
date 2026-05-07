@@ -3,15 +3,13 @@
 /* ─── Editorial Design System ─────────────────────────────────── */
 :root {
   /* New editorial palette */
-  --ivani-bg: #F7F8F4;
+  --ivani-bg: #FDFEFA;
   --ivani-surface: #FFFFFF;
-  --ivani-border: #E6E9E2;
-  --ivani-primary: #1F5C3F;
-  --ivani-secondary: #A8C93A;
-  --ivani-blue: #4F7CF7;
-  --ivani-teal: #33B7A5;
-  --ivani-purple: #8D5BE8;
-  --ivani-text: #1B1F1D;
+  --ivani-border: #E8EBE4;
+  --ivani-primary: #327039; /* Forest Fern */
+  --ivani-secondary: #F8EDD9; /* Alabaster Hay */
+  --ivani-accent: #DD5C36; /* Cherry Grove */
+  --ivani-text: #133020; /* Tilled Earth */
   --ivani-muted: #667065;
 
   /* Legacy aliases — keep old pages working */
