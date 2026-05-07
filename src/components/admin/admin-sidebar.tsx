@@ -66,10 +66,9 @@ function LogoBlock() {
           <img 
             src="/branding/logo-handwritten.png" 
             alt="Ivani Pallets" 
-            className="h-full w-full object-contain transition-transform duration-500 scale-[1.5]"
+            className="h-full w-full object-contain transition-transform duration-500 scale-[1.8]"
             style={{ 
-              filter: 'contrast(1.5) brightness(1.15) saturate(1.1)',
-              mixBlendMode: 'multiply'
+              filter: 'contrast(1.1) brightness(1.05)',
             }}
           />
         </div>
