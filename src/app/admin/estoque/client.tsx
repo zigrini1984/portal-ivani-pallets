@@ -10,6 +10,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { reprocessarEstoque, registrarSaidaEstoque } from "@/app/actions/estoque";
+import { BicPenBanner } from "@/components/ui/editorial";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -139,30 +140,20 @@ export function AdminEstoqueClient({
 
   return (
     <div className="max-w-[1200px] mx-auto pb-20">
-      {/* ── Page Header ──────────────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12 pb-8 border-b border-[var(--ivani-border)] relative">
-        <div className="absolute bottom-[-1px] left-0 w-32 h-[2px] bg-[var(--ivani-teal)]" />
-        <div className="relative">
-          {/* Enhanced Bic Pen Decoration */}
-          <svg className="absolute -left-10 -top-8 w-16 h-16 text-[var(--ivani-teal)] opacity-30 pointer-events-none" viewBox="0 0 100 100">
-             <path d="M5,50 Q45,5 95,50 T185,50" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-             <path d="M10,65 Q50,20 90,65 T170,65" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-          </svg>
-          
-          <p className="text-[11px] font-black uppercase tracking-[0.3em] text-[var(--ivani-primary)] mb-3 opacity-80">Patrimônio & Giro</p>
-          <h1 className="text-4xl font-black text-[var(--ivani-text)] tracking-tighter">Estoque Central</h1>
-          <p className="text-[15px] text-[var(--ivani-muted)] mt-3 font-medium max-w-xl leading-relaxed">
-            Monitoramento em tempo real do saldo de pallets prontos para expedição e registro histórico de movimentações.
-          </p>
-        </div>
-        
+      <BicPenBanner 
+        title="Estoque Central"
+        subtitle="Monitoramento em tempo real do saldo de pallets prontos para expedição e registro histórico de movimentações."
+        image="/branding/banner-dashboard.png"
+      />
+
+      <div className="flex justify-end mb-12">
         <button
           onClick={handleSync}
           disabled={syncing}
-          className="group relative inline-flex items-center gap-3 px-7 py-4 bg-[var(--ivani-primary)] text-white rounded-[1.2rem] text-xs font-black uppercase tracking-widest overflow-hidden transition-all hover:shadow-[0_10px_30px_-5px_rgba(31,92,63,0.4)] active:scale-[0.97] disabled:opacity-50"
+          className="group relative inline-flex items-center gap-3 px-8 py-4 bg-[var(--ivani-primary)] text-white rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest overflow-hidden transition-all hover:shadow-[0_10px_30px_-5px_rgba(31,92,63,0.4)] active:scale-[0.97] disabled:opacity-50"
         >
           <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-          {syncing ? <Loader2 size={18} className="animate-spin" /> : <RefreshCcw size={18} className="transition-transform group-hover:rotate-180 duration-700 ease-in-out" />}
+          {syncing ? <Loader2 size={18} className="animate-spin text-[var(--ivani-secondary)]" /> : <RefreshCcw size={18} className="transition-transform group-hover:rotate-180 duration-700 ease-in-out text-[var(--ivani-secondary)]" />}
           <span className="relative z-10">{syncing ? "Sincronizando..." : "Sincronizar Saldo"}</span>
         </button>
       </div>

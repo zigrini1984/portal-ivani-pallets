@@ -81,10 +81,11 @@ export default function Home() {
             className="flex flex-col"
           >
             <div className="flex items-center gap-2 mb-8">
-              <div className="w-10 h-10 bg-[#327039] rounded-xl flex items-center justify-center shadow-lg shadow-[#327039]/20">
-                <Package className="text-white" size={24} />
-              </div>
-              <span className="font-display font-bold text-2xl tracking-tight text-[#327039]">Portal Ivani Pallets</span>
+              <img 
+                src="/branding/logo-handwritten.png" 
+                alt="Ivani Pallets" 
+                className="h-14 w-auto object-contain mix-blend-multiply transition-transform hover:scale-105 duration-500"
+              />
             </div>
 
             <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 text-xs font-bold tracking-widest uppercase border border-[#327039]/20 rounded-full bg-[#327039]/5 text-[#327039] w-fit">
@@ -410,8 +411,11 @@ export default function Home() {
       <footer className="py-12 border-t border-[#DD5C36]/50 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:row justify-between items-center gap-8">
           <div className="flex items-center gap-2">
-            <Package className="text-[#327039]" size={24} />
-            <span className="font-display font-bold text-xl tracking-tight text-[#133020]">Portal Ivani Pallets</span>
+            <img 
+              src="/branding/logo-handwritten.png" 
+              alt="Ivani Pallets" 
+              className="h-10 w-auto object-contain mix-blend-multiply opacity-80"
+            />
           </div>
           <div className="text-[#133020]/40 text-xs font-bold tracking-widest uppercase">
             © {new Date().getFullYear()} Ivani Pallets — Feito para durar.

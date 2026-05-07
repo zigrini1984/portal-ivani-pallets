@@ -28,6 +28,10 @@ body {
   background-color: var(--ivani-bg);
   color: var(--ivani-text);
   font-family: var(--font-poppins), system-ui, sans-serif;
+  background-image: 
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3%3Ffilter id='noiseFilter'%3E%3FfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3/filter%3E%3rect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3/svg%3E"),
+    linear-gradient(to bottom, #F7F8F4, #F2F4EE);
+  background-attachment: fixed;
 }
 
 /* ─── Utility Classes ─────────────────────────────────────────── */
@@ -58,10 +62,45 @@ body {
 
 /* Floating sidebar (light, white) */
 .floating-sidebar {
-  background-color: var(--ivani-surface);
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
   border-right: 1px solid var(--ivani-border);
   box-shadow: 2px 0 16px rgba(27, 31, 29, 0.03);
 }
+
+/* ─── Bic Pen Styles ──────────────────────────────────────────── */
+
+.bic-pen-sketch {
+  font-family: inherit;
+  position: relative;
+}
+
+.hand-drawn-path {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: draw 2s ease-out forwards;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.paper-card {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E");
+}
+
+.sketch-icon {
+  filter: url(#wiggle);
+}
+
+.editorial-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ivani-border), transparent);
+  margin: 2rem 0;
+}
+
 
 /* Legacy card-shadow used by tropical.tsx components */
 .card-shadow {

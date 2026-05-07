@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { BicPenBanner } from "@/components/ui/editorial";
 import { iniciarManutencao, concluirManutencao, sincronizarManutencoesPendentes, limparRegistrosInvalidos } from "@/app/actions/manutencao";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -128,41 +129,29 @@ export function AdminManutencaoClient({
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="max-w-[1200px] mx-auto">
-      {/* ── Page Header ──────────────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 pb-8 border-b border-[var(--ivani-border)] relative">
-        <div className="absolute bottom-[-1px] left-0 w-24 h-[2px] bg-[var(--ivani-purple)]" />
-        <div className="relative">
-          {/* Subtle Bic Pen Decoration */}
-          <svg className="absolute -left-6 -top-6 w-12 h-12 text-[var(--ivani-purple)] opacity-40 pointer-events-none" viewBox="0 0 100 100">
-             <path d="M10,40 Q30,10 70,40 T130,40" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-             <path d="M10,55 Q30,25 70,55 T130,55" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-          </svg>
-          
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--ivani-primary)] mb-2 opacity-80">Reparo e Recuperação</p>
-          <h1 className="text-3xl font-black text-[var(--ivani-text)] tracking-tight">Manutenção e Reparos</h1>
-          <p className="text-sm text-[var(--ivani-muted)] mt-2 font-medium max-w-lg leading-relaxed">
-            Gestão operacional de itens em reforma ou remanufatura vindos da triagem para restauração de estoque.
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleClean}
-            title="Limpar registros inválidos"
-            className="p-3.5 border border-[var(--ivani-border)] rounded-2xl text-[var(--ivani-muted)] hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all active:scale-95 shadow-sm bg-white"
-          >
-            <Trash2 size={18} />
-          </button>
-          <button
-            onClick={handleSync}
-            disabled={isSyncing}
-            className="group relative inline-flex items-center gap-3 px-6 py-3.5 bg-[var(--ivani-primary)] text-white rounded-2xl text-sm font-bold overflow-hidden transition-all hover:shadow-[0_8px_25px_-5px_rgba(31,92,63,0.4)] active:scale-[0.98] disabled:opacity-60"
-          >
-            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-            {isSyncing ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
-            Sincronizar Triagens
-          </button>
-        </div>
+      <BicPenBanner 
+        title="Manutenção e Reparos"
+        subtitle="Gestão operacional de itens em reforma ou remanufatura vindos da triagem para restauração de estoque."
+        image="/branding/banner-operacao.png"
+      />
+
+      <div className="flex justify-end items-center gap-3 mb-10">
+        <button
+          onClick={handleClean}
+          title="Limpar registros inválidos"
+          className="p-3.5 border border-[var(--ivani-border)] rounded-2xl text-[var(--ivani-muted)] hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all active:scale-95 shadow-sm bg-white"
+        >
+          <Trash2 size={18} />
+        </button>
+        <button
+          onClick={handleSync}
+          disabled={isSyncing}
+          className="group relative inline-flex items-center gap-3 px-6 py-3.5 bg-[var(--ivani-primary)] text-white rounded-2xl text-sm font-bold overflow-hidden transition-all hover:shadow-[0_8px_25px_-5px_rgba(31,92,63,0.4)] active:scale-[0.98] disabled:opacity-60"
+        >
+          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+          {isSyncing ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
+          Sincronizar Triagens
+        </button>
       </div>
 
       {/* ── KPI Grid ─────────────────────────────────────────────────────── */}

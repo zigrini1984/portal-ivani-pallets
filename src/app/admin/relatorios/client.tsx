@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import { BicPenBanner } from "@/components/ui/editorial";
 
 // --- TIPAGEM ---
 
@@ -143,26 +144,16 @@ export function AdminRelatoriosClient({ initialTriagens }: AdminRelatoriosClient
 
   return (
     <div className="max-w-[1200px] mx-auto">
-      {/* ── Page Header ──────────────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 pb-8 border-b border-[var(--ivani-border)] relative">
-        <div className="absolute bottom-[-1px] left-0 w-24 h-[2px] bg-[var(--ivani-teal)]" />
-        <div className="relative">
-          {/* Subtle Bic Pen Decoration */}
-          <svg className="absolute -left-6 -top-6 w-12 h-12 text-[var(--ivani-teal)] opacity-40 pointer-events-none" viewBox="0 0 100 100">
-             <path d="M5,50 Q45,5 95,50 T185,50" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-             <path d="M10,65 Q50,20 90,65 T170,65" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-          </svg>
-          
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--ivani-primary)] mb-2 opacity-80">Relatório Executivo</p>
-          <h1 className="text-3xl font-black text-[var(--ivani-text)] tracking-tight">Performance Analítica</h1>
-          <p className="text-sm text-[var(--ivani-muted)] mt-2 font-medium max-w-lg leading-relaxed">
-            Consolidado de eficiência operacional e impacto sustentável gerado através da recuperação de pallets.
-          </p>
-        </div>
-        
-        <button className="group relative inline-flex items-center gap-3 px-6 py-3.5 bg-[var(--ivani-primary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest overflow-hidden transition-all hover:shadow-xl active:scale-[0.98]">
+      <BicPenBanner 
+        title="Performance Analítica"
+        subtitle="Consolidado de eficiência operacional e impacto sustentável gerado através da recuperação de pallets."
+        image="/branding/banner-esg.png"
+      />
+
+      <div className="flex justify-end mb-10">
+        <button className="group relative inline-flex items-center gap-3 px-8 py-4 bg-[var(--ivani-primary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest overflow-hidden transition-all hover:shadow-xl active:scale-[0.98]">
           <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <Download size={16} />
+          <Download size={16} className="text-[var(--ivani-secondary)]" />
           Exportar Relatório PDF
         </button>
       </div>

@@ -60,17 +60,15 @@ function NavLink({
 // ─── Logo Block ───────────────────────────────────────────────────────────────
 function LogoBlock() {
   return (
-    <Link href="/admin/coleta" className="flex items-center gap-3 group">
-      <div className="w-9 h-9 rounded-xl bg-[var(--ivani-primary)] flex items-center justify-center shadow-sm flex-shrink-0 group-hover:scale-105 transition-transform">
-        <Package size={18} className="text-white" />
-      </div>
-      <div className="flex flex-col leading-none">
-        <span className="font-bold text-[var(--ivani-text)] text-sm tracking-tight font-display">
-          Portal Ivani
-        </span>
-        <span className="text-[10px] font-semibold text-[var(--ivani-muted)] uppercase tracking-widest">
-          Operação
-        </span>
+    <Link href="/admin/coleta" className="flex items-center gap-3 group px-2">
+      <div className="relative">
+        <img 
+          src="/branding/logo-handwritten.png" 
+          alt="Ivani Pallets" 
+          className="h-12 w-auto object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500"
+        />
+        {/* Subtle bic pen underline */}
+        <div className="absolute -bottom-1 left-0 w-full h-[1px] bg-[var(--ivani-primary)] opacity-40 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-700" />
       </div>
     </Link>
   );
@@ -84,9 +82,9 @@ export function AdminSidebar() {
   return (
     <>
       {/* ── Desktop Sidebar ──────────────────────────────────────────────────── */}
-      <aside className="hidden md:flex flex-col w-64 h-screen sticky top-0 z-40 floating-sidebar flex-shrink-0">
+      <aside className="hidden md:flex flex-col w-64 h-screen sticky top-0 z-40 floating-sidebar flex-shrink-0 paper-texture">
         {/* Logo */}
-        <div className="h-16 flex items-center px-5 border-b border-[var(--ivani-border)]">
+        <div className="h-20 flex items-center px-4 border-b border-[var(--ivani-border)] bg-white/50">
           <LogoBlock />
         </div>
 

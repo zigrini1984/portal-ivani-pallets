@@ -28,6 +28,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
+import { BicPenBanner } from "@/components/ui/editorial";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -229,23 +230,13 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
   return (
     <div className="max-w-[1200px] mx-auto">
       {/* ── Page Header ──────────────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 pb-8 border-b border-[var(--ivani-border)] relative">
-        <div className="absolute bottom-[-1px] left-0 w-24 h-[2px] bg-[var(--ivani-blue)]" />
-        <div className="relative">
-          {/* Subtle Bic Pen Decoration */}
-          <svg className="absolute -left-6 -top-6 w-12 h-12 text-[var(--ivani-blue)] opacity-40 pointer-events-none" viewBox="0 0 100 100">
-             <path d="M5,40 Q45,0 95,40 T185,40" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-             <path d="M10,55 Q50,15 90,55 T170,55" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-          </svg>
-          
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--ivani-primary)] mb-2 opacity-80">Apontamento Operacional</p>
-          <h1 className="text-3xl font-black text-[var(--ivani-text)] tracking-tight">Faturamento PCE</h1>
-          <p className="text-sm text-[var(--ivani-muted)] mt-2 font-medium max-w-lg leading-relaxed">
-            Gestão de recebíveis originados de saídas de estoque. Visão simplificada de parcelas e vencimentos.
-          </p>
-        </div>
-        
-        {/* Tab Selector */}
+      <BicPenBanner 
+        title="Faturamento PCE"
+        subtitle="Gestão de recebíveis originados de saídas de estoque. Visão simplificada de parcelas e vencimentos."
+        image="/branding/banner-esg.png"
+      />
+
+      <div className="flex justify-end mb-10">
         <div className="inline-flex p-1.5 bg-[var(--ivani-bg)]/60 rounded-2xl border border-[var(--ivani-border)]">
           {[
             { id: "ativos", label: "Faturamentos", icon: <LayoutGrid size={16} /> },

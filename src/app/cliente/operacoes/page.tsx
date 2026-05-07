@@ -15,6 +15,7 @@ import { registrarAcesso } from "@/lib/utils/monitoramento";
 import { LoadingPage } from "@/components/ui/loading-screen";
 import { ClientNav } from "@/components/dashboard/client-nav";
 import { KpiCard } from "@/components/dashboard/KpiCard";
+import { BicPenBanner } from "@/components/ui/editorial";
 import { motion, AnimatePresence } from "framer-motion";
 
 const TableHeader = ({ children }: { children?: React.ReactNode }) => (
@@ -131,21 +132,16 @@ export default function CentralOperacoesPCE() {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-neutral-900 pb-24">
-      {/* 1. HEADER */}
-      <header className="bg-white border-b border-neutral-200 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div>
-              <div className="flex items-center gap-2.5 mb-2">
-                <Badge variant="success">Operação em tempo real</Badge>
-              </div>
-              <h1 className="text-3xl font-bold tracking-tight">Central de Operações PCE</h1>
-              <p className="text-sm text-neutral-500 mt-1 font-medium">Acompanhamento detalhado das cargas, triagem, estoque e saídas.</p>
-            </div>
-            <ClientNav />
-          </div>
+      <div className="max-w-7xl mx-auto px-6 pt-10">
+        <div className="flex justify-end mb-6">
+          <ClientNav />
         </div>
-      </header>
+        <BicPenBanner 
+          title="Central de Operações PCE"
+          subtitle="Acompanhamento detalhado das cargas, triagem, estoque e saídas em tempo real."
+          image="/branding/banner-operacao.png"
+        />
+      </div>
 
       <main className="max-w-7xl mx-auto px-6 pt-10 space-y-10">
         

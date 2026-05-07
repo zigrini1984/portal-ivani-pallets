@@ -60,9 +60,13 @@ export default function LoginPage() {
 
         <div className="bg-white p-10 rounded-[2rem] shadow-[0_4px_20px_-2px_rgba(22,35,42,0.05)] border border-[#133020]/5">
           <div className="flex justify-center mb-8">
-            <div className="w-16 h-16 bg-[#133020] rounded-2xl flex items-center justify-center shadow-lg shadow-[#133020]/20">
-              <Package className="text-white" size={32} />
-            </div>
+            <Link href="/">
+              <img 
+                src="/branding/logo-handwritten.png" 
+                alt="Ivani Pallets" 
+                className="h-20 w-auto object-contain mix-blend-multiply transition-transform hover:scale-105 duration-500"
+              />
+            </Link>
           </div>
 
           <div className="text-center mb-10">

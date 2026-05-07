@@ -15,6 +15,7 @@ import { LoadingPage } from "@/components/ui/loading-screen";
 import { fetchDashboardKPIs, DashboardKPIs } from "@/lib/kpis";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { ClientNav } from "@/components/dashboard/client-nav";
+import { BicPenBanner } from "@/components/ui/editorial";
 
 const SimpleKpiRow = ({ label, value, icon: Icon, isWarning = false, isSuccess = false }: { label: string, value: string | number, icon: any, isWarning?: boolean, isSuccess?: boolean }) => (
   <div className="group flex justify-between items-center py-4 border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50 px-2 -mx-2 rounded-xl transition-colors cursor-default">
@@ -148,26 +149,16 @@ export default function ClienteDashboardPCE() {
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-neutral-900 font-sans selection:bg-neutral-200 selection:text-neutral-900 pb-24">
       
-      {/* 1. HEADER LIMPO */}
-      <header className="bg-white border-b border-neutral-200 sticky top-0 z-40 shadow-[0_1px_4px_rgba(0,0,0,0.01)]">
-        <div className="max-w-6xl mx-auto px-6 py-6 md:py-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">Operação Ativa</span>
-                </div>
-                <span className="text-neutral-300 text-xs">•</span>
-                <span className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider">{mesAno}</span>
-              </div>
-              <h1 className="text-3xl md:text-4xl font-bold text-neutral-900 tracking-tight">Painel Executivo PCE</h1>
-              <p className="text-sm md:text-base text-neutral-500 mt-1.5 font-medium">Acompanhamento estratégico: economia, eficiência e impacto sustentável.</p>
-            </div>
-            <ClientNav />
-          </div>
+      <div className="max-w-6xl mx-auto px-6 pt-10">
+        <div className="flex justify-end mb-6">
+          <ClientNav />
         </div>
-      </header>
+        <BicPenBanner 
+          title="Painel Executivo PCE"
+          subtitle="Acompanhamento estratégico: economia, eficiência e impacto sustentável."
+          image="/branding/banner-dashboard.png"
+        />
+      </div>
 
       <main className="max-w-6xl mx-auto px-6 pt-10 md:pt-12 space-y-10 md:space-y-12">
         
