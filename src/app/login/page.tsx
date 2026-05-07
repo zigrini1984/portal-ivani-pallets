@@ -64,7 +64,7 @@ export default function LoginPage() {
               <img 
                 src="/branding/logo-handwritten.png" 
                 alt="Ivani Pallets" 
-                className="h-20 w-auto object-contain mix-blend-multiply transition-transform hover:scale-105 duration-500"
+                className="h-28 w-auto object-contain mix-blend-multiply transition-transform hover:scale-105 duration-500"
               />
             </Link>
           </div>
