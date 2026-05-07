@@ -100,5 +100,8 @@ export async function login(formData: FormData): Promise<LoginResult> {
 export async function logout() {
   const cookieStore = await cookies();
   cookieStore.delete(SESSION_COOKIE);
+  cookieStore.delete("ivani_portal_perfil");
+  cookieStore.delete("ivani_portal_cliente_id");
+  cookieStore.delete("ivani_portal_token");
   redirect("/login");
-}
+}

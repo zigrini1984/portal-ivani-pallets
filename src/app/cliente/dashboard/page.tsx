@@ -83,7 +83,7 @@ export default async function ClienteDashboardPCE() {
         <BicPenBanner 
           title="Inteligência Logística"
           subtitle="Acompanhamento em tempo real da sua operação de pallets e impacto ambiental."
-          image="/media__1778175575898.png"
+          image="/branding/banner-dashboard.png"
         />
 
         {error && (

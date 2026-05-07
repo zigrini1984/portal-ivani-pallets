@@ -148,7 +148,7 @@ export default async function AdminDashboardPage() {
       <BicPenBanner 
         title="Cada ciclo importa."
         subtitle="Do recebimento à devolução, transformamos processos manuais em inteligência logística de alta performance. Sua operação em tempo real."
-        image="/media__1778175575898.png"
+        image="/branding/banner-dashboard.png"
       />
 
       {/* 3. Ciclo Operacional */}

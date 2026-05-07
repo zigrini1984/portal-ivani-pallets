@@ -17,6 +17,7 @@ export default async function AdminFaturamentoPage() {
     .eq("cliente_id", "pce")
     .order("data_saida", { ascending: false });
 
+
   // 2. Buscar Saídas de Estoque que ainda não estão faturadas
   const { data: allSaidas } = await supabase
     .from("estoque_movimentacoes")
