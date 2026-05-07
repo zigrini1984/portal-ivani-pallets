@@ -1,74 +1,47 @@
 @import "tailwindcss";
 
 :root {
-  --color-forest-fern: #327039;
-  --color-tilled-earth: #133020;
-  --color-wheat-field: #f0be49;
-  --color-cherry-grove: #dd5c36;
-  --color-alabaster-hay: #f8edd9;
-  --color-card: #ffffff;
-  --color-text: #133020;
-  --color-muted: rgba(19, 48, 32, 0.62);
+  --ivani-bg: #F7F8F4;
+  --ivani-surface: #FFFFFF;
+  --ivani-border: #E6E9E2;
+  --ivani-primary: #1F5C3F;
+  --ivani-secondary: #A8C93A;
+  --ivani-blue: #4F7CF7;
+  --ivani-teal: #33B7A5;
+  --ivani-purple: #8D5BE8;
+  --ivani-text: #1B1F1D;
+  --ivani-muted: #667065;
 }
 
 html,
 body {
   min-height: 100%;
-  background: var(--color-alabaster-hay);
-  color: var(--color-text);
+  background-color: var(--ivani-bg);
+  color: var(--ivani-text);
+  font-family: var(--font-poppins), system-ui, sans-serif;
 }
 
-body {
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+/* Hand-drawn / Editorial utility classes */
+.hand-drawn-border {
+  border: 1px solid var(--ivani-border);
+  border-radius: 8px 12px 10px 8px / 12px 8px 10px 12px;
 }
 
-.app-bg {
-  background: var(--color-alabaster-hay);
+.soft-shadow {
+  box-shadow: 0 4px 20px -2px rgba(27, 31, 29, 0.05);
 }
 
-.app-sidebar {
-  background: var(--color-tilled-earth);
+.editorial-card {
+  background-color: var(--ivani-surface);
+  border: 1px solid var(--ivani-border);
+  border-radius: 20px;
+  box-shadow: 0 4px 20px -2px rgba(27, 31, 29, 0.05);
+  transition: all 0.2s ease;
 }
 
-.app-card {
-  background: var(--color-card);
-  border: 1px solid rgba(19, 48, 32, 0.08);
-  border-radius: 28px;
-  box-shadow: 0 20px 50px rgba(19, 48, 32, 0.08);
-}
-
-.app-card-soft {
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(19, 48, 32, 0.08);
-  border-radius: 24px;
-  box-shadow: 0 14px 34px rgba(19, 48, 32, 0.06);
-}
-
-.app-button-primary {
-  background: var(--color-cherry-grove);
-  color: #ffffff;
-  border-radius: 18px;
-  box-shadow: 0 12px 24px rgba(221, 92, 54, 0.22);
-}
-
-.app-button-primary:hover {
-  background: #c94f2f;
-}
-
-.app-button-secondary {
-  background: var(--color-tilled-earth);
-  color: #ffffff;
-  border-radius: 18px;
-}
-
-.app-badge-green {
-  background: rgba(50, 112, 57, 0.12);
-  color: var(--color-forest-fern);
-  border: 1px solid rgba(50, 112, 57, 0.18);
-}
-
-.app-badge-orange {
-  background: rgba(221, 92, 54, 0.12);
-  color: var(--color-cherry-grove);
-  border: 1px solid rgba(221, 92, 54, 0.18);
+.floating-sidebar {
+  background-color: var(--ivani-surface);
+  border-right: 1px solid var(--ivani-border);
+  border-radius: 0 24px 24px 0;
+  box-shadow: 4px 0 24px rgba(27, 31, 29, 0.02);
 }
