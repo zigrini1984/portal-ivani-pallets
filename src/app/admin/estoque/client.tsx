@@ -143,7 +143,7 @@ export function AdminEstoqueClient({
       <BicPenBanner 
         title="Estoque de Pallets" 
         subtitle="Monitoramento em tempo real do saldo de pallets prontos para expedição e registro histórico de movimentações."
-        image="/branding/banner-estoque-v2.png"
+        image="/branding/banner-operacao.png"
       />
 
       <div className="flex justify-end mb-12">

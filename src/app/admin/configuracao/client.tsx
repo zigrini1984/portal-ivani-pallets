@@ -197,7 +197,7 @@ export function AdminConfiguracaoClient({ initialModelos, initialUsuarios, initi
       <BicPenBanner 
         title="Configurações do Sistema" 
         subtitle="Gerenciamento de usuários, modelos de pallets e logs de auditoria."
-        image="/branding/banner-configuracao-v2.png"
+        image="/branding/banner-esg.png"
       />
 
       <div className="flex justify-end mb-10">

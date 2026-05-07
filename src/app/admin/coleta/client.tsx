@@ -155,7 +155,7 @@ export function AdminColetaClient({ initialColetas, error }: AdminColetaClientPr
       <BicPenBanner 
         title="Registro de Coletas"
         subtitle="Controle de entrada de material bruto e encaminhamento para a triagem operacional."
-        image="/branding/banner-coleta-v2.png"
+        image="/branding/banner-coleta.png"
       />
 
       <div className="flex justify-end mb-8">

@@ -233,7 +233,7 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
       <BicPenBanner 
         title="Controle de Faturamento" 
         subtitle="Gestão de notas fiscais, volumes expedidos e histórico financeiro operacional."
-        image="/branding/banner-faturamento-v2.png"
+        image="/branding/banner-relatorios.png"
       />
 
       <div className="flex justify-end mb-10">

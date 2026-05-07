@@ -147,7 +147,7 @@ export function AdminRelatoriosClient({ initialTriagens }: AdminRelatoriosClient
       <BicPenBanner 
         title="Relatórios Executivos" 
         subtitle="Análise de performance operacional, volumes processados e indicadores ESG."
-        image="/branding/banner-relatorios-v2.png"
+        image="/branding/banner-relatorios.png"
       />
 
       <div className="flex justify-end mb-10">
