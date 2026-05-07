@@ -18,6 +18,7 @@ interface ModeloPallet { id: string; nome: string; codigo: string; medidas: stri
 interface TriagemItem {
   id?: string; triagem_id: string; modelo_pallet_id: string;
   quantidade_reforma: number; quantidade_remanufatura: number; quantidade_compra_ivani: number;
+  quantidade_sucateado: number;
   modelo_pallet?: ModeloPallet;
 }
 
@@ -85,6 +86,7 @@ export function AdminTriagemClient({ initialTriagens, initialModelosPallets, ser
         quantidade_reforma: i.quantidade_reforma ?? 0,
         quantidade_remanufatura: i.quantidade_remanufatura ?? 0,
         quantidade_compra_ivani: i.quantidade_compra_ivani ?? 0,
+        quantidade_sucateado: i.quantidade_sucateado ?? 0,
       }))
     );
     setIsModalOpen(true);
@@ -100,6 +102,7 @@ export function AdminTriagemClient({ initialTriagens, initialModelosPallets, ser
     setItensForm(prev => [...prev, {
       triagem_id: editing.id, modelo_pallet_id: next.id,
       quantidade_reforma: 0, quantidade_remanufatura: 0, quantidade_compra_ivani: 0,
+      quantidade_sucateado: 0,
       modelo_pallet: next,
     }]);
   }
@@ -143,7 +146,7 @@ export function AdminTriagemClient({ initialTriagens, initialModelosPallets, ser
           quantidade_reforma: i.quantidade_reforma,
           quantidade_remanufatura: i.quantidade_remanufatura,
           quantidade_compra_ivani: i.quantidade_compra_ivani,
-          quantidade_sucateado: 0,
+          quantidade_sucateado: i.quantidade_sucateado,
         })),
         finalizar,
       });
@@ -356,6 +359,7 @@ export function AdminTriagemClient({ initialTriagens, initialModelosPallets, ser
                                   { label: "Reforma", field: "quantidade_reforma", val: item.quantidade_reforma, cl: "text-[#DD5C36]" },
                                   { label: "Remanuf.", field: "quantidade_remanufatura", val: item.quantidade_remanufatura, cl: "text-[#133020]/70" },
                                   { label: "Compra", field: "quantidade_compra_ivani", val: item.quantidade_compra_ivani, cl: "text-[#327039]" },
+                                  { label: "Sucata", field: "quantidade_sucateado", val: item.quantidade_sucateado, cl: "text-red-500" },
                                 ].map(f => (
                                   <div key={f.field}>
                                     <label className={`text-[9px] font-bold uppercase tracking-tighter block mb-1.5 ${f.cl}`}>{f.label}</label>

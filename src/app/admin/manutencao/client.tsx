@@ -105,8 +105,8 @@ export function AdminManutencaoClient({
       if (!res.success) throw new Error(res.error);
       
       const msg = `Sincronização concluída!\n\n` +
-                  `Triagens verificadas: ${res.verificadas}\n` +
-                  `Itens criados: ${res.criados}\n` +
+                  `Triagens verificadas: ${res.triagensVerificadas}\n` +
+                  `Itens criados: ${res.itensCriados}\n` +
                   (res.motivos && res.motivos.length > 0 ? `\nObservações:\n- ${res.motivos.slice(0,3).join('\n- ')}` : "");
       
       alert(msg);

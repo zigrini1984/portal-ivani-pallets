@@ -29,10 +29,11 @@ import { PageShell, AppCard, AppButton, StatusBadge, EmptyState } from "@/compon
 
 interface EstoqueItem {
   id: string;
-  modelo_pallet_id: string;
-  quantidade_disponivel: number;
-  quantidade_reservada: number;
-  observacao: string;
+  modelo_id: string;
+  cliente_id: string;
+  quantidade: number;
+  modelo_nome_snapshot: string;
+  updated_at: string;
   modelo_pallet?: {
     nome: string;
     codigo: string;
@@ -77,7 +78,7 @@ export function AdminEstoqueClient({ initialEstoque, initialMovimentacoes }: Adm
       const { data: estData, error: estError } = await supabase
         .from("estoque_pallets")
         .select(`
-          *,
+          id, cliente_id, modelo_id, modelo_nome_snapshot, quantidade, updated_at,
           modelo_pallet:modelos_pallets(nome, codigo, medidas)
         `)
         .eq("cliente_id", "pce");
@@ -87,7 +88,7 @@ export function AdminEstoqueClient({ initialEstoque, initialMovimentacoes }: Adm
       const { data: movData, error: movError } = await supabase
         .from("estoque_movimentacoes")
         .select(`
-          *,
+          id, tipo, quantidade, origem, descricao, created_at,
           modelo_pallet:modelos_pallets(nome)
         `)
         .eq("cliente_id", "pce")
@@ -96,8 +97,18 @@ export function AdminEstoqueClient({ initialEstoque, initialMovimentacoes }: Adm
 
       if (movError) throw movError;
 
-      setEstoque(estData || []);
-      setMovimentacoes(movData || []);
+      const mappedEstoque = (estData || []).map((item: any) => ({
+        ...item,
+        modelo_pallet: Array.isArray(item.modelo_pallet) ? item.modelo_pallet[0] : item.modelo_pallet
+      }));
+
+      const mappedMovimentacoes = (movData || []).map((mov: any) => ({
+        ...mov,
+        modelo_pallet: Array.isArray(mov.modelo_pallet) ? mov.modelo_pallet[0] : mov.modelo_pallet
+      }));
+
+      setEstoque(mappedEstoque);
+      setMovimentacoes(mappedMovimentacoes);
     } catch (err: any) {
       console.error(err);
       setError("Falha ao carregar estoque.");
@@ -125,8 +136,8 @@ export function AdminEstoqueClient({ initialEstoque, initialMovimentacoes }: Adm
   const handleOutflow = async () => {
     if (!selectedModel || outflowQty <= 0) return;
 
-    const estItem = estoque.find(e => e.modelo_pallet_id === selectedModel);
-    if (!estItem || estItem.quantidade_disponivel < outflowQty) {
+    const estItem = estoque.find(e => e.modelo_id === selectedModel);
+    if (!estItem || estItem.quantidade < outflowQty) {
       alert("Saldo insuficiente para esta saída.");
       return;
     }
@@ -218,7 +229,7 @@ export function AdminEstoqueClient({ initialEstoque, initialMovimentacoes }: Adm
                         <Package size={24} />
                       </div>
                       <button 
-                        onClick={() => { setSelectedModel(item.modelo_pallet_id); setIsOutflowModalOpen(true); }}
+                        onClick={() => { setSelectedModel(item.modelo_id); setIsOutflowModalOpen(true); }}
                         className="px-4 py-2 bg-[#DD5C36]/10 text-[#DD5C36] rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#DD5C36] hover:text-white transition-all border border-[#DD5C36]/20 hover:border-[#DD5C36]"
                       >
                         Registrar Saída
@@ -234,14 +245,13 @@ export function AdminEstoqueClient({ initialEstoque, initialMovimentacoes }: Adm
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3">
                       <div className="bg-[#327039]/10 rounded-2xl p-4 border border-[#327039]/20">
                         <span className="text-[10px] font-bold text-[#327039] uppercase tracking-widest block mb-1">Disponível</span>
-                        <div className="text-3xl font-black text-[#133020]">{item.quantidade_disponivel} <span className="text-xs opacity-50 font-bold">un</span></div>
+                        <div className="text-3xl font-black text-[#133020]">{item.quantidade} <span className="text-xs opacity-50 font-bold">un</span></div>
                       </div>
-                      <div className="bg-[#F8EDD9]/30 rounded-2xl p-4 border border-[#133020]/5">
-                        <span className="text-[10px] font-bold text-[#133020]/30 uppercase tracking-widest block mb-1">Reservado</span>
-                        <div className="text-3xl font-black text-[#133020]/40">{item.quantidade_reservada} <span className="text-xs opacity-50 font-bold">un</span></div>
+                      <div className="text-[9px] font-bold text-[#133020]/30 uppercase tracking-widest ml-1">
+                        Última atualização: {new Date(item.updated_at).toLocaleString('pt-BR')}
                       </div>
                     </div>
                   </div>
