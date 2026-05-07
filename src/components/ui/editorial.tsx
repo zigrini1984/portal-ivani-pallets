@@ -9,9 +9,10 @@ interface BicPenBannerProps {
   subtitle: string;
   image: string;
   accentColor?: string;
+  hueRotate?: string;
 }
 
-export function BicPenBanner({ title, subtitle, image, accentColor = "var(--ivani-primary)" }: BicPenBannerProps) {
+export function BicPenBanner({ title, subtitle, image, accentColor = "var(--ivani-primary)", hueRotate = "0deg" }: BicPenBannerProps) {
   return (
     <div className="relative w-full mb-8 overflow-hidden rounded-3xl bg-white border border-[var(--ivani-border)] shadow-sm group">
       {/* Background Pattern */}
@@ -70,7 +71,7 @@ export function BicPenBanner({ title, subtitle, image, accentColor = "var(--ivan
               alt="Operational Sketch"
               className="w-full h-full object-contain opacity-100 group-hover:scale-[1.05] transition-transform duration-1000 bg-white scale-[1.35]"
               style={{ 
-                filter: 'contrast(1.1) brightness(1.05) saturate(1.1)',
+                filter: `contrast(1.1) brightness(1.05) saturate(1.1) hue-rotate(${hueRotate})`,
                 mixBlendMode: 'multiply'
               }}
             />

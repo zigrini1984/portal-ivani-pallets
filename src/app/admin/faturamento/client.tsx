@@ -234,6 +234,7 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
         title="Controle de Faturamento" 
         subtitle="Gestão de notas fiscais, volumes expedidos e histórico financeiro operacional."
         image="/branding/banner-relatorios.png"
+        hueRotate="160deg"
       />
 
       <div className="flex justify-end mb-10">

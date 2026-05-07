@@ -198,6 +198,7 @@ export function AdminConfiguracaoClient({ initialModelos, initialUsuarios, initi
         title="Configurações do Sistema" 
         subtitle="Gerenciamento de usuários, modelos de pallets e logs de auditoria."
         image="/branding/banner-esg.png"
+        hueRotate="120deg"
       />
 
       <div className="flex justify-end mb-10">

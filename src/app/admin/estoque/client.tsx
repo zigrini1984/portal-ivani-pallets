@@ -144,6 +144,7 @@ export function AdminEstoqueClient({
         title="Estoque de Pallets" 
         subtitle="Monitoramento em tempo real do saldo de pallets prontos para expedição e registro histórico de movimentações."
         image="/branding/banner-operacao.png"
+        hueRotate="45deg"
       />
 
       <div className="flex justify-end mb-12">

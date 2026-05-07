@@ -133,6 +133,7 @@ export function AdminManutencaoClient({
         title="Manutenção e Reparos" 
         subtitle="Gestão operacional de itens em reforma ou remanufatura vindos da triagem."
         image="/branding/banner-operacao.png"
+        hueRotate="240deg"
       />
 
       <div className="flex justify-end items-center gap-3 mb-10">

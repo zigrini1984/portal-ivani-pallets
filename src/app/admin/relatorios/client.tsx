@@ -148,6 +148,7 @@ export function AdminRelatoriosClient({ initialTriagens }: AdminRelatoriosClient
         title="Relatórios Executivos" 
         subtitle="Análise de performance operacional, volumes processados e indicadores ESG."
         image="/branding/banner-relatorios.png"
+        hueRotate="60deg"
       />
 
       <div className="flex justify-end mb-10">
