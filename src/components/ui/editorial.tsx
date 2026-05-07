@@ -227,7 +227,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   const menuItems = [
-    { label: "Dashboard", href: "/admin", icon: <LayoutDashboard size={20} /> },
+    { label: "Dashboard", href: "/admin/dashboard", icon: <LayoutDashboard size={20} /> },
     { label: "Coletas", href: "/admin/coleta", icon: <Truck size={20} /> },
     { label: "Triagem", href: "/admin/triagem", icon: <ClipboardList size={20} /> },
     { label: "Manutenção", href: "/admin/manutencao", icon: <Wrench size={20} /> },
