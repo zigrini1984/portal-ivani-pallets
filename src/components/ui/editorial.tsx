@@ -65,10 +65,10 @@ export function BicPenBanner({ title, subtitle, image, accentColor = "var(--ivan
             transition={{ duration: 1.5 }}
             src={image} 
             alt="Operational Sketch"
-            className="w-full h-full object-contain mix-blend-multiply opacity-90 group-hover:scale-[1.02] transition-transform duration-1000 p-8"
+            className="w-full h-full object-contain mix-blend-multiply opacity-100 group-hover:scale-[1.02] transition-transform duration-1000 p-8"
           />
           {/* Bic Pen Soft Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-white via-transparent to-transparent hidden md:block opacity-60" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-transparent to-transparent hidden md:block opacity-40" />
         </div>
       </div>
       
