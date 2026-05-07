@@ -3,148 +3,201 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  Menu, X, Package, Search, LayoutDashboard, Truck, Settings, 
-  BarChart2, FileText, Wrench, Archive, LogOut 
+import {
+  Menu, X, Package, Search, Truck, Settings,
+  BarChart2, FileText, Wrench, Archive, LogOut,
+  ChevronRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { logout } from "@/app/actions/auth";
 
+// ─── Nav items — routes unchanged ─────────────────────────────────────────────
 const navItems = [
-  { label: "Coletas", href: "/admin/coleta", icon: <Truck size={20} /> },
-  { label: "Triagem", href: "/admin/triagem", icon: <Search size={20} /> },
-  { label: "Manutenção", href: "/admin/manutencao", icon: <Wrench size={20} /> },
-  { label: "Estoque", href: "/admin/estoque", icon: <Archive size={20} /> },
-  { label: "Faturamento", href: "/admin/faturamento", icon: <FileText size={20} /> },
-  { label: "Relatórios", href: "/admin/relatorios", icon: <BarChart2 size={20} /> },
-  { label: "Configuração", href: "/admin/configuracao", icon: <Settings size={20} /> },
+  { label: "Coletas",     href: "/admin/coleta",       icon: Truck      },
+  { label: "Triagem",     href: "/admin/triagem",      icon: Search     },
+  { label: "Manutenção",  href: "/admin/manutencao",   icon: Wrench     },
+  { label: "Estoque",     href: "/admin/estoque",      icon: Archive    },
+  { label: "Faturamento", href: "/admin/faturamento",  icon: FileText   },
+  { label: "Relatórios",  href: "/admin/relatorios",   icon: BarChart2  },
+  { label: "Configuração",href: "/admin/configuracao", icon: Settings   },
 ];
 
+// ─── NavLink — used in both desktop and mobile ────────────────────────────────
+function NavLink({
+  item,
+  isActive,
+  onClick,
+}: {
+  item: (typeof navItems)[number];
+  isActive: boolean;
+  onClick?: () => void;
+}) {
+  const Icon = item.icon;
+  return (
+    <Link
+      href={item.href}
+      onClick={onClick}
+      className={`
+        group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
+        transition-all duration-150
+        ${
+          isActive
+            ? "bg-[var(--ivani-primary)] text-white shadow-sm"
+            : "text-[var(--ivani-muted)] hover:bg-[var(--ivani-bg)] hover:text-[var(--ivani-text)]"
+        }
+      `}
+    >
+      <Icon
+        size={17}
+        className={`flex-shrink-0 transition-transform ${isActive ? "" : "group-hover:scale-110"}`}
+      />
+      <span className="flex-1 truncate">{item.label}</span>
+      {isActive && <ChevronRight size={14} className="opacity-60" />}
+    </Link>
+  );
+}
+
+// ─── Logo Block ───────────────────────────────────────────────────────────────
+function LogoBlock() {
+  return (
+    <Link href="/admin/coleta" className="flex items-center gap-3 group">
+      <div className="w-9 h-9 rounded-xl bg-[var(--ivani-primary)] flex items-center justify-center shadow-sm flex-shrink-0 group-hover:scale-105 transition-transform">
+        <Package size={18} className="text-white" />
+      </div>
+      <div className="flex flex-col leading-none">
+        <span className="font-bold text-[var(--ivani-text)] text-sm tracking-tight font-display">
+          Portal Ivani
+        </span>
+        <span className="text-[10px] font-semibold text-[var(--ivani-muted)] uppercase tracking-widest">
+          Operação
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export function AdminSidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 bg-[#133020] border-r border-[#133020]/10 text-[#F8EDD9] h-screen shrink-0 sticky top-0 z-40">
-        <div className="h-20 flex items-center px-6 border-b border-[#F8EDD9]/10">
-          <Link href="/admin/coleta" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-[#DD5C36] rounded-xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-              <Package className="text-white" size={20} />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-bold text-sm tracking-tight text-white font-display">Portal Ivani</span>
-              <span className="text-[10px] font-bold text-[#F8EDD9]/50 uppercase tracking-widest">Operação</span>
-            </div>
-          </Link>
+      {/* ── Desktop Sidebar ──────────────────────────────────────────────────── */}
+      <aside className="hidden md:flex flex-col w-64 h-screen sticky top-0 z-40 floating-sidebar flex-shrink-0">
+        {/* Logo */}
+        <div className="h-16 flex items-center px-5 border-b border-[var(--ivani-border)]">
+          <LogoBlock />
         </div>
 
-        <nav className="flex-1 py-8 px-4 flex flex-col gap-2 overflow-y-auto">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-[#F8EDD9]/40 mb-2 px-2">Menu Principal</div>
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
-                  isActive
-                    ? "bg-[#DD5C36] text-white shadow-md shadow-[#DD5C36]/20"
-                    : "text-[#F8EDD9]/70 hover:bg-[#F8EDD9]/10 hover:text-white"
-                }`}
-              >
-                {item.icon}
-                {item.label}
-              </Link>
-            );
-          })}
+        {/* Nav */}
+        <nav className="flex-1 py-6 px-3 flex flex-col gap-1 overflow-y-auto">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--ivani-muted)] mb-3 px-3">
+            Menu Principal
+          </p>
+          {navItems.map((item) => (
+            <NavLink
+              key={item.href}
+              item={item}
+              isActive={pathname === item.href}
+            />
+          ))}
         </nav>
 
-        <div className="p-4 border-t border-[#F8EDD9]/10">
+        {/* Footer / Logout */}
+        <div className="p-3 border-t border-[var(--ivani-border)]">
+          {/* Version badge */}
+          <div className="px-3 py-2 mb-2 rounded-xl bg-[var(--ivani-bg)]">
+            <p className="text-xs font-medium text-[var(--ivani-muted)]">
+              Ivani Pallets
+            </p>
+            <p className="text-[10px] text-[var(--ivani-muted)] opacity-60 mt-0.5">
+              v2.1 · Sistema Operacional
+            </p>
+          </div>
           <form action={logout}>
             <button
               type="submit"
-              className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-semibold text-[#F8EDD9]/70 hover:bg-red-500/10 hover:text-red-400 transition-all"
+              className="
+                flex items-center gap-3 w-full px-3 py-2.5 rounded-xl
+                text-sm font-medium text-[var(--ivani-muted)]
+                hover:bg-red-50 hover:text-red-600
+                transition-all duration-150
+              "
             >
-              <LogOut size={20} />
+              <LogOut size={17} />
               Sair do Sistema
             </button>
           </form>
         </div>
       </aside>
 
-      {/* Mobile Header / Nav Toggle */}
-      <div className="md:hidden flex items-center justify-between h-16 bg-[#133020] px-4 sticky top-0 z-40 border-b border-[#F8EDD9]/10">
-        <Link href="/admin/coleta" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-[#DD5C36] rounded-lg flex items-center justify-center">
-            <Package className="text-white" size={16} />
-          </div>
-          <span className="font-bold text-sm text-white font-display">Portal Ivani</span>
-        </Link>
-        <button 
+      {/* ── Mobile Header ───────────────────────────────────────────────────── */}
+      <div className="md:hidden flex items-center justify-between h-14 bg-[var(--ivani-surface)] border-b border-[var(--ivani-border)] px-4 sticky top-0 z-40">
+        <LogoBlock />
+        <button
           onClick={() => setIsOpen(!isOpen)}
-          className="p-2 text-[#F8EDD9]/80 hover:bg-[#F8EDD9]/10 rounded-lg transition-colors"
+          className="p-2 text-[var(--ivani-muted)] hover:bg-[var(--ivani-bg)] rounded-lg transition-colors"
+          aria-label="Toggle navigation"
         >
-          {isOpen ? <X size={24} /> : <Menu size={24} />}
+          {isOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* ── Mobile Drawer ───────────────────────────────────────────────────── */}
       <AnimatePresence>
         {isOpen && (
           <>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-[#133020]/60 backdrop-blur-sm z-[60] md:hidden"
+              className="fixed inset-0 bg-[var(--ivani-text)]/20 backdrop-blur-sm z-[60] md:hidden"
             />
-            
-            <motion.div 
+
+            <motion.div
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed top-0 left-0 bottom-0 w-[280px] bg-[#133020] z-[70] md:hidden shadow-2xl border-r border-[#F8EDD9]/10 flex flex-col p-6"
+              transition={{ type: "spring", damping: 28, stiffness: 220 }}
+              className="fixed top-0 left-0 bottom-0 w-72 bg-[var(--ivani-surface)] z-[70] md:hidden shadow-2xl flex flex-col"
             >
-              <div className="flex justify-between items-center mb-8">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#DD5C36]">Navegação</span>
-                <button onClick={() => setIsOpen(false)} className="p-2 text-[#F8EDD9]/40 hover:text-white">
+              {/* Header */}
+              <div className="flex items-center justify-between h-16 px-5 border-b border-[var(--ivani-border)]">
+                <LogoBlock />
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="p-2 text-[var(--ivani-muted)] hover:bg-[var(--ivani-bg)] rounded-lg transition-colors"
+                >
                   <X size={20} />
                 </button>
               </div>
 
-              <div className="flex flex-col gap-2 overflow-y-auto pr-2 flex-1">
-                {navItems.map((item) => {
-                  const isActive = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setIsOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-4 rounded-2xl text-sm font-bold transition-all ${
-                        isActive
-                          ? "bg-[#DD5C36] text-white shadow-lg shadow-[#DD5C36]/20"
-                          : "text-[#F8EDD9]/70 hover:bg-[#F8EDD9]/10 hover:text-white"
-                      }`}
-                    >
-                      {item.icon}
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </div>
+              {/* Nav */}
+              <nav className="flex-1 overflow-y-auto py-6 px-3 flex flex-col gap-1">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--ivani-muted)] mb-3 px-3">
+                  Menu Principal
+                </p>
+                {navItems.map((item) => (
+                  <NavLink
+                    key={item.href}
+                    item={item}
+                    isActive={pathname === item.href}
+                    onClick={() => setIsOpen(false)}
+                  />
+                ))}
+              </nav>
 
-              <div className="mt-auto pt-6 border-t border-[#F8EDD9]/10">
+              {/* Logout */}
+              <div className="p-3 border-t border-[var(--ivani-border)]">
                 <form action={logout}>
                   <button
                     type="submit"
-                    className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-semibold text-[#F8EDD9]/70 hover:bg-red-500/10 hover:text-red-400 transition-all"
+                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-[var(--ivani-muted)] hover:bg-red-50 hover:text-red-600 transition-all"
                   >
-                    <LogOut size={20} />
-                    Sair
+                    <LogOut size={17} />
+                    Sair do Sistema
                   </button>
                 </form>
               </div>
@@ -155,6 +208,3 @@ export function AdminSidebar() {
     </>
   );
 }
-
-
-

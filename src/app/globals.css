@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
+/* ─── Editorial Design System ─────────────────────────────────── */
 :root {
+  /* New editorial palette */
   --ivani-bg: #F7F8F4;
   --ivani-surface: #FFFFFF;
   --ivani-border: #E6E9E2;
@@ -11,6 +13,13 @@
   --ivani-purple: #8D5BE8;
   --ivani-text: #1B1F1D;
   --ivani-muted: #667065;
+
+  /* Legacy aliases — keep old pages working */
+  --color-forest-fern: #327039;
+  --color-tilled-earth: #133020;
+  --color-wheat-field: #F0BE49;
+  --color-cherry-grove: #DD5C36;
+  --color-alabaster-hay: #F8EDD9;
 }
 
 html,
@@ -21,27 +30,62 @@ body {
   font-family: var(--font-poppins), system-ui, sans-serif;
 }
 
-/* Hand-drawn / Editorial utility classes */
+/* ─── Utility Classes ─────────────────────────────────────────── */
+
+/* Subtle hand-drawn / organic border effect */
 .hand-drawn-border {
   border: 1px solid var(--ivani-border);
   border-radius: 8px 12px 10px 8px / 12px 8px 10px 12px;
 }
 
+/* Soft elevation used on cards */
 .soft-shadow {
   box-shadow: 0 4px 20px -2px rgba(27, 31, 29, 0.05);
 }
 
+/* Main editorial card style */
 .editorial-card {
   background-color: var(--ivani-surface);
   border: 1px solid var(--ivani-border);
   border-radius: 20px;
   box-shadow: 0 4px 20px -2px rgba(27, 31, 29, 0.05);
-  transition: all 0.2s ease;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
+.editorial-card:hover {
+  box-shadow: 0 8px 32px -4px rgba(27, 31, 29, 0.08);
+}
+
+/* Floating sidebar (light, white) */
 .floating-sidebar {
   background-color: var(--ivani-surface);
   border-right: 1px solid var(--ivani-border);
-  border-radius: 0 24px 24px 0;
-  box-shadow: 4px 0 24px rgba(27, 31, 29, 0.02);
+  box-shadow: 2px 0 16px rgba(27, 31, 29, 0.03);
+}
+
+/* Legacy card-shadow used by tropical.tsx components */
+.card-shadow {
+  box-shadow: 0 4px 20px -2px rgba(27, 31, 29, 0.05);
+}
+
+/* ─── Typography ─────────────────────────────────────────────── */
+.font-display {
+  font-family: var(--font-poppins), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--ivani-border);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ivani-muted);
 }

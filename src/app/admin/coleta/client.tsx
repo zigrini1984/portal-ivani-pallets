@@ -25,7 +25,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { criarColeta, enviarColetaParaTriagem, salvarColeta } from "@/app/actions/coletas";
-import { PageShell, KPIGrid, KPICard, AppCard, AppButton, StatusBadge, EmptyState } from "@/components/ui/tropical";
+import { EditorialHeader, KpiCard, ActionButton, StatusBadge, EmptyState, FilterBar, DataTable } from "@/components/ui/editorial";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -189,19 +189,23 @@ export function AdminColetaClient({
   };
 
   return (
-    <PageShell hideHeader={false}
-      title="Painel de Coletas"
-      subtitle="Gerencie e encaminhe coletas recebidas da PCE."
-      actions={
-        <AppButton onClick={() => setIsModalOpen(true)} icon={<Plus size={16} />}>
-          Nova Coleta
-        </AppButton>
-      }
-    >
-        <KPIGrid>
-          <KPICard title="Total de Coletas" value={initialColetas.length} colorVariant="aqua" />
-          <KPICard title="Total de Pallets" value={totalPallets.toLocaleString("pt-BR")} colorVariant="orange" />
-        </KPIGrid>
+    <>
+      <div className="flex justify-between items-start mb-8">
+        <EditorialHeader 
+          title="Painel de Coletas"
+          subtitle="Gerencie e encaminhe coletas recebidas da PCE."
+        />
+        <ActionButton onClick={() => setIsModalOpen(true)}>
+          <div className="flex items-center gap-2">
+            <Plus size={16} /> Nova Coleta
+          </div>
+        </ActionButton>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <KpiCard title="Total de Coletas" value={initialColetas.length} />
+        <KpiCard title="Total de Pallets" value={totalPallets.toLocaleString("pt-BR")} />
+      </div>
 
         {error && (
           <div className="mb-8 bg-red-50 border border-red-100 rounded-3xl p-5 flex items-center gap-3">
@@ -210,10 +214,10 @@ export function AdminColetaClient({
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <FilterBar>
           <div className="relative flex-1 max-w-sm">
             <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-[#133020]/30"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--ivani-muted)]"
               size={18}
             />
             <input
@@ -221,66 +225,29 @@ export function AdminColetaClient({
               placeholder="Buscar por data, motorista, caminhão…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white border border-[#133020]/10 rounded-2xl text-sm font-bold text-[#133020] outline-none focus:ring-2 focus:ring-[#327039]/30 transition-all shadow-sm"
+              className="w-full pl-12 pr-4 py-3 bg-[var(--ivani-surface)] border border-[var(--ivani-border)] rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-[var(--ivani-primary)]/30 transition-all"
             />
           </div>
-          <button
+          <ActionButton
             onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
-            className="flex items-center gap-2 px-5 py-3 bg-white border border-[#133020]/10 rounded-2xl text-xs font-bold text-[#133020]/60 hover:bg-[#F8EDD9]/30 transition-all shadow-sm"
+            variant="outline"
           >
-            {sortDir === "desc" ? (
-              <ChevronDown size={16} />
-            ) : (
-              <ChevronUp size={16} />
-            )}
-            {sortDir === "desc" ? "Mais recentes" : "Mais antigas"}
-          </button>
-        </div>
+            <div className="flex items-center gap-2">
+              {sortDir === "desc" ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+              {sortDir === "desc" ? "Mais recentes" : "Mais antigas"}
+            </div>
+          </ActionButton>
+        </FilterBar>
 
         {!error && filtered.length === 0 && (
-          <AppCard>
-            <EmptyState 
-              icon={<Truck size={48} />}
-              title={search ? "Nenhum resultado encontrado" : "Sem coletas registradas"}
-              description={search ? "Tente ajustar o filtro de busca." : undefined}
-            />
-          </AppCard>
+          <EmptyState 
+            message={search ? "Nenhum resultado encontrado. Tente ajustar o filtro." : "Sem coletas registradas."}
+          />
         )}
 
         {!error && filtered.length > 0 && (
-          <AppCard>
-            <div className="overflow-x-auto min-h-[300px]">
-              <table className="w-full text-left border-collapse min-w-[900px]">
-                <thead>
-                  <tr className="bg-[#F8EDD9]/50 border-b border-[#133020]/5">
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#133020]/50">
-                      <div className="flex items-center gap-2">
-                        <Calendar size={14} />
-                        Data / NF
-                      </div>
-                    </th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#133020]/50">
-                      <div className="flex items-center gap-2">
-                        <Package size={14} />
-                        Qtd. Bruta
-                      </div>
-                    </th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#133020]/50">
-                      Transporte
-                    </th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#133020]/50">
-                      Status
-                    </th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#133020]/50">
-                      Observação
-                    </th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#133020]/50 text-right">
-                      Operacional
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y divide-[#133020]/5">
+          <div className="mb-6">
+            <DataTable headers={["Data / NF", "Qtd. Bruta", "Transporte", "Status", "Observação", "Operacional"]}>
                   <AnimatePresence>
                     {filtered.map((c, i) => {
                       const { label, type } = getStatusProps(c.status);
@@ -323,7 +290,7 @@ export function AdminColetaClient({
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <StatusBadge variant={type as any}>{label}</StatusBadge>
+                          <StatusBadge status={label} variant={type as any} />
                         </td>
                         <td className="px-6 py-4 text-xs font-bold text-[#133020]/50 max-w-[150px] truncate">
                           {c.observacao ?? (
@@ -333,14 +300,16 @@ export function AdminColetaClient({
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-3">
                             {/* Botão Principal: Enviar para Triagem */}
-                            <AppButton
+                            <ActionButton
                               onClick={() => handleUpdateStatus(c.id, "enviado_triagem")}
                               disabled={loadingRowId === c.id || c.status === "enviado_triagem"}
                               variant={c.status === "enviado_triagem" ? "secondary" : "primary"}
-                              icon={loadingRowId === c.id ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                             >
-                              {c.status === "enviado_triagem" ? "Na Triagem" : "Enviar p/ Triagem"}
-                            </AppButton>
+                              <div className="flex items-center gap-2 text-sm">
+                                {loadingRowId === c.id ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                                {c.status === "enviado_triagem" ? "Na Triagem" : "Enviar p/ Triagem"}
+                              </div>
+                            </ActionButton>
 
                             <div className="relative">
                               <button
@@ -379,16 +348,11 @@ export function AdminColetaClient({
                       </motion.tr>
                     )})}
                   </AnimatePresence>
-                </tbody>
-              </table>
+                </DataTable>
+            <div className="px-6 py-4 text-xs font-medium text-[var(--ivani-muted)] text-right">
+              {filtered.length} de {initialColetas.length} registros
             </div>
-
-            <div className="px-6 py-5 border-t border-[#133020]/5 bg-[#F8EDD9]/30 flex items-center justify-between">
-              <p className="text-[10px] font-bold text-[#133020]/40 uppercase tracking-widest">
-                {filtered.length} de {initialColetas.length} registros
-              </p>
-            </div>
-          </AppCard>
+          </div>
         )}
 
       <AnimatePresence>
@@ -507,30 +471,30 @@ export function AdminColetaClient({
                 </div>
 
                 <div className="mt-6 flex gap-4">
-                  <AppButton
+                  <ActionButton
                     type="button"
                     onClick={() => setIsModalOpen(false)}
                     disabled={isSubmitting}
-                    variant="secondary"
-                    className="flex-1"
+                    variant="outline"
                   >
                     Cancelar
-                  </AppButton>
-                  <AppButton
+                  </ActionButton>
+                  <ActionButton
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-[2]"
-                    icon={isSubmitting ? <Loader2 size={16} className="animate-spin" /> : undefined}
                   >
-                    {isSubmitting ? "Salvando..." : "Salvar Coleta"}
-                  </AppButton>
+                    <div className="flex items-center gap-2">
+                      {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : null}
+                      {isSubmitting ? "Salvando..." : "Salvar Coleta"}
+                    </div>
+                  </ActionButton>
                 </div>
               </form>
             </motion.div>
           </>
         )}
       </AnimatePresence>
-    </PageShell>
+    </>
   );
 }
 
