@@ -134,7 +134,7 @@ export function AdminManutencaoClient({
   }
 
   return (
-    <PageShell hideHeader={true} 
+    <PageShell hideHeader={false} 
       title="Manutenção e Reparos" 
       subtitle="Gerencie itens em reforma ou remanufatura vindos da triagem."
       actions={
@@ -157,17 +157,17 @@ export function AdminManutencaoClient({
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
           <AppCard className="p-4 flex items-center gap-4">
-             <div className="p-3 rounded-2xl bg-brand-orange/10 text-brand-orange"><Hammer size={20} /></div>
+             <div className="p-3 rounded-2xl bg-[#DD5C36]/10 text-[#DD5C36]"><Hammer size={20} /></div>
              <div>
-               <p className="text-[10px] font-black uppercase tracking-widest text-brand-mirage/60">Total Reforma</p>
-               <p className="text-2xl font-black text-brand-mirage">{stats.reforma} <span className="text-[10px] font-bold text-brand-mirage/40 uppercase">un</span></p>
+               <p className="text-[10px] font-black uppercase tracking-widest text-[#133020]/60">Total Reforma</p>
+               <p className="text-2xl font-black text-[#133020]">{stats.reforma} <span className="text-[10px] font-bold text-[#133020]/40 uppercase">un</span></p>
              </div>
           </AppCard>
           <AppCard className="p-4 flex items-center gap-4">
-             <div className="p-3 rounded-2xl bg-brand-mirage/5 text-brand-mirage"><Wrench size={20} /></div>
+             <div className="p-3 rounded-2xl bg-[#133020]/5 text-[#133020]"><Wrench size={20} /></div>
              <div>
-               <p className="text-[10px] font-black uppercase tracking-widest text-brand-mirage/60">Total Remanufatura</p>
-               <p className="text-2xl font-black text-brand-mirage">{stats.remanufatura} <span className="text-[10px] font-bold text-brand-mirage/40 uppercase">un</span></p>
+               <p className="text-[10px] font-black uppercase tracking-widest text-[#133020]/60">Total Remanufatura</p>
+               <p className="text-2xl font-black text-[#133020]">{stats.remanufatura} <span className="text-[10px] font-bold text-[#133020]/40 uppercase">un</span></p>
              </div>
           </AppCard>
         </div>
@@ -182,20 +182,20 @@ export function AdminManutencaoClient({
         {/* Filters */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="relative flex-1 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-mirage/30 group-focus-within:text-brand-orange transition-colors" size={20} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#133020]/30 group-focus-within:text-[#DD5C36] transition-colors" size={20} />
             <input type="text" placeholder="Buscar modelo de pallet..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-white border border-brand-mirage/10 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-brand-orange/10 transition-all shadow-sm font-medium text-brand-mirage" />
+              className="w-full pl-12 pr-4 py-4 bg-white border border-[#133020]/10 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-[#DD5C36]/10 transition-all shadow-sm font-medium text-[#133020]" />
           </div>
           
           <div className="relative min-w-[200px]">
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-              className="w-full appearance-none pl-4 pr-12 py-4 bg-white border border-brand-mirage/10 rounded-2xl text-sm font-bold outline-none cursor-pointer focus:border-brand-orange shadow-sm transition-all text-brand-mirage">
+              className="w-full appearance-none pl-4 pr-12 py-4 bg-white border border-[#133020]/10 rounded-2xl text-sm font-bold outline-none cursor-pointer focus:border-[#DD5C36] shadow-sm transition-all text-[#133020]">
               <option value="todos">Todos Status</option>
               <option value="pendente">Pendentes</option>
               <option value="em_andamento">Iniciados</option>
               <option value="concluida">Concluídos</option>
             </select>
-            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-mirage/30 pointer-events-none" size={18} />
+            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-[#133020]/30 pointer-events-none" size={18} />
           </div>
         </div>
 
@@ -211,31 +211,31 @@ export function AdminManutencaoClient({
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[800px]">
                 <thead>
-                  <tr className="bg-brand-sand/50 border-b border-brand-mirage/5">
-                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-brand-mirage/50">Modelo / Origem</th>
-                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-brand-mirage/50 text-center">Quantidade</th>
-                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-brand-mirage/50">Status / Tipo</th>
-                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-brand-mirage/50 text-right">Ações Operacionais</th>
+                  <tr className="bg-[#F8EDD9]/50 border-b border-[#133020]/5">
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-[#133020]/50">Modelo / Origem</th>
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-[#133020]/50 text-center">Quantidade</th>
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-[#133020]/50">Status / Tipo</th>
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-[#133020]/50 text-right">Ações Operacionais</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-brand-mirage/5">
+                <tbody className="divide-y divide-[#133020]/5">
                   <AnimatePresence>
                     {filteredList.map((item) => (
-                      <motion.tr key={item.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="hover:bg-brand-sand/30 transition-colors group">
+                      <motion.tr key={item.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="hover:bg-[#F8EDD9]/30 transition-colors group">
                         <td className="px-6 py-5">
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-brand-teal/10 flex items-center justify-center text-brand-teal group-hover:scale-110 transition-transform">
+                            <div className="w-12 h-12 rounded-2xl bg-[#327039]/10 flex items-center justify-center text-[#327039] group-hover:scale-110 transition-transform">
                               <Package size={24} />
                             </div>
                             <div>
-                              <p className="text-sm font-black text-brand-mirage">{item.modelo_nome_snapshot || "Modelo não informado"}</p>
-                              <p className="text-[10px] text-brand-mirage/50 font-bold uppercase tracking-widest mt-0.5">Triagem #{item.triagem_id?.split('-')[0]}</p>
+                              <p className="text-sm font-black text-[#133020]">{item.modelo_nome_snapshot || "Modelo não informado"}</p>
+                              <p className="text-[10px] text-[#133020]/50 font-bold uppercase tracking-widest mt-0.5">Triagem #{item.triagem_id?.split('-')[0]}</p>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-5 text-center">
-                          <span className="text-xl font-black text-brand-mirage">{item.quantidade}</span>
-                          <span className="text-[10px] font-bold text-brand-mirage/30 ml-1.5 uppercase tracking-widest">un</span>
+                          <span className="text-xl font-black text-[#133020]">{item.quantidade}</span>
+                          <span className="text-[10px] font-bold text-[#133020]/30 ml-1.5 uppercase tracking-widest">un</span>
                         </td>
                         <td className="px-6 py-5">
                           <div className="flex flex-col gap-2 items-start">
@@ -266,7 +266,7 @@ export function AdminManutencaoClient({
                             )}
 
                             {item.status === "concluida" && (
-                              <div className="flex items-center gap-2 px-4 py-3 bg-brand-mirage/5 text-brand-mirage/40 rounded-2xl text-[10px] font-black uppercase tracking-widest">
+                              <div className="flex items-center gap-2 px-4 py-3 bg-[#133020]/5 text-[#133020]/40 rounded-2xl text-[10px] font-black uppercase tracking-widest">
                                 <CheckCircle2 size={16} className="text-emerald-500" /> No Estoque
                               </div>
                             )}
@@ -283,3 +283,5 @@ export function AdminManutencaoClient({
     </PageShell>
   );
 }
+
+

@@ -22,7 +22,6 @@ import {
   Send
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { criarColeta, enviarColetaParaTriagem, salvarColeta } from "@/app/actions/coletas";
@@ -190,7 +189,7 @@ export function AdminColetaClient({
   };
 
   return (
-    <PageShell hideHeader={true}
+    <PageShell hideHeader={false}
       title="Painel de Coletas"
       subtitle="Gerencie e encaminhe coletas recebidas da PCE."
       actions={
@@ -214,7 +213,7 @@ export function AdminColetaClient({
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1 max-w-sm">
             <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-mirage/30"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-[#133020]/30"
               size={18}
             />
             <input
@@ -222,12 +221,12 @@ export function AdminColetaClient({
               placeholder="Buscar por data, motorista, caminhão…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white border border-brand-mirage/10 rounded-2xl text-sm font-bold text-brand-mirage outline-none focus:ring-2 focus:ring-brand-teal/30 transition-all shadow-sm"
+              className="w-full pl-12 pr-4 py-3 bg-white border border-[#133020]/10 rounded-2xl text-sm font-bold text-[#133020] outline-none focus:ring-2 focus:ring-[#327039]/30 transition-all shadow-sm"
             />
           </div>
           <button
             onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
-            className="flex items-center gap-2 px-5 py-3 bg-white border border-brand-mirage/10 rounded-2xl text-xs font-bold text-brand-mirage/60 hover:bg-brand-sand/30 transition-all shadow-sm"
+            className="flex items-center gap-2 px-5 py-3 bg-white border border-[#133020]/10 rounded-2xl text-xs font-bold text-[#133020]/60 hover:bg-[#F8EDD9]/30 transition-all shadow-sm"
           >
             {sortDir === "desc" ? (
               <ChevronDown size={16} />
@@ -253,35 +252,35 @@ export function AdminColetaClient({
             <div className="overflow-x-auto min-h-[300px]">
               <table className="w-full text-left border-collapse min-w-[900px]">
                 <thead>
-                  <tr className="bg-brand-sand/50 border-b border-brand-mirage/5">
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-brand-mirage/50">
+                  <tr className="bg-[#F8EDD9]/50 border-b border-[#133020]/5">
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#133020]/50">
                       <div className="flex items-center gap-2">
                         <Calendar size={14} />
                         Data / NF
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-brand-mirage/50">
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#133020]/50">
                       <div className="flex items-center gap-2">
                         <Package size={14} />
                         Qtd. Bruta
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-brand-mirage/50">
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#133020]/50">
                       Transporte
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-brand-mirage/50">
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#133020]/50">
                       Status
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-brand-mirage/50">
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#133020]/50">
                       Observação
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-brand-mirage/50 text-right">
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#133020]/50 text-right">
                       Operacional
                     </th>
                   </tr>
                 </thead>
 
-                <tbody className="divide-y divide-brand-mirage/5">
+                <tbody className="divide-y divide-[#133020]/5">
                   <AnimatePresence>
                     {filtered.map((c, i) => {
                       const { label, type } = getStatusProps(c.status);
@@ -291,34 +290,34 @@ export function AdminColetaClient({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: i * 0.03 }}
-                        className="hover:bg-brand-sand/30 transition-colors group"
+                        className="hover:bg-[#F8EDD9]/30 transition-colors group"
                       >
                         <td className="px-6 py-4">
                           <div className="flex flex-col">
-                            <span className="text-xs font-bold text-brand-mirage">
+                            <span className="text-xs font-bold text-[#133020]">
                               {formatDate(c.data_coleta)}
                             </span>
                             {c.nf_saida_pce && (
-                              <span className="text-[10px] text-brand-mirage/50 mt-1 font-bold uppercase tracking-widest">
+                              <span className="text-[10px] text-[#133020]/50 mt-1 font-bold uppercase tracking-widest">
                                 NF: {c.nf_saida_pce}
                               </span>
                             )}
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="text-sm font-black text-brand-mirage">
+                          <span className="text-sm font-black text-[#133020]">
                             {c.quantidade_material_bruto.toLocaleString("pt-BR")}
                           </span>
-                          <span className="text-[10px] text-brand-mirage/40 font-bold ml-1">
+                          <span className="text-[10px] text-[#133020]/40 font-bold ml-1">
                             un
                           </span>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-col">
-                            <span className="text-xs font-black text-brand-mirage/80">
+                            <span className="text-xs font-black text-[#133020]/80">
                               {c.motorista ?? "—"}
                             </span>
-                            <span className="text-[10px] text-brand-mirage/50 font-bold uppercase tracking-widest mt-1">
+                            <span className="text-[10px] text-[#133020]/50 font-bold uppercase tracking-widest mt-1">
                               {c.caminhao ?? "—"}
                             </span>
                           </div>
@@ -326,7 +325,7 @@ export function AdminColetaClient({
                         <td className="px-6 py-4">
                           <StatusBadge variant={type as any}>{label}</StatusBadge>
                         </td>
-                        <td className="px-6 py-4 text-xs font-bold text-brand-mirage/50 max-w-[150px] truncate">
+                        <td className="px-6 py-4 text-xs font-bold text-[#133020]/50 max-w-[150px] truncate">
                           {c.observacao ?? (
                             <span className="italic opacity-50">—</span>
                           )}
@@ -346,7 +345,7 @@ export function AdminColetaClient({
                             <div className="relative">
                               <button
                                 onClick={() => setOpenMenuId(openMenuId === c.id ? null : c.id)}
-                                className="p-2 text-brand-mirage/30 hover:bg-brand-mirage/5 hover:text-brand-mirage rounded-xl transition-colors"
+                                className="p-2 text-[#133020]/30 hover:bg-[#133020]/5 hover:text-[#133020] rounded-xl transition-colors"
                               >
                                 <MoreVertical size={16} />
                               </button>
@@ -357,11 +356,11 @@ export function AdminColetaClient({
                                   <motion.div 
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
-                                    className="absolute right-0 top-12 w-48 bg-white rounded-2xl shadow-xl border border-brand-mirage/10 py-2 z-20 flex flex-col"
+                                    className="absolute right-0 top-12 w-48 bg-white rounded-2xl shadow-xl border border-[#133020]/10 py-2 z-20 flex flex-col"
                                   >
                                     <button
                                       onClick={() => handleUpdateStatus(c.id, "manutencao")}
-                                      className="px-4 py-2.5 text-left text-xs font-bold text-brand-orange hover:bg-brand-orange/10 flex items-center gap-3 transition-colors"
+                                      className="px-4 py-2.5 text-left text-xs font-bold text-[#DD5C36] hover:bg-[#DD5C36]/10 flex items-center gap-3 transition-colors"
                                     >
                                       <Wrench size={16} /> Manutenção
                                     </button>
@@ -384,8 +383,8 @@ export function AdminColetaClient({
               </table>
             </div>
 
-            <div className="px-6 py-5 border-t border-brand-mirage/5 bg-brand-sand/30 flex items-center justify-between">
-              <p className="text-[10px] font-bold text-brand-mirage/40 uppercase tracking-widest">
+            <div className="px-6 py-5 border-t border-[#133020]/5 bg-[#F8EDD9]/30 flex items-center justify-between">
+              <p className="text-[10px] font-bold text-[#133020]/40 uppercase tracking-widest">
                 {filtered.length} de {initialColetas.length} registros
               </p>
             </div>
@@ -399,18 +398,18 @@ export function AdminColetaClient({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-brand-mirage/30 backdrop-blur-sm z-40"
+              className="fixed inset-0 bg-[#133020]/30 backdrop-blur-sm z-40"
               onClick={() => !isSubmitting && setIsModalOpen(false)}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-md bg-white rounded-3xl shadow-2xl border border-brand-mirage/10 z-50 overflow-hidden"
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-md bg-white rounded-3xl shadow-2xl border border-[#133020]/10 z-50 overflow-hidden"
             >
-              <div className="p-6 border-b border-brand-mirage/5 flex justify-between items-center bg-brand-sand/30">
-                <h2 className="text-lg font-bold text-brand-mirage flex items-center gap-3">
-                  <div className="w-10 h-10 bg-brand-teal/20 text-brand-teal rounded-xl flex items-center justify-center">
+              <div className="p-6 border-b border-[#133020]/5 flex justify-between items-center bg-[#F8EDD9]/30">
+                <h2 className="text-lg font-bold text-[#133020] flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[#327039]/20 text-[#327039] rounded-xl flex items-center justify-center">
                     <Plus size={18} />
                   </div>
                   Registrar Nova Coleta
@@ -418,7 +417,7 @@ export function AdminColetaClient({
                 <button
                   onClick={() => setIsModalOpen(false)}
                   disabled={isSubmitting}
-                  className="p-2 text-brand-mirage/30 hover:bg-white hover:text-brand-mirage rounded-xl transition-colors disabled:opacity-50"
+                  className="p-2 text-[#133020]/30 hover:bg-white hover:text-[#133020] rounded-xl transition-colors disabled:opacity-50"
                 >
                   <X size={20} />
                 </button>
@@ -427,7 +426,7 @@ export function AdminColetaClient({
               <form onSubmit={handleCreateColeta} className="p-6 flex flex-col gap-5 bg-[#FAFAFA]">
                 <div className="grid grid-cols-2 gap-5">
                   <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-brand-mirage/50">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#133020]/50">
                       Data da Coleta
                     </label>
                     <input
@@ -435,11 +434,11 @@ export function AdminColetaClient({
                       required
                       value={formData.data_coleta}
                       onChange={(e) => setFormData({ ...formData, data_coleta: e.target.value })}
-                      className="px-4 py-3 bg-white border border-brand-mirage/10 rounded-2xl text-sm font-bold text-brand-mirage outline-none focus:border-brand-teal/50 focus:ring-2 focus:ring-brand-teal/20 transition-all"
+                      className="px-4 py-3 bg-white border border-[#133020]/10 rounded-2xl text-sm font-bold text-[#133020] outline-none focus:border-[#327039]/50 focus:ring-2 focus:ring-[#327039]/20 transition-all"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-brand-mirage/50">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#133020]/50">
                       Qtd. Bruta
                     </label>
                     <input
@@ -449,13 +448,13 @@ export function AdminColetaClient({
                       placeholder="Ex: 100"
                       value={formData.quantidade_material_bruto}
                       onChange={(e) => setFormData({ ...formData, quantidade_material_bruto: e.target.value })}
-                      className="px-4 py-3 bg-white border border-brand-mirage/10 rounded-2xl text-sm font-bold text-brand-mirage outline-none focus:border-brand-teal/50 focus:ring-2 focus:ring-brand-teal/20 transition-all"
+                      className="px-4 py-3 bg-white border border-[#133020]/10 rounded-2xl text-sm font-bold text-[#133020] outline-none focus:border-[#327039]/50 focus:ring-2 focus:ring-[#327039]/20 transition-all"
                     />
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-brand-mirage/50">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-[#133020]/50">
                     NF Saída PCE
                   </label>
                   <input
@@ -463,13 +462,13 @@ export function AdminColetaClient({
                     placeholder="Número da Nota Fiscal"
                     value={formData.nf_saida_pce}
                     onChange={(e) => setFormData({ ...formData, nf_saida_pce: e.target.value })}
-                    className="px-4 py-3 bg-white border border-brand-mirage/10 rounded-2xl text-sm font-bold text-brand-mirage outline-none focus:border-brand-teal/50 focus:ring-2 focus:ring-brand-teal/20 transition-all"
+                    className="px-4 py-3 bg-white border border-[#133020]/10 rounded-2xl text-sm font-bold text-[#133020] outline-none focus:border-[#327039]/50 focus:ring-2 focus:ring-[#327039]/20 transition-all"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-5">
                   <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-brand-mirage/50">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#133020]/50">
                       Motorista
                     </label>
                     <input
@@ -477,11 +476,11 @@ export function AdminColetaClient({
                       placeholder="Nome do motorista"
                       value={formData.motorista}
                       onChange={(e) => setFormData({ ...formData, motorista: e.target.value })}
-                      className="px-4 py-3 bg-white border border-brand-mirage/10 rounded-2xl text-sm font-bold text-brand-mirage outline-none focus:border-brand-teal/50 focus:ring-2 focus:ring-brand-teal/20 transition-all"
+                      className="px-4 py-3 bg-white border border-[#133020]/10 rounded-2xl text-sm font-bold text-[#133020] outline-none focus:border-[#327039]/50 focus:ring-2 focus:ring-[#327039]/20 transition-all"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-brand-mirage/50">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#133020]/50">
                       Placa / Caminhão
                     </label>
                     <input
@@ -489,13 +488,13 @@ export function AdminColetaClient({
                       placeholder="Placa do veículo"
                       value={formData.caminhao}
                       onChange={(e) => setFormData({ ...formData, caminhao: e.target.value })}
-                      className="px-4 py-3 bg-white border border-brand-mirage/10 rounded-2xl text-sm font-bold text-brand-mirage outline-none focus:border-brand-teal/50 focus:ring-2 focus:ring-brand-teal/20 transition-all"
+                      className="px-4 py-3 bg-white border border-[#133020]/10 rounded-2xl text-sm font-bold text-[#133020] outline-none focus:border-[#327039]/50 focus:ring-2 focus:ring-[#327039]/20 transition-all"
                     />
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-brand-mirage/50">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-[#133020]/50">
                     Observação
                   </label>
                   <textarea
@@ -503,7 +502,7 @@ export function AdminColetaClient({
                     placeholder="Detalhes adicionais..."
                     value={formData.observacao}
                     onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
-                    className="px-4 py-4 bg-white border border-brand-mirage/10 rounded-2xl text-sm font-bold text-brand-mirage outline-none focus:border-brand-teal/50 focus:ring-2 focus:ring-brand-teal/20 resize-none transition-all"
+                    className="px-4 py-4 bg-white border border-[#133020]/10 rounded-2xl text-sm font-bold text-[#133020] outline-none focus:border-[#327039]/50 focus:ring-2 focus:ring-[#327039]/20 resize-none transition-all"
                   />
                 </div>
 
@@ -534,3 +533,5 @@ export function AdminColetaClient({
     </PageShell>
   );
 }
+
+

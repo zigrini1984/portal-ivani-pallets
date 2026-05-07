@@ -34,3 +34,5 @@ export default async function AdminFaturamentoPage() {
 
   return <AdminFaturamentoClient initialFaturamentos={fatData as any || []} initialSaidasPendentes={pendentes as any} />;
 }
+
+

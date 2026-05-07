@@ -32,8 +32,6 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { logout } from "@/app/actions/auth";
 import { LoadingPage } from "@/components/ui/loading-screen";
-import { AdminNav } from "@/components/admin/admin-nav";
-import { AdminPageHeader } from "@/components/admin/admin-page-header";
 
 import { PageShell, KPIGrid, KPICard, AppCard, AppButton, StatusBadge, EmptyState } from "@/components/ui/tropical";
 
@@ -55,10 +53,10 @@ interface Triagem {
 const DistributionBar = ({ label, value, total, color }: any) => (
   <div className="space-y-2">
     <div className="flex justify-between items-center text-[11px] font-bold">
-      <span className="text-brand-mirage/60 uppercase">{label}</span>
-      <span className="text-brand-mirage">{value} <span className="text-brand-mirage/30">({total > 0 ? ((value / total) * 100).toFixed(0) : 0}%)</span></span>
+      <span className="text-[#133020]/60 uppercase">{label}</span>
+      <span className="text-[#133020]">{value} <span className="text-[#133020]/30">({total > 0 ? ((value / total) * 100).toFixed(0) : 0}%)</span></span>
     </div>
-    <div className="h-2 w-full bg-brand-mirage/5 rounded-full overflow-hidden">
+    <div className="h-2 w-full bg-[#133020]/5 rounded-full overflow-hidden">
       <motion.div 
         initial={{ width: 0 }}
         animate={{ width: total > 0 ? `${(value / total) * 100}%` : '0%' }}
@@ -164,7 +162,7 @@ export function AdminRelatoriosClient({ initialTriagens }: AdminRelatoriosClient
   }
 
   return (
-    <PageShell hideHeader={true}
+    <PageShell hideHeader={false}
       title="Dashboard de Performance"
       subtitle="Visão holística da operação e impacto ambiental."
       actions={
@@ -177,19 +175,19 @@ export function AdminRelatoriosClient({ initialTriagens }: AdminRelatoriosClient
       <AppCard className="mb-10 p-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-3">
-            <label className="text-[10px] font-black uppercase text-brand-mirage/50 flex items-center gap-2 tracking-widest">
-              <Calendar size={14} className="text-brand-teal" /> Período
+            <label className="text-[10px] font-black uppercase text-[#133020]/50 flex items-center gap-2 tracking-widest">
+              <Calendar size={14} className="text-[#327039]" /> Período
             </label>
             <div className="flex gap-3">
-              <input type="date" onChange={(e) => setDateFilter(p => ({ ...p, start: e.target.value }))} className="flex-1 bg-white border border-brand-mirage/10 rounded-xl px-4 py-3 text-xs font-bold text-brand-mirage outline-none focus:ring-2 focus:ring-brand-teal/30 transition-all shadow-sm" />
-              <input type="date" onChange={(e) => setDateFilter(p => ({ ...p, end: e.target.value }))} className="flex-1 bg-white border border-brand-mirage/10 rounded-xl px-4 py-3 text-xs font-bold text-brand-mirage outline-none focus:ring-2 focus:ring-brand-teal/30 transition-all shadow-sm" />
+              <input type="date" onChange={(e) => setDateFilter(p => ({ ...p, start: e.target.value }))} className="flex-1 bg-white border border-[#133020]/10 rounded-xl px-4 py-3 text-xs font-bold text-[#133020] outline-none focus:ring-2 focus:ring-[#327039]/30 transition-all shadow-sm" />
+              <input type="date" onChange={(e) => setDateFilter(p => ({ ...p, end: e.target.value }))} className="flex-1 bg-white border border-[#133020]/10 rounded-xl px-4 py-3 text-xs font-bold text-[#133020] outline-none focus:ring-2 focus:ring-[#327039]/30 transition-all shadow-sm" />
             </div>
           </div>
           <div className="space-y-3">
-            <label className="text-[10px] font-black uppercase text-brand-mirage/50 flex items-center gap-2 tracking-widest">
-              <Activity size={14} className="text-brand-orange" /> Status da Triagem
+            <label className="text-[10px] font-black uppercase text-[#133020]/50 flex items-center gap-2 tracking-widest">
+              <Activity size={14} className="text-[#DD5C36]" /> Status da Triagem
             </label>
-            <select onChange={(e) => setStatusFilter(e.target.value)} className="w-full bg-white border border-brand-mirage/10 rounded-xl px-4 py-3 text-xs font-bold text-brand-mirage outline-none focus:ring-2 focus:ring-brand-teal/30 transition-all shadow-sm">
+            <select onChange={(e) => setStatusFilter(e.target.value)} className="w-full bg-white border border-[#133020]/10 rounded-xl px-4 py-3 text-xs font-bold text-[#133020] outline-none focus:ring-2 focus:ring-[#327039]/30 transition-all shadow-sm">
               <option value="todos">Todos os Status</option>
               <option value="em_triagem">Em Triagem</option>
               <option value="classificada">Classificada</option>
@@ -219,30 +217,30 @@ export function AdminRelatoriosClient({ initialTriagens }: AdminRelatoriosClient
         <AppCard className="lg:col-span-2">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h3 className="text-lg font-black text-brand-mirage">Eficiência de Triagem</h3>
-              <p className="text-[10px] text-brand-mirage/40 font-bold uppercase tracking-widest mt-1">Distribuição por Categoria de Recuperação</p>
+              <h3 className="text-lg font-black text-[#133020]">Eficiência de Triagem</h3>
+              <p className="text-[10px] text-[#133020]/40 font-bold uppercase tracking-widest mt-1">Distribuição por Categoria de Recuperação</p>
             </div>
-            <div className="w-12 h-12 bg-brand-teal/10 rounded-2xl flex items-center justify-center text-brand-teal">
+            <div className="w-12 h-12 bg-[#327039]/10 rounded-2xl flex items-center justify-center text-[#327039]">
               <PieChart size={24} />
             </div>
           </div>
           <div className="space-y-6">
-            <DistributionBar label="Reforma / Manutenção" value={stats.reforma} total={stats.totalPallets} color="bg-brand-orange" />
-            <DistributionBar label="Remanufatura Direta" value={stats.remanufatura} total={stats.totalPallets} color="bg-brand-teal" />
+            <DistributionBar label="Reforma / Manutenção" value={stats.reforma} total={stats.totalPallets} color="bg-[#DD5C36]" />
+            <DistributionBar label="Remanufatura Direta" value={stats.remanufatura} total={stats.totalPallets} color="bg-[#327039]" />
             <DistributionBar label="Compra pela Ivani" value={stats.compra} total={stats.totalPallets} color="bg-emerald-400" />
-            <DistributionBar label="Sucata / Descarte" value={stats.sucata} total={stats.totalPallets} color="bg-brand-mirage" />
+            <DistributionBar label="Sucata / Descarte" value={stats.sucata} total={stats.totalPallets} color="bg-[#133020]" />
           </div>
         </AppCard>
 
         {/* Impacto Ambiental */}
-        <AppCard className="bg-brand-sand/40 border-brand-sand">
+        <AppCard className="bg-[#F8EDD9]/40 border-[#F8EDD9]">
           <div className="flex items-center gap-4 mb-8">
             <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600">
               <Leaf size={24} />
             </div>
             <div>
-              <h3 className="text-lg font-black text-brand-mirage">Eco-Impacto</h3>
-              <p className="text-[10px] text-brand-mirage/40 font-bold uppercase tracking-widest mt-1">Contribuição Ambiental PCE</p>
+              <h3 className="text-lg font-black text-[#133020]">Eco-Impacto</h3>
+              <p className="text-[10px] text-[#133020]/40 font-bold uppercase tracking-widest mt-1">Contribuição Ambiental PCE</p>
             </div>
           </div>
           
@@ -252,8 +250,8 @@ export function AdminRelatoriosClient({ initialTriagens }: AdminRelatoriosClient
                 <Trees size={24} />
               </div>
               <div>
-                <span className="text-[10px] font-black text-brand-mirage/40 uppercase tracking-widest block mb-1">Madeira Recuperada</span>
-                <div className="text-2xl font-black text-brand-mirage">{stats.madeiraRecuperada} <span className="text-sm font-bold text-brand-mirage/40 ml-1">Toneladas</span></div>
+                <span className="text-[10px] font-black text-[#133020]/40 uppercase tracking-widest block mb-1">Madeira Recuperada</span>
+                <div className="text-2xl font-black text-[#133020]">{stats.madeiraRecuperada} <span className="text-sm font-bold text-[#133020]/40 ml-1">Toneladas</span></div>
               </div>
             </div>
 
@@ -262,13 +260,13 @@ export function AdminRelatoriosClient({ initialTriagens }: AdminRelatoriosClient
                 <Wind size={24} />
               </div>
               <div>
-                <span className="text-[10px] font-black text-brand-mirage/40 uppercase tracking-widest block mb-1">CO2 Evitado</span>
-                <div className="text-2xl font-black text-brand-mirage">{stats.co2Evitado} <span className="text-sm font-bold text-brand-mirage/40 ml-1">Toneladas</span></div>
+                <span className="text-[10px] font-black text-[#133020]/40 uppercase tracking-widest block mb-1">CO2 Evitado</span>
+                <div className="text-2xl font-black text-[#133020]">{stats.co2Evitado} <span className="text-sm font-bold text-[#133020]/40 ml-1">Toneladas</span></div>
               </div>
             </div>
 
-            <div className="mt-8 pt-8 border-t border-brand-mirage/5">
-              <p className="text-[10px] text-brand-mirage/40 font-bold tracking-wide italic leading-relaxed">
+            <div className="mt-8 pt-8 border-t border-[#133020]/5">
+              <p className="text-[10px] text-[#133020]/40 font-bold tracking-wide italic leading-relaxed">
                 * Cálculos baseados na economia média de 25kg de madeira virgem e 15kg de emissão de CO2 por pallet recuperado.
               </p>
             </div>
@@ -278,3 +276,5 @@ export function AdminRelatoriosClient({ initialTriagens }: AdminRelatoriosClient
     </PageShell>
   );
 }
+
+

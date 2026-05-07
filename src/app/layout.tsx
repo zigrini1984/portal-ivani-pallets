@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Outfit } from "next/font/google";
+import { Inter, Geist } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -7,9 +7,9 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-const outfit = Outfit({
+const geist = Geist({
   subsets: ["latin"],
-  variable: "--font-outfit",
+  variable: "--font-geist",
 });
 
 export const metadata: Metadata = {
@@ -23,8 +23,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${inter.variable} ${outfit.variable}`}>
-      <body className="antialiased">{children}</body>
+    <html lang="pt-BR" className={`${inter.variable} ${geist.variable}`}>
+      <body className="antialiased text-[#133020] bg-[#F8EDD9] min-h-screen">
+        {children}
+      </body>
     </html>
   );
 }
+
+

@@ -68,7 +68,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-bg-primary text-brand-mirage font-sans selection:bg-brand-teal/20 selection:text-brand-teal">
+    <main className="min-h-screen bg-[#F8EDD9] text-[#133020] font-sans selection:bg-[#327039]/20 selection:text-[#327039]">
       {/* Hero Section */}
       <section className="relative pt-12 pb-24 px-6 overflow-hidden">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -81,21 +81,21 @@ export default function Home() {
             className="flex flex-col"
           >
             <div className="flex items-center gap-2 mb-8">
-              <div className="w-10 h-10 bg-brand-teal rounded-xl flex items-center justify-center shadow-lg shadow-brand-teal/20">
+              <div className="w-10 h-10 bg-[#327039] rounded-xl flex items-center justify-center shadow-lg shadow-[#327039]/20">
                 <Package className="text-white" size={24} />
               </div>
-              <span className="font-display font-bold text-2xl tracking-tight text-brand-teal">Portal Ivani Pallets</span>
+              <span className="font-display font-bold text-2xl tracking-tight text-[#327039]">Portal Ivani Pallets</span>
             </div>
 
-            <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 text-xs font-bold tracking-widest uppercase border border-brand-teal/20 rounded-full bg-brand-teal/5 text-brand-teal w-fit">
+            <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 text-xs font-bold tracking-widest uppercase border border-[#327039]/20 rounded-full bg-[#327039]/5 text-[#327039] w-fit">
               Gestão inteligente de pallets usados
             </div>
 
             <h1 className="font-display text-5xl md:text-6xl font-extrabold mb-8 leading-[1.1] tracking-tight">
-              Transparência e economia na gestão de <span className="text-brand-teal">pallets usados</span>
+              Transparência e economia na gestão de <span className="text-[#327039]">pallets usados</span>
             </h1>
 
-            <p className="text-lg md:text-xl text-brand-mirage/70 mb-12 leading-relaxed max-w-xl">
+            <p className="text-lg md:text-xl text-[#133020]/70 mb-12 leading-relaxed max-w-xl">
               Acompanhe coletas, triagem, manutenção, estoque, entregas e faturamento em um portal simples, claro e feito para clientes da Ivani Pallets.
             </p>
 
@@ -104,7 +104,7 @@ export default function Home() {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full sm:w-auto px-10 py-5 bg-brand-teal hover:bg-[#1a6e74] text-white rounded-2xl font-bold flex items-center justify-center gap-3 transition-all shadow-xl shadow-brand-teal/20"
+                  className="w-full sm:w-auto px-10 py-5 bg-[#327039] hover:bg-[#1a6e74] text-white rounded-2xl font-bold flex items-center justify-center gap-3 transition-all shadow-xl shadow-[#327039]/20"
                 >
                   Acessar Portal <ArrowRight size={20} />
                 </motion.button>
@@ -112,7 +112,7 @@ export default function Home() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full sm:w-auto px-10 py-5 bg-white hover:bg-brand-orange/30 border border-brand-teal/10 rounded-2xl font-bold transition-all"
+                className="w-full sm:w-auto px-10 py-5 bg-white hover:bg-[#DD5C36]/30 border border-[#327039]/10 rounded-2xl font-bold transition-all"
               >
                 Conhecer o processo
               </motion.button>
@@ -126,15 +126,15 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="relative pointer-events-auto"
           >
-            <div className="bg-white p-8 md:p-10 rounded-[2.5rem] card-shadow border border-brand-orange relative z-10 pointer-events-auto">
+            <div className="bg-white p-8 md:p-10 rounded-[2.5rem] card-shadow border border-[#DD5C36] relative z-10 pointer-events-auto">
               <div className="text-center mb-10">
                 <h3 className="font-display text-2xl font-bold mb-2">Portal do Cliente</h3>
-                <p className="text-sm text-brand-mirage/50">Acompanhe seus pallets em tempo real</p>
+                <p className="text-sm text-[#133020]/50">Acompanhe seus pallets em tempo real</p>
               </div>
 
               <form onSubmit={handlePortalLogin} className="relative z-20 space-y-6 mb-10 pointer-events-auto">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-brand-mirage/40 mb-2 ml-1">E-mail</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#133020]/40 mb-2 ml-1">E-mail</label>
                   <input
                     name="email"
                     type="email"
@@ -144,11 +144,11 @@ export default function Home() {
                     disabled={portalLoading}
                     placeholder="exemplo@empresa.com.br"
                     autoComplete="email"
-                    className="w-full h-14 bg-brand-primary/50 border border-brand-orange rounded-2xl px-5 text-brand-mirage placeholder:text-brand-mirage/30 focus:outline-none focus:border-brand-teal/50 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="w-full h-14 bg-[#F8EDD9]/50 border border-[#DD5C36] rounded-2xl px-5 text-[#133020] placeholder:text-[#133020]/30 focus:outline-none focus:border-[#327039]/50 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-brand-mirage/40 mb-2 ml-1">Senha</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#133020]/40 mb-2 ml-1">Senha</label>
                   <input
                     name="password"
                     type="password"
@@ -158,7 +158,7 @@ export default function Home() {
                     disabled={portalLoading}
                     placeholder="************"
                     autoComplete="current-password"
-                    className="w-full h-14 bg-brand-primary/50 border border-brand-orange rounded-2xl px-5 text-brand-mirage placeholder:text-brand-mirage/30 focus:outline-none focus:border-brand-teal/50 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="w-full h-14 bg-[#F8EDD9]/50 border border-[#DD5C36] rounded-2xl px-5 text-[#133020] placeholder:text-[#133020]/30 focus:outline-none focus:border-[#327039]/50 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -171,7 +171,7 @@ export default function Home() {
                 <motion.button
                   type="submit"
                   disabled={portalLoading}
-                  className="w-full py-5 bg-brand-teal/10 text-brand-teal rounded-2xl font-bold border border-brand-teal/20 disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="w-full py-5 bg-[#327039]/10 text-[#327039] rounded-2xl font-bold border border-[#327039]/20 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {portalLoading ? "Entrando..." : "Entrar no Portal"}
                 </motion.button>
@@ -186,17 +186,17 @@ export default function Home() {
                   { icon: <ArrowRight size={14} />, label: "Entrega" },
                   { icon: <CreditCard size={14} />, label: "Faturamento" },
                 ].map((item, i) => (
-                  <div key={i} className="flex flex-col items-center gap-2 p-3 bg-brand-orange/20 rounded-xl">
-                    <div className="text-brand-teal">{item.icon}</div>
-                    <span className="text-[10px] font-bold uppercase tracking-tighter text-brand-mirage/60">{item.label}</span>
+                  <div key={i} className="flex flex-col items-center gap-2 p-3 bg-[#DD5C36]/20 rounded-xl">
+                    <div className="text-[#327039]">{item.icon}</div>
+                    <span className="text-[10px] font-bold uppercase tracking-tighter text-[#133020]/60">{item.label}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Elementos Decorativos */}
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-brand-yellow/20 blur-[60px] rounded-full pointer-events-none" />
-            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-brand-teal/10 blur-[60px] rounded-full pointer-events-none" />
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#F0BE49]/20 blur-[60px] rounded-full pointer-events-none" />
+            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-[#327039]/10 blur-[60px] rounded-full pointer-events-none" />
           </motion.div>
         </div>
       </section>
@@ -206,7 +206,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-20">
             <h2 className="font-display text-4xl font-bold mb-4 tracking-tight">Como funciona</h2>
-            <div className="w-20 h-1.5 bg-brand-yellow mx-auto rounded-full" />
+            <div className="w-20 h-1.5 bg-[#F0BE49] mx-auto rounded-full" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -221,13 +221,13 @@ export default function Home() {
               <motion.div
                 key={i}
                 whileHover={{ y: -5 }}
-                className="p-8 rounded-[2rem] bg-bg-primary border border-brand-orange/50 hover:border-brand-teal/30 transition-all group"
+                className="p-8 rounded-[2rem] bg-[#F8EDD9] border border-[#DD5C36]/50 hover:border-[#327039]/30 transition-all group"
               >
-                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-brand-teal mb-6 shadow-sm group-hover:bg-brand-teal group-hover:text-white transition-colors duration-500">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#327039] mb-6 shadow-sm group-hover:bg-[#327039] group-hover:text-white transition-colors duration-500">
                   {step.icon}
                 </div>
                 <h3 className="text-xl font-bold mb-3">{step.title}</h3>
-                <p className="text-brand-mirage/60 text-sm leading-relaxed">{step.desc}</p>
+                <p className="text-[#133020]/60 text-sm leading-relaxed">{step.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -239,21 +239,21 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-20">
             <h2 className="font-display text-4xl font-bold mb-4 tracking-tight">Por que isso importa para o cliente?</h2>
-            <p className="text-brand-mirage/50">Transparência que gera resultados reais.</p>
+            <p className="text-[#133020]/50">Transparência que gera resultados reais.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {[
-              { icon: <LayoutDashboard className="text-brand-teal" />, title: "Mais controle sobre os pallets", desc: "Acesse seu saldo e histórico a qualquer momento, sem planilhas confusas." },
-              { icon: <TrendingDown className="text-brand-brown" />, title: "Menos desperdício", desc: "Identificamos pallets que podem ser salvos, evitando descartes desnecessários." },
-              { icon: <Target className="text-brand-yellow" />, title: "Melhor aproveitamento", desc: "Sua operação roda com pallets recuperados que possuem o mesmo desempenho de novos." },
-              { icon: <ShieldCheck className="text-brand-teal" />, title: "Informações claras", desc: "Dados auditáveis para conferência de faturamento e fluxo de caixa." },
+              { icon: <LayoutDashboard className="text-[#327039]" />, title: "Mais controle sobre os pallets", desc: "Acesse seu saldo e histórico a qualquer momento, sem planilhas confusas." },
+              { icon: <TrendingDown className="text-[#133020]" />, title: "Menos desperdício", desc: "Identificamos pallets que podem ser salvos, evitando descartes desnecessários." },
+              { icon: <Target className="text-[#F0BE49]" />, title: "Melhor aproveitamento", desc: "Sua operação roda com pallets recuperados que possuem o mesmo desempenho de novos." },
+              { icon: <ShieldCheck className="text-[#327039]" />, title: "Informações claras", desc: "Dados auditáveis para conferência de faturamento e fluxo de caixa." },
             ].map((item, i) => (
-              <div key={i} className="flex gap-6 p-8 bg-white rounded-[2rem] card-shadow border border-brand-orange/20">
+              <div key={i} className="flex gap-6 p-8 bg-white rounded-[2rem] card-shadow border border-[#DD5C36]/20">
                 <div className="mt-1">{item.icon}</div>
                 <div>
                   <h4 className="text-lg font-bold mb-2">{item.title}</h4>
-                  <p className="text-brand-mirage/60 text-sm leading-relaxed">{item.desc}</p>
+                  <p className="text-[#133020]/60 text-sm leading-relaxed">{item.desc}</p>
                 </div>
               </div>
             ))}
@@ -262,7 +262,7 @@ export default function Home() {
       </section>
 
       {/* Seção Economia Circular */}
-      <section className="py-32 bg-brand-teal text-white px-6 relative overflow-hidden">
+      <section className="py-32 bg-[#327039] text-white px-6 relative overflow-hidden">
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <h2 className="font-display text-4xl font-bold mb-8 tracking-tight italic">Economia circular na prática</h2>
           <p className="text-xl md:text-2xl leading-relaxed font-medium text-white/90">
@@ -282,7 +282,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-20">
             <h2 className="font-display text-4xl font-bold mb-4 tracking-tight">Impacto ambiental da reutilização de pallets</h2>
-            <p className="text-brand-mirage/50 max-w-2xl mx-auto">
+            <p className="text-[#133020]/50 max-w-2xl mx-auto">
               A recuperação de pallets reduz o descarte de madeira e contribui para um ciclo mais sustentável. 
               Os indicadores abaixo representam estimativas baseadas na operação.
             </p>
@@ -291,22 +291,22 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               { 
-                icon: <Target className="text-brand-teal" />, 
+                icon: <Target className="text-[#327039]" />, 
                 title: "Menos árvores descartadas", 
                 desc: "A recuperação evita a necessidade de extrair novas matérias-primas da natureza constantemente." 
               },
               { 
-                icon: <Recycle className="text-brand-brown" />, 
+                icon: <Recycle className="text-[#133020]" />, 
                 title: "Redução de resíduos", 
                 desc: "Prolongamos a vida útil dos pallets, evitando que terminem em aterros ou descarte inadequado." 
               },
               { 
-                icon: <Truck className="text-brand-yellow" />, 
+                icon: <Truck className="text-[#F0BE49]" />, 
                 title: "Menor impacto logístico", 
                 desc: "A circulação otimizada de pallets usados diminui a necessidade de grandes transportes de carga nova." 
               },
               { 
-                icon: <CreditCard className="text-brand-teal" />, 
+                icon: <CreditCard className="text-[#327039]" />, 
                 title: "Economia para o cliente", 
                 desc: "O reaproveitamento reduz custos operacionais sem comprometer a segurança da carga." 
               },
@@ -314,13 +314,13 @@ export default function Home() {
               <motion.div
                 key={i}
                 whileHover={{ y: -5 }}
-                className="p-8 bg-white rounded-[2.5rem] card-shadow border border-brand-orange/20"
+                className="p-8 bg-white rounded-[2.5rem] card-shadow border border-[#DD5C36]/20"
               >
-                <div className="mb-6 p-4 bg-bg-primary rounded-2xl w-fit">
+                <div className="mb-6 p-4 bg-[#F8EDD9] rounded-2xl w-fit">
                   {card.icon}
                 </div>
                 <h4 className="text-lg font-bold mb-3">{card.title}</h4>
-                <p className="text-brand-mirage/60 text-sm leading-relaxed">{card.desc}</p>
+                <p className="text-[#133020]/60 text-sm leading-relaxed">{card.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -328,7 +328,7 @@ export default function Home() {
       </section>
 
       {/* Seção de Contato */}
-      <section className="py-20 px-6 bg-brand-orange/10">
+      <section className="py-20 px-6 bg-[#DD5C36]/10">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             {/* Coluna Esquerda: Texto Explicativo */}
@@ -337,13 +337,13 @@ export default function Home() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
             >
-              <div className="w-16 h-16 bg-brand-yellow/20 rounded-2xl flex items-center justify-center mb-8">
-                <MessageSquare className="text-brand-brown" size={32} />
+              <div className="w-16 h-16 bg-[#F0BE49]/20 rounded-2xl flex items-center justify-center mb-8">
+                <MessageSquare className="text-[#133020]" size={32} />
               </div>
               <h2 className="font-display text-4xl font-bold mb-6 tracking-tight">
                 Como podemos ajudar sua empresa?
               </h2>
-              <p className="text-lg text-brand-mirage/70 mb-10 leading-relaxed">
+              <p className="text-lg text-[#133020]/70 mb-10 leading-relaxed">
                 Atendemos empresas que precisam comprar, vender, coletar, recuperar ou organizar o fluxo de pallets usados com mais clareza e agilidade.
               </p>
               
@@ -355,8 +355,8 @@ export default function Home() {
                   "Recuperação e reaproveitamento",
                   "Gestão do fluxo de pallets"
                 ].map((item, idx) => (
-                  <li key={idx} className="flex items-center gap-4 text-brand-mirage/80 font-medium">
-                    <CheckCircle2 className="text-brand-teal shrink-0" size={24} />
+                  <li key={idx} className="flex items-center gap-4 text-[#133020]/80 font-medium">
+                    <CheckCircle2 className="text-[#327039] shrink-0" size={24} />
                     {item}
                   </li>
                 ))}
@@ -368,11 +368,11 @@ export default function Home() {
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="bg-white p-8 md:p-12 rounded-[3rem] card-shadow border border-brand-orange/20"
+              className="bg-white p-8 md:p-12 rounded-[3rem] card-shadow border border-[#DD5C36]/20"
             >
               <div className="mb-10">
                 <h3 className="text-2xl font-bold mb-2">Solicite um contato</h3>
-                <p className="text-sm text-brand-mirage/50">
+                <p className="text-sm text-[#133020]/50">
                   Preencha seus dados para conversarmos sobre sua operação.
                 </p>
               </div>
@@ -385,7 +385,7 @@ export default function Home() {
 
       {/* CTA Final Refatorado */}
       <section className="pb-32 px-6">
-        <div className="max-w-4xl mx-auto bg-brand-teal rounded-[3rem] p-12 md:p-16 text-center text-white relative overflow-hidden">
+        <div className="max-w-4xl mx-auto bg-[#327039] rounded-[3rem] p-12 md:p-16 text-center text-white relative overflow-hidden">
           <div className="relative z-10">
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-8 tracking-tight">
               Acompanhe sua operação com transparência
@@ -394,7 +394,7 @@ export default function Home() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-10 py-5 bg-white text-brand-teal rounded-2xl font-bold transition-all shadow-xl"
+                className="px-10 py-5 bg-white text-[#327039] rounded-2xl font-bold transition-all shadow-xl"
               >
                 Acessar Portal do Cliente
               </motion.button>
@@ -407,13 +407,13 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 border-t border-brand-orange/50 px-6">
+      <footer className="py-12 border-t border-[#DD5C36]/50 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:row justify-between items-center gap-8">
           <div className="flex items-center gap-2">
-            <Package className="text-brand-teal" size={24} />
-            <span className="font-display font-bold text-xl tracking-tight text-brand-mirage">Portal Ivani Pallets</span>
+            <Package className="text-[#327039]" size={24} />
+            <span className="font-display font-bold text-xl tracking-tight text-[#133020]">Portal Ivani Pallets</span>
           </div>
-          <div className="text-brand-mirage/40 text-xs font-bold tracking-widest uppercase">
+          <div className="text-[#133020]/40 text-xs font-bold tracking-widest uppercase">
             © {new Date().getFullYear()} Ivani Pallets — Feito para durar.
           </div>
         </div>
@@ -421,3 +421,5 @@ export default function Home() {
     </main>
   );
 }
+
+

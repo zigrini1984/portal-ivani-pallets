@@ -1,41 +1,74 @@
 @import "tailwindcss";
 
-@theme {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-
-  /* Premium SaaS Palette */
-  --color-brand-mirage: #16232A;
-  --color-brand-orange: #FF5B04;
-  --color-brand-teal: #075056;
-  --color-brand-sand: #E4EEF0;
-  
-  --color-bg-primary: #F8FAFB;
-  --color-text-dark: #1E293B;
-
-  --radius-xl: 1rem;
-  --radius-2xl: 1.5rem;
-  --radius-3xl: 2rem;
+:root {
+  --color-forest-fern: #327039;
+  --color-tilled-earth: #133020;
+  --color-wheat-field: #f0be49;
+  --color-cherry-grove: #dd5c36;
+  --color-alabaster-hay: #f8edd9;
+  --color-card: #ffffff;
+  --color-text: #133020;
+  --color-muted: rgba(19, 48, 32, 0.62);
 }
 
-@layer base {
-  :root {
-    --background: #F8FAFB;
-    --foreground: #16232A;
-  }
-
-  body {
-    color: var(--foreground);
-    background: var(--background);
-    font-family: var(--font-sans);
-  }
+html,
+body {
+  min-height: 100%;
+  background: var(--color-alabaster-hay);
+  color: var(--color-text);
 }
 
-@layer utilities {
-  .card-shadow {
-    box-shadow: 0 4px 20px -2px rgba(22, 35, 42, 0.05);
-  }
-  .glass-light {
-    @apply bg-white/70 backdrop-blur-lg border border-white/50;
-  }
+body {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.app-bg {
+  background: var(--color-alabaster-hay);
+}
+
+.app-sidebar {
+  background: var(--color-tilled-earth);
+}
+
+.app-card {
+  background: var(--color-card);
+  border: 1px solid rgba(19, 48, 32, 0.08);
+  border-radius: 28px;
+  box-shadow: 0 20px 50px rgba(19, 48, 32, 0.08);
+}
+
+.app-card-soft {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(19, 48, 32, 0.08);
+  border-radius: 24px;
+  box-shadow: 0 14px 34px rgba(19, 48, 32, 0.06);
+}
+
+.app-button-primary {
+  background: var(--color-cherry-grove);
+  color: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 12px 24px rgba(221, 92, 54, 0.22);
+}
+
+.app-button-primary:hover {
+  background: #c94f2f;
+}
+
+.app-button-secondary {
+  background: var(--color-tilled-earth);
+  color: #ffffff;
+  border-radius: 18px;
+}
+
+.app-badge-green {
+  background: rgba(50, 112, 57, 0.12);
+  color: var(--color-forest-fern);
+  border: 1px solid rgba(50, 112, 57, 0.18);
+}
+
+.app-badge-orange {
+  background: rgba(221, 92, 54, 0.12);
+  color: var(--color-cherry-grove);
+  border: 1px solid rgba(221, 92, 54, 0.18);
 }

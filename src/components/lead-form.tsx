@@ -76,33 +76,33 @@ export function LeadForm() {
       className="grid grid-cols-1 md:grid-cols-2 gap-6"
     >
       {state && (
-        <div className={`md:col-span-2 rounded-xl px-4 py-3 text-sm font-semibold ${state.success ? "bg-brand-teal/10 text-brand-teal border border-brand-teal/20" : "bg-red-50 text-red-700 border border-red-200"}`}>
+        <div className={`md:col-span-2 rounded-xl px-4 py-3 text-sm font-semibold ${state.success ? "bg-[#327039]/10 text-[#327039] border border-[#327039]/20" : "bg-red-50 text-red-700 border border-red-200"}`}>
           {state.success ? state.message : state.error}
         </div>
       )}
       <div className="md:col-span-1">
-        <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-mirage/40 mb-2 ml-1">Nome</label>
-        <input required name="nome" type="text" placeholder="Nome completo" className="w-full h-12 bg-bg-primary border border-brand-orange/30 rounded-xl px-4 focus:outline-none focus:border-brand-teal/50 transition-colors" />
+        <label className="block text-[10px] font-bold uppercase tracking-wider text-[#133020]/40 mb-2 ml-1">Nome</label>
+        <input required name="nome" type="text" placeholder="Nome completo" className="w-full h-12 bg-[#F8EDD9] border border-[#DD5C36]/30 rounded-xl px-4 focus:outline-none focus:border-[#327039]/50 transition-colors" />
       </div>
       <div className="md:col-span-1">
-        <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-mirage/40 mb-2 ml-1">Empresa</label>
-        <input required name="empresa" type="text" placeholder="Nome da empresa" className="w-full h-12 bg-bg-primary border border-brand-orange/30 rounded-xl px-4 focus:outline-none focus:border-brand-teal/50 transition-colors" />
+        <label className="block text-[10px] font-bold uppercase tracking-wider text-[#133020]/40 mb-2 ml-1">Empresa</label>
+        <input required name="empresa" type="text" placeholder="Nome da empresa" className="w-full h-12 bg-[#F8EDD9] border border-[#DD5C36]/30 rounded-xl px-4 focus:outline-none focus:border-[#327039]/50 transition-colors" />
       </div>
       <div className="md:col-span-1">
-        <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-mirage/40 mb-2 ml-1">WhatsApp</label>
-        <input required name="whatsapp" type="tel" placeholder="WhatsApp com DDD" className="w-full h-12 bg-bg-primary border border-brand-orange/30 rounded-xl px-4 focus:outline-none focus:border-brand-teal/50 transition-colors" />
+        <label className="block text-[10px] font-bold uppercase tracking-wider text-[#133020]/40 mb-2 ml-1">WhatsApp</label>
+        <input required name="whatsapp" type="tel" placeholder="WhatsApp com DDD" className="w-full h-12 bg-[#F8EDD9] border border-[#DD5C36]/30 rounded-xl px-4 focus:outline-none focus:border-[#327039]/50 transition-colors" />
       </div>
       <div className="md:col-span-1">
-        <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-mirage/40 mb-2 ml-1">E-mail</label>
-        <input required name="email" type="email" placeholder="email@empresa.com.br" className="w-full h-12 bg-bg-primary border border-brand-orange/30 rounded-xl px-4 focus:outline-none focus:border-brand-teal/50 transition-colors" />
+        <label className="block text-[10px] font-bold uppercase tracking-wider text-[#133020]/40 mb-2 ml-1">E-mail</label>
+        <input required name="email" type="email" placeholder="email@empresa.com.br" className="w-full h-12 bg-[#F8EDD9] border border-[#DD5C36]/30 rounded-xl px-4 focus:outline-none focus:border-[#327039]/50 transition-colors" />
       </div>
       <div className="md:col-span-2">
-        <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-mirage/40 mb-2 ml-1">Cidade</label>
-        <input required name="cidade" type="text" placeholder="Cidade / Estado" className="w-full h-12 bg-bg-primary border border-brand-orange/30 rounded-xl px-4 focus:outline-none focus:border-brand-teal/50 transition-colors" />
+        <label className="block text-[10px] font-bold uppercase tracking-wider text-[#133020]/40 mb-2 ml-1">Cidade</label>
+        <input required name="cidade" type="text" placeholder="Cidade / Estado" className="w-full h-12 bg-[#F8EDD9] border border-[#DD5C36]/30 rounded-xl px-4 focus:outline-none focus:border-[#327039]/50 transition-colors" />
       </div>
       <div className="md:col-span-2">
-        <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-mirage/40 mb-2 ml-1">Mensagem</label>
-        <textarea name="mensagem" rows={3} placeholder="Escreva brevemente como podemos ajudar" className="w-full bg-bg-primary border border-brand-orange/30 rounded-xl px-4 py-3 focus:outline-none focus:border-brand-teal/50 transition-colors resize-none"></textarea>
+        <label className="block text-[10px] font-bold uppercase tracking-wider text-[#133020]/40 mb-2 ml-1">Mensagem</label>
+        <textarea name="mensagem" rows={3} placeholder="Escreva brevemente como podemos ajudar" className="w-full bg-[#F8EDD9] border border-[#DD5C36]/30 rounded-xl px-4 py-3 focus:outline-none focus:border-[#327039]/50 transition-colors resize-none"></textarea>
       </div>
       
       <div className="md:col-span-2 mt-4">
@@ -110,7 +110,7 @@ export function LeadForm() {
           disabled={isPending}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className={`w-full py-5 text-white rounded-2xl font-bold transition-all shadow-lg shadow-brand-teal/20 ${isPending ? "bg-brand-teal/50 cursor-not-allowed" : "bg-brand-teal hover:bg-[#1a6e74]"}`}
+          className={`w-full py-5 text-white rounded-2xl font-bold transition-all shadow-lg shadow-[#327039]/20 ${isPending ? "bg-[#327039]/50 cursor-not-allowed" : "bg-[#327039] hover:bg-[#1a6e74]"}`}
         >
           {isPending ? "Enviando..." : "Solicitar contato agora"}
         </motion.button>
@@ -118,3 +118,5 @@ export function LeadForm() {
     </form>
   );
 }
+
+

@@ -3,13 +3,13 @@ import { motion } from "framer-motion";
 
 export function PageShell({ children, title, subtitle, actions, hideHeader = false }: { children: React.ReactNode, title: string, subtitle?: string, actions?: React.ReactNode, hideHeader?: boolean }) {
   return (
-    <div className="min-h-screen bg-brand-sand/30 text-brand-mirage pb-20">
+    <div className="min-h-screen bg-[#F8EDD9] text-[#133020] pb-20 font-sans">
       {!hideHeader && (
-        <header className="bg-white border-b border-brand-mirage/5 sticky top-0 z-30 shadow-sm">
+        <header className="bg-[#F8EDD9]/80 backdrop-blur-md border-b border-[#133020]/5 sticky top-0 z-30">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-brand-mirage">{title}</h1>
-              {subtitle && <p className="text-sm text-brand-mirage/60 font-medium">{subtitle}</p>}
+              <h1 className="text-2xl font-bold tracking-tight text-[#133020] font-display">{title}</h1>
+              {subtitle && <p className="text-sm text-[#133020]/60 font-medium">{subtitle}</p>}
             </div>
             {actions && <div className="flex items-center gap-3">{actions}</div>}
           </div>
@@ -25,10 +25,10 @@ export function PageShell({ children, title, subtitle, actions, hideHeader = fal
 export function SectionHeader({ title, description, icon }: { title: string, description?: string, icon?: React.ReactNode }) {
   return (
     <div className="flex items-center gap-4 mb-6">
-      {icon && <div className="w-12 h-12 rounded-2xl bg-brand-teal/10 text-brand-teal flex items-center justify-center">{icon}</div>}
+      {icon && <div className="w-12 h-12 rounded-2xl bg-[#327039]/10 text-[#327039] flex items-center justify-center">{icon}</div>}
       <div>
-        <h2 className="text-xl font-bold text-brand-mirage">{title}</h2>
-        {description && <p className="text-sm text-brand-mirage/60">{description}</p>}
+        <h2 className="text-xl font-bold text-[#133020] font-display">{title}</h2>
+        {description && <p className="text-sm text-[#133020]/60">{description}</p>}
       </div>
     </div>
   );
@@ -45,25 +45,25 @@ export function KPIGrid({ children }: { children: React.ReactNode }) {
 export function KPICard({ title, value, unit, icon, colorVariant = "default", description }: { title: string, value: string | number, unit?: string, icon?: React.ReactNode, colorVariant?: "default" | "orange" | "aqua" | "jasmine" | "indigo" | "primary" | "floral" | "cream", description?: string }) {
   // Mapping old tropical variants to new premium ones
   const colors = {
-    default: "bg-white border-brand-mirage/10 text-brand-mirage",
-    orange: "bg-white border-brand-orange/20 text-brand-orange shadow-sm",
-    aqua: "bg-white border-brand-teal/20 text-brand-teal shadow-sm",
-    jasmine: "bg-white border-brand-mirage/10 text-amber-700 shadow-sm",
-    indigo: "bg-brand-mirage text-white shadow-md",
-    primary: "bg-white border-emerald-200 text-emerald-700 shadow-sm",
-    floral: "bg-brand-sand/50 border-brand-mirage/10 text-brand-mirage",
-    cream: "bg-white border-brand-mirage/5 text-brand-mirage shadow-sm",
+    default: "bg-white border-[#133020]/10 text-[#133020]",
+    orange: "bg-white border-[#DD5C36]/20 text-[#DD5C36] shadow-sm",
+    aqua: "bg-white border-[#327039]/20 text-[#327039] shadow-sm",
+    jasmine: "bg-white border-[#F0BE49]/30 text-[#133020] shadow-sm",
+    indigo: "bg-[#133020] text-[#F8EDD9] shadow-md border-[#327039]/20",
+    primary: "bg-white border-[#327039]/20 text-[#327039] shadow-sm",
+    floral: "bg-[#F8EDD9]/50 border-[#133020]/10 text-[#133020]",
+    cream: "bg-white border-[#133020]/5 text-[#133020] shadow-sm",
   };
   
   const iconColors = {
-    default: "bg-brand-mirage/5 text-brand-mirage",
-    orange: "bg-brand-orange/10 text-brand-orange",
-    aqua: "bg-brand-teal/10 text-brand-teal",
-    jasmine: "bg-amber-50 text-amber-600",
-    indigo: "bg-white/10 text-white",
-    primary: "bg-emerald-50 text-emerald-600",
-    floral: "bg-brand-mirage/5 text-brand-mirage",
-    cream: "bg-brand-mirage/5 text-brand-mirage",
+    default: "bg-[#133020]/5 text-[#133020]",
+    orange: "bg-[#DD5C36]/10 text-[#DD5C36]",
+    aqua: "bg-[#327039]/10 text-[#327039]",
+    jasmine: "bg-[#F0BE49]/20 text-[#133020]",
+    indigo: "bg-[#327039]/20 text-[#F8EDD9]",
+    primary: "bg-[#327039]/10 text-[#327039]",
+    floral: "bg-[#133020]/5 text-[#133020]",
+    cream: "bg-[#133020]/5 text-[#133020]",
   };
 
   return (
@@ -88,7 +88,7 @@ export function KPICard({ title, value, unit, icon, colorVariant = "default", de
 
 export function AppCard({ children, className = "", noPadding = false }: { children: React.ReactNode, className?: string, noPadding?: boolean }) {
   return (
-    <div className={`bg-white rounded-2xl border border-brand-mirage/10 card-shadow overflow-hidden ${noPadding ? 'p-0' : 'p-6'} ${className}`}>
+    <div className={`bg-white rounded-2xl border border-[#133020]/10 card-shadow overflow-hidden ${noPadding ? 'p-0' : 'p-6'} ${className}`}>
       {children}
     </div>
   );
@@ -96,10 +96,10 @@ export function AppCard({ children, className = "", noPadding = false }: { child
 
 export function StatusBadge({ children, variant = "default" }: { children: React.ReactNode, variant?: "success" | "warning" | "error" | "info" | "default" }) {
   const styles = {
-    success: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    warning: "bg-amber-50 text-amber-700 border-amber-200",
+    success: "bg-[#327039]/10 text-[#327039] border-[#327039]/20",
+    warning: "bg-[#F0BE49]/20 text-amber-700 border-[#F0BE49]/40",
     error: "bg-red-50 text-red-700 border-red-200",
-    info: "bg-brand-teal/10 text-brand-teal border-brand-teal/20",
+    info: "bg-blue-50 text-blue-700 border-blue-200",
     default: "bg-slate-50 text-slate-600 border-slate-200"
   };
 
@@ -113,9 +113,9 @@ export function StatusBadge({ children, variant = "default" }: { children: React
 export function EmptyState({ icon, title, description }: { icon: React.ReactNode, title: string, description?: string }) {
   return (
     <div className="py-20 text-center px-4 flex flex-col items-center">
-      <div className="text-brand-mirage/20 mb-4 bg-brand-sand/50 p-6 rounded-full">{icon}</div>
-      <h3 className="text-lg font-bold text-brand-mirage">{title}</h3>
-      {description && <p className="text-sm text-brand-mirage/60 mt-2 max-w-sm">{description}</p>}
+      <div className="text-[#133020]/30 mb-4 bg-[#133020]/5 p-6 rounded-full">{icon}</div>
+      <h3 className="text-lg font-bold text-[#133020] font-display">{title}</h3>
+      {description && <p className="text-sm text-[#133020]/60 mt-2 max-w-sm">{description}</p>}
     </div>
   );
 }
@@ -130,10 +130,10 @@ export function AppButton({ children, onClick, variant = "primary", disabled = f
   const base = "flex items-center justify-center gap-2 font-semibold transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed";
   
   const variants = {
-    primary: "bg-brand-orange text-white hover:bg-[#E04F00] border border-transparent",
-    secondary: "bg-white border border-brand-mirage/20 text-brand-mirage hover:bg-brand-mirage/5",
+    primary: "bg-[#DD5C36] text-white hover:bg-[#C04928] border border-transparent",
+    secondary: "bg-white border border-[#133020]/20 text-[#133020] hover:bg-[#133020]/5",
     danger: "bg-red-50 border border-red-100 text-red-600 hover:bg-red-100",
-    ghost: "bg-transparent border-transparent text-brand-mirage/70 hover:bg-brand-mirage/5 hover:text-brand-mirage shadow-none"
+    ghost: "bg-transparent border-transparent text-[#133020]/70 hover:bg-[#133020]/5 hover:text-[#133020] shadow-none"
   };
 
   return (
@@ -143,4 +143,6 @@ export function AppButton({ children, onClick, variant = "primary", disabled = f
     </button>
   );
 }
+
+
 
