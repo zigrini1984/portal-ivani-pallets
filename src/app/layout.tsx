@@ -9,8 +9,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Portal Ivani | Logistics & Pallet Solutions",
-  description: "Elite logistics management and sustainable pallet solutions for high-performance operations.",
+  title: "Portal Ivani | Logística & Gestão de Ativos",
+  description: "Gestão logística de alta performance e soluções sustentáveis para movimentação de cargas.",
 };
 
 export default function RootLayout({
