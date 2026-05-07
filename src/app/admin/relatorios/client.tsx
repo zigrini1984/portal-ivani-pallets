@@ -145,9 +145,9 @@ export function AdminRelatoriosClient({ initialTriagens }: AdminRelatoriosClient
   return (
     <div className="max-w-[1200px] mx-auto">
       <BicPenBanner 
-        title="Performance Analítica"
-        subtitle="Consolidado de eficiência operacional e impacto sustentável gerado através da recuperação de pallets."
-        image="/branding/banner-esg.png"
+        title="Relatórios Executivos" 
+        subtitle="Análise de performance operacional, volumes processados e indicadores ESG."
+        image="/branding/banner-relatorios-v2.png"
       />
 
       <div className="flex justify-end mb-10">

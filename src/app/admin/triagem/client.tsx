@@ -178,7 +178,7 @@ export function AdminTriagemClient({ initialTriagens, initialModelosPallets, ser
       <BicPenBanner 
         title="Painel de Triagem"
         subtitle="Analise o estado das cargas recebidas e direcione cada unidade para reforma, remanufatura ou estoque."
-        image="/branding/banner-operacao.png"
+        image="/branding/banner-triagem-v2.png"
       />
 
       {/* ── KPI Grid ─────────────────────────────────────────────────────── */}

@@ -130,9 +130,9 @@ export function AdminManutencaoClient({
   return (
     <div className="max-w-[1200px] mx-auto">
       <BicPenBanner 
-        title="Manutenção e Reparos"
-        subtitle="Gestão operacional de itens em reforma ou remanufatura vindos da triagem para restauração de estoque."
-        image="/branding/banner-operacao.png"
+        title="Manutenção e Reparos" 
+        subtitle="Gestão operacional de itens em reforma ou remanufatura vindos da triagem."
+        image="/branding/banner-manutencao-v2.png"
       />
 
       <div className="flex justify-end items-center gap-3 mb-10">

@@ -231,9 +231,9 @@ export function AdminFaturamentoClient({ initialFaturamentos, initialSaidasPende
     <div className="max-w-[1200px] mx-auto">
       {/* ── Page Header ──────────────────────────────────────────────────── */}
       <BicPenBanner 
-        title="Faturamento PCE"
-        subtitle="Gestão de recebíveis originados de saídas de estoque. Visão simplificada de parcelas e vencimentos."
-        image="/branding/banner-esg.png"
+        title="Controle de Faturamento" 
+        subtitle="Gestão de notas fiscais, volumes expedidos e histórico financeiro operacional."
+        image="/branding/banner-faturamento-v2.png"
       />
 
       <div className="flex justify-end mb-10">
