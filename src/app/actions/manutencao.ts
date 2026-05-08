@@ -96,14 +96,25 @@ export async function gerarManutencoesDaTriagem(triagemId: string) {
       }
     }
 
-    // 4. Fallback
+    // 4. Fallback para triagens sem detalhamento de modelos
     if (manutItems.length === 0) {
+      // Tentar encontrar o ID do modelo PBR Padrão como fallback para o "Modelo Geral"
+      const { data: defaultModel } = await supabase
+        .from("modelos_pallets")
+        .select("id")
+        .ilike("nome", "%PBR%Padrao%")
+        .limit(1);
+      
+      const defaultId = defaultModel?.[0]?.id || null;
+
       if ((triagem.quantidade_manutencao || 0) > 0) {
         const qty = triagem.quantidade_manutencao;
         manutItems.push({
           triagem_id: triagemId,
           coleta_id: triagem.coleta_id,
           cliente_id: clienteId,
+          modelo_id: defaultId,
+          modelo_pallet_id: defaultId,
           modelo_nome_snapshot: "Modelo Geral (Reforma)",
           tipo_servico: "reforma",
           quantidade: qty,
@@ -117,6 +128,8 @@ export async function gerarManutencoesDaTriagem(triagemId: string) {
           triagem_id: triagemId,
           coleta_id: triagem.coleta_id,
           cliente_id: clienteId,
+          modelo_id: defaultId,
+          modelo_pallet_id: defaultId,
           modelo_nome_snapshot: "Modelo Geral (Remanufatura)",
           tipo_servico: "remanufatura",
           quantidade: qty,
@@ -267,20 +280,47 @@ export async function concluirManutencao(manutencaoId: string) {
 
     // 3. Atualizar Estoque Acumulado (estoque_pallets)
     const clienteId = manut.cliente_id || "pce";
+    let finalModeloId = manut.modelo_pallet_id || manut.modelo_id;
+
+    // Recuperação de ID caso esteja nulo (essencial para evitar erro de constraint)
+    if (!finalModeloId) {
+      console.log(`[concluirManutencao] Modelo ID nulo para '${manut.modelo_nome_snapshot}'. Tentando recuperar...`);
+      
+      // 1. Tentar buscar por nome exato
+      const { data: modelByName } = await supabase
+        .from("modelos_pallets")
+        .select("id")
+        .eq("nome", manut.modelo_nome_snapshot)
+        .limit(1);
+      
+      if (modelByName?.[0]) {
+        finalModeloId = modelByName[0].id;
+      } else {
+        // 2. Fallback final para Pallet PBR Padrão se for "Modelo Geral" ou desconhecido
+        const { data: defaultModel } = await supabase
+          .from("modelos_pallets")
+          .select("id")
+          .ilike("nome", "%PBR%Padrao%")
+          .limit(1);
+        
+        finalModeloId = defaultModel?.[0]?.id;
+        
+        if (!finalModeloId) {
+          return { success: false, error: "Não foi possível encontrar um modelo de pallet válido para esta manutenção. Por favor, associe um modelo antes de concluir." };
+        }
+        
+        console.warn(`[concluirManutencao] Usando fallback PBR para '${manut.modelo_nome_snapshot}'`);
+      }
+    }
     
     // Tenta encontrar estoque existente por modelo
-    let query = supabase
+    const { data: estData, error: estError } = await supabase
       .from("estoque_pallets")
       .select("id, quantidade")
-      .eq("cliente_id", clienteId);
+      .eq("cliente_id", clienteId)
+      .eq("modelo_pallet_id", finalModeloId)
+      .limit(1);
 
-    if (manut.modelo_id || manut.modelo_pallet_id) {
-      query = query.or(`modelo_id.eq.${manut.modelo_id},modelo_pallet_id.eq.${manut.modelo_pallet_id || manut.modelo_id}`);
-    } else {
-      query = query.eq("modelo_nome_snapshot", manut.modelo_nome_snapshot);
-    }
-
-    const { data: estData, error: estError } = await query.limit(1);
     if (estError) throw estError;
 
     const estoqueExistente = estData?.[0];
@@ -303,8 +343,8 @@ export async function concluirManutencao(manutencaoId: string) {
         .from("estoque_pallets")
         .insert({
           cliente_id: clienteId,
-          modelo_id: manut.modelo_pallet_id || manut.modelo_id,
-          modelo_pallet_id: manut.modelo_pallet_id || manut.modelo_id,
+          modelo_id: finalModeloId,
+          modelo_pallet_id: finalModeloId,
           modelo_nome_snapshot: manut.modelo_nome_snapshot,
           quantidade: qtyFinal,
           quantidade_disponivel: qtyFinal,
