@@ -68,7 +68,6 @@ export async function classificarTriagem(input: ClassificarTriagemInput) {
     }
 
     const novoStatus = input.finalizar ? "concluida" : "em_andamento";
-    const triadoEm = input.finalizar ? new Date().toISOString() : null;
 
     // 3. Atualizar triagem
     const updateData: any = {
