@@ -81,9 +81,7 @@ export async function classificarTriagem(input: ClassificarTriagemInput) {
       updated_at: new Date().toISOString()
     };
 
-    if (triadoEm) {
-      updateData.triado_em = triadoEm;
-    }
+    // Omitindo triado_em pois a coluna não existe no banco. updated_at servirá para rastrear a conclusão.
 
     const { error: updateError } = await supabase
       .from("triagens")
@@ -168,7 +166,7 @@ export async function getTriagemById(triagemId: string) {
 
     const { data, error } = await supabase
       .from("triagens")
-      .select("id, coleta_id, cliente_id, nf_saida_pce, motorista, caminhao, data_coleta, quantidade_total, quantidade_sucata, quantidade_manutencao, quantidade_remanufatura, quantidade_compra_ivani, status, observacao, created_at, triado_em")
+      .select("id, coleta_id, cliente_id, nf_saida_pce, motorista, caminhao, data_coleta, quantidade_total, quantidade_sucata, quantidade_manutencao, quantidade_remanufatura, quantidade_compra_ivani, status, observacao, created_at")
       .eq("id", triagemId);
 
     if (error) throw error;
