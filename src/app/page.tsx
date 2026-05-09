@@ -2,25 +2,19 @@
 
 import { motion } from "framer-motion";
 import React, { useState } from "react";
+import Image from "next/image";
 import { 
-  ArrowRight, 
-  Truck, 
-  ClipboardCheck, 
-  Hammer, 
   Package, 
-  FileInput, 
-  CreditCard,
-  Target,
-  ShieldCheck,
-  TrendingDown,
-  LayoutDashboard,
-  Recycle,
-  MessageSquare,
-  CheckCircle2,
-  Wrench,
-  Search,
-  User,
-  Leaf
+  Truck, 
+  Recycle, 
+  Search, 
+  Wrench, 
+  ClipboardCheck, 
+  Leaf, 
+  User, 
+  ShieldCheck, 
+  Menu,
+  X
 } from "lucide-react";
 import Link from "next/link";
 import { LeadForm } from "@/components/lead-form";
@@ -165,9 +159,11 @@ export default function Home() {
                 {/* Illustration Sketch Hint */}
                 <div className="mt-12 flex flex-col items-center opacity-40 group hover:opacity-100 transition-opacity duration-700">
                   <div className="relative">
-                    <img 
+                    <Image 
                       src="/ivani_pallet_sketch_hero_1778296434259.png" 
                       alt="Esboço de Pallet" 
+                      width={192}
+                      height={192}
                       className="w-48 h-auto grayscale group-hover:grayscale-0 transition-all duration-700"
                     />
                     <div className="absolute -top-4 -right-4">
@@ -186,9 +182,11 @@ export default function Home() {
           <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-24">
             <div className="lg:w-1/2 p-8 border-2 border-[#1A3A6B] rounded-[20px_255px_20px_225px/225px_20px_255px_20px] bg-white relative group overflow-hidden">
                <div className="aspect-video bg-[#21409A]/5 flex flex-col items-center justify-center relative p-12">
-                  <img 
+                  <Image 
                     src="/ivani_truck_sketch_about_1778296454406.png" 
                     alt="Caminhão Logística" 
+                    width={500}
+                    height={300}
                     className="w-full h-auto object-contain opacity-60 group-hover:opacity-100 transition-opacity duration-700"
                   />
                   <div className="absolute inset-0 border-2 border-dashed border-[#1A3A6B]/10 rounded-xl pointer-events-none" />
@@ -235,7 +233,7 @@ export default function Home() {
               ].map((step, idx) => (
                 <div key={idx} className="flex flex-col items-center text-center p-8 bg-white border-2 border-[#1A3A6B]/10 rounded-3xl hover:border-[#21409A] transition-all group hover:shadow-xl hover:shadow-[#21409A]/5">
                   <div className="w-20 h-20 border-2 border-dashed border-[#1A3A6B]/20 rounded-2xl flex items-center justify-center text-[#21409A] mb-8 group-hover:rotate-6 transition-transform">
-                    {React.cloneElement(step.icon as React.ReactElement, { size: 40, strokeWidth: 1 } as any)}
+                    {React.cloneElement(step.icon as React.ReactElement<{ size?: number; strokeWidth?: number }>, { size: 40, strokeWidth: 1 })}
                   </div>
                   <span className="text-2xl font-black text-[#E3702D] mb-2">{step.n}. {step.title}</span>
                   <p className="text-[11px] font-black leading-relaxed opacity-50 uppercase tracking-tighter">{step.desc}</p>
@@ -267,9 +265,11 @@ export default function Home() {
               ].map((prod, i) => (
                 <div key={i} className="bg-white p-6 border-2 border-[#1A3A6B]/10 rounded-[20px_50px_25px_40px/40px_25px_50px_20px] hover:border-[#21409A] transition-all group">
                   <div className="aspect-[4/3] bg-[#21409A]/5 rounded-2xl flex items-center justify-center mb-8 relative overflow-hidden p-6">
-                     <img 
+                     <Image 
                        src="/ivani_pallet_pbr_sketch_1778296492779.png" 
                        alt="Esboço de Pallet PBR" 
+                       width={300}
+                       height={200}
                        className="w-full h-auto object-contain opacity-40 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700"
                      />
                      <div className="absolute top-4 right-4 text-[8px] font-black opacity-20 tracking-widest">TECHNICAL SPEC V{i+1}</div>
@@ -290,9 +290,11 @@ export default function Home() {
                    <Recycle size={300} strokeWidth={0.1} className="text-[#3AA54C]/10" />
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center p-20">
-                   <img 
+                   <Image 
                      src="/ivani_globe_sketch_sustainability_1778296473224.png" 
                      alt="Sustentabilidade Globo" 
+                     width={400}
+                     height={400}
                      className="w-full h-auto object-contain opacity-80 animate-pulse"
                    />
                 </div>
