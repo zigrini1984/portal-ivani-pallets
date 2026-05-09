@@ -1,11 +1,27 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+import { Poppins, Outfit, Architects_Daughter, Raleway } from "next/font/google";
 import "./globals.css";
 
 const poppins = Poppins({
   weight: ["300", "400", "500", "600", "700"],
   subsets: ["latin"],
   variable: "--font-poppins",
+});
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  variable: "--font-outfit",
+});
+
+const architectsDaughter = Architects_Daughter({
+  weight: ["400"],
+  subsets: ["latin"],
+  variable: "--font-sketch",
+});
+
+const raleway = Raleway({
+  subsets: ["latin"],
+  variable: "--font-raleway",
 });
 
 export const metadata: Metadata = {
@@ -19,8 +35,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${poppins.variable}`}>
-      <body className="antialiased min-h-screen">
+    <html lang="pt-BR" className={`${poppins.variable} ${outfit.variable} ${architectsDaughter.variable} ${raleway.variable}`}>
+      <body className="antialiased min-h-screen font-sans">
         {children}
       </body>
     </html>

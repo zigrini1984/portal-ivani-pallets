@@ -59,13 +59,11 @@ export default function LoginPage() {
         </Link>
 
         <div className="bg-white p-10 rounded-[2rem] shadow-[0_4px_20px_-2px_rgba(22,35,42,0.05)] border border-[#133020]/5">
-          <div className="flex justify-center mb-8">
+          <div className="flex justify-center mb-6">
             <Link href="/">
-              <img 
-                src="/branding/logo-handwritten.png" 
-                alt="Ivani Pallets" 
-                className="h-28 w-auto object-contain mix-blend-multiply transition-transform hover:scale-105 duration-500"
-              />
+              <span className="font-display text-4xl font-black tracking-tighter text-[#327039]">
+                IVANI<span className="text-[#DD5C36]">.</span>PALLETS
+              </span>
             </Link>
           </div>
 
