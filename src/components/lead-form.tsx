@@ -64,15 +64,7 @@ export function LeadForm() {
 
   return (
     <form 
-      onSubmit={(e) => {
-        e.preventDefault();
-        console.log("CLIQUE FUNCIONOU");
-
-        fetch("/api/leads", {
-          method: "POST",
-          body: JSON.stringify({ teste: true }),
-        });
-      }}
+      onSubmit={handleSubmit}
       className="grid grid-cols-1 md:grid-cols-2 gap-6"
     >
       {state && (
@@ -107,6 +99,7 @@ export function LeadForm() {
       
       <div className="md:col-span-2 mt-4">
         <motion.button
+          type="submit"
           disabled={isPending}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}

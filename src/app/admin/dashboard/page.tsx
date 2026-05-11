@@ -131,8 +131,8 @@ export default async function AdminDashboardPage() {
                  <MapPin size={16} />
               </div>
               <div className="flex flex-col">
-                 <span className="text-[10px] font-black uppercase tracking-widest text-[var(--ivani-text)]">PCE Componentes</span>
-                 <span className="text-[8px] font-bold uppercase tracking-widest text-[var(--ivani-muted)] opacity-50">Cajamar, SP</span>
+                 <span className="text-[10px] font-black uppercase tracking-widest text-[var(--ivani-text)]">PCE</span>
+                 <span className="text-[8px] font-bold uppercase tracking-widest text-[var(--ivani-muted)] opacity-50">Itu, SP</span>
               </div>
               <ChevronRight size={16} className="text-[var(--ivani-muted)] opacity-30 ml-2" />
            </div>
@@ -220,7 +220,7 @@ export default async function AdminDashboardPage() {
                <StatCard 
                  label="Coletas no Mês" 
                  value={stats.coletas} 
-                 sub="Cargas recebidas em Cajamar" 
+                 sub="Cargas recebidas em Itu" 
                  icon={<Truck />} 
                  trend="+12%" 
                  color="var(--ivani-primary)"
@@ -272,7 +272,7 @@ export default async function AdminDashboardPage() {
                        <div className="flex-1 border-b border-[var(--ivani-border)]/30 pb-4">
                           <div className="flex justify-between items-start mb-1">
                              <h4 className="text-[11px] font-bold text-[var(--ivani-text)] uppercase tracking-tight">
-                               Triagem #{act.id.slice(0, 8)} - {act.status === 'concluida' ? 'Concluída' : 'Em Aberto'}
+                                Triagem #{act.id.slice(0, 8)} - {act.status === 'concluida' ? 'Concluída' : 'Em Aberto'}
                              </h4>
                              <span className="text-[9px] font-medium text-[var(--ivani-muted)] opacity-40">
                                 {new Date(act.data_coleta).toLocaleDateString('pt-BR')}
