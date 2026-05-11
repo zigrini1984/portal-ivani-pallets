@@ -2,234 +2,263 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { 
-  TrendingUp, TrendingDown, Minus, Package, Recycle, 
-  Leaf, Wallet, Clock, ArrowRight, BarChart3,
-  Calendar, CheckCircle2, AlertCircle, Ship,
-  Droplets, Globe, Zap, TreePine, Coins, Briefcase
+import {
+  TrendingUp, TrendingDown, Package2, RefreshCcw,
+  Leaf, BadgeDollarSign, Timer, Activity,
+  CalendarDays, ShieldCheck, Wind, Sprout,
+  Droplets, Layers, ArrowUpRight, Banknote,
+  Scale, LayoutGrid, Warehouse
 } from "lucide-react";
 import { DashboardKPIs } from "@/lib/kpis";
 
-const formatCurrency = (val: number) => 
+const formatCurrency = (val: number) =>
   val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const formatNumber = (val: number) => 
+const formatNumber = (val: number) =>
   val.toLocaleString("pt-BR");
 
-const MainKpiCard = ({ title, value, subtitle, icon: Icon, color, trend, chartData }: any) => (
-  <motion.div 
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="bg-white p-8 rounded-[1.5rem] border border-neutral-100 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)] relative overflow-hidden group"
-  >
-    <div className="flex justify-between items-start mb-4">
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color} bg-opacity-10`}>
-        <Icon className={color.replace("bg-", "text-")} size={24} />
+const fadeUp = (delay = 0) => ({
+  initial: { opacity: 0, y: 24 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] },
+});
+
+/* ─── PRIMARY KPI CARD ─── */
+const HeroCard = ({ title, value, subtitle, icon: Icon, accent, trend }: any) => (
+  <motion.div {...fadeUp(0.05)} className="bg-white rounded-[1.75rem] border border-neutral-100 p-7 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.07)] relative overflow-hidden group">
+    {/* accent glow */}
+    <div className={`absolute -top-10 -right-10 w-36 h-36 rounded-full opacity-[0.06] blur-2xl ${accent}`} />
+
+    <div className="flex justify-between items-start mb-5">
+      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${accent} bg-opacity-10`}>
+        <Icon className={accent.replace("bg-", "text-")} size={22} strokeWidth={1.8} />
       </div>
-      {trend && (
-        <div className={`flex items-center gap-1 text-[10px] font-black ${trend > 0 ? "text-emerald-600" : "text-amber-600"} bg-neutral-50 px-2 py-1 rounded-full`}>
-          {trend > 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+      {trend !== undefined && (
+        <div className={`flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full ${trend >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"}`}>
+          {trend >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
           {Math.abs(trend).toFixed(1)}%
         </div>
       )}
     </div>
-    <div className="relative z-10">
-      <h3 className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-1">{title}</h3>
-      <p className="text-4xl font-black text-neutral-900 tracking-tighter mb-1">{value}</p>
-      <p className="text-xs font-bold text-neutral-400">{subtitle}</p>
-    </div>
-    
-    {/* Mini Sparkline Mockup */}
-    <div className="mt-6 h-12 flex items-end gap-1 opacity-20 group-hover:opacity-40 transition-opacity">
-      {[40, 70, 45, 90, 65, 80, 50].map((h, i) => (
-        <div key={i} className={`flex-1 ${color} rounded-t-sm`} style={{ height: `${h}%` }} />
-      ))}
+
+    <p className="text-[9px] font-black text-neutral-400 uppercase tracking-[0.22em] mb-1.5">{title}</p>
+    <p className="text-[2.1rem] font-black text-neutral-900 tracking-tight leading-none mb-2">{value}</p>
+    <p className="text-[11px] font-semibold text-neutral-400 leading-snug">{subtitle}</p>
+
+    {/* subtle animated bar */}
+    <div className="mt-5 h-1 bg-neutral-50 rounded-full overflow-hidden">
+      <motion.div
+        initial={{ width: 0 }}
+        animate={{ width: "72%" }}
+        transition={{ duration: 1.2, delay: 0.3, ease: "easeOut" }}
+        className={`h-full ${accent} opacity-40 rounded-full`}
+      />
     </div>
   </motion.div>
 );
 
-const MiniKpi = ({ title, value, icon: Icon, colorClass }: any) => (
-  <div className="bg-white px-5 py-4 rounded-2xl border border-neutral-100 flex items-center gap-4 hover:border-neutral-200 transition-all">
-    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colorClass} bg-opacity-10 shrink-0`}>
-      <Icon className={colorClass.replace("bg-", "text-")} size={18} />
+/* ─── MINI STAT ─── */
+const StatChip = ({ title, value, icon: Icon, accent }: any) => (
+  <motion.div {...fadeUp(0.1)} className="bg-white rounded-2xl border border-neutral-100 px-5 py-4 flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${accent} bg-opacity-10 shrink-0`}>
+      <Icon className={accent.replace("bg-", "text-")} size={18} strokeWidth={1.8} />
     </div>
     <div>
-      <h4 className="text-[9px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">{title}</h4>
-      <p className="text-sm font-black text-neutral-900">{value}</p>
+      <p className="text-[8.5px] font-black text-neutral-400 uppercase tracking-[0.18em] mb-0.5">{title}</p>
+      <p className="text-[13px] font-black text-neutral-900 leading-none">{value}</p>
     </div>
+  </motion.div>
+);
+
+/* ─── NATURE ROW ITEM ─── */
+const NatureRow = ({ label, value, icon: Icon, color }: any) => (
+  <div className="flex items-center gap-4 py-4 border-b border-white/10 last:border-0">
+    <div className={`w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0 ${color}`}>
+      <Icon size={20} strokeWidth={1.8} />
+    </div>
+    <div className="flex-1">
+      <p className="text-[9px] font-black text-white/50 uppercase tracking-[0.18em]">{label}</p>
+      <p className="text-xl font-black text-white leading-tight">{value}</p>
+    </div>
+    <ArrowUpRight size={16} className="text-white/20" />
   </div>
 );
 
-const ProgressBar = ({ label, value, target, color }: any) => {
-  const percentage = Math.min((value / target) * 100, 100);
-  return (
-    <div className="space-y-2">
-      <div className="flex justify-between items-end">
-        <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">{label}</span>
-        <span className="text-[10px] font-black text-neutral-900">{percentage.toFixed(1)}%</span>
-      </div>
-      <div className="h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-        <motion.div 
-          initial={{ width: 0 }}
-          animate={{ width: `${percentage}%` }}
-          className={`h-full ${color}`}
-        />
-      </div>
-      <div className="flex justify-between text-[8px] font-bold text-neutral-300 uppercase">
-        <span>0</span>
-        <span>Meta: {target}</span>
-      </div>
-    </div>
-  );
-};
+export default function ClientDashboard({ initialKPIs }: { initialKPIs: DashboardKPIs, initialTimeline: any[] }) {
+  const mesAtual = new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 
-export default function ClientDashboard({ initialKPIs, initialTimeline }: { initialKPIs: DashboardKPIs, initialTimeline: any[] }) {
   return (
-    <div className="mt-8 space-y-12">
-      {/* Header Info Bar */}
-      <div className="bg-[#133020] text-white/70 p-4 rounded-2xl flex flex-wrap gap-8 items-center text-[10px] font-black uppercase tracking-[0.2em] border border-white/5 shadow-2xl">
+    <div className="mt-8 space-y-8">
+
+      {/* ── STATUS BAR ── */}
+      <motion.div {...fadeUp(0)} className="bg-[#0f2218] rounded-2xl px-6 py-4 flex flex-wrap items-center gap-x-8 gap-y-3 border border-white/5">
+        <div className="flex items-center gap-2.5">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+          </span>
+          <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Sistema Operacional</span>
+        </div>
+        <div className="h-3 w-px bg-white/10 hidden md:block" />
         <div className="flex items-center gap-2">
-          <span className="text-white/40">Status do Sistema:</span>
-          <span className="flex items-center gap-1.5 text-emerald-400">
-            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-            Operacional
+          <CalendarDays size={13} className="text-white/30" />
+          <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider">{mesAtual}</span>
+        </div>
+        <div className="h-3 w-px bg-white/10 hidden md:block" />
+        <div className="flex items-center gap-2">
+          <Activity size={13} className="text-white/30" />
+          <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider">
+            {formatNumber(initialKPIs.operacao.cargas_processadas)} cargas processadas
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-white/40">Meta Mensal:</span>
-          <span className="text-white">R$ 100k economia</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-white/40">Ciclo Atual:</span>
-          <span className="text-white">{new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</span>
-        </div>
-      </div>
+      </motion.div>
 
-      {/* Row 1: Primary Strategic KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MainKpiCard 
+      {/* ── ROW 1: 4 HERO KPIS ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <HeroCard
           title="Economia Total Acumulada"
           value={formatCurrency(initialKPIs.financeiro.economia_total)}
-          subtitle="Capital poupado vs compra de novos"
-          icon={Coins}
-          color="bg-emerald-500"
+          subtitle="Capital poupado em relação à compra de pallets novos"
+          icon={BadgeDollarSign}
+          accent="bg-emerald-500"
           trend={18.1}
         />
-        <MainKpiCard 
-          title="Eficiência de Triage"
-          value={`${initialKPIs.eficiencia.taxa_reaproveitamento}%`}
-          subtitle="Índice de ativos recuperados"
-          icon={Recycle}
-          color="bg-blue-500"
+        <HeroCard
+          title="Pallets Recuperados"
+          value={formatNumber(initialKPIs.operacao.total_processado)}
+          subtitle="Ativos coletados e devolvidos à operação"
+          icon={RefreshCcw}
+          accent="bg-sky-500"
           trend={7.5}
         />
-        <MainKpiCard 
-          title="Impacto Ambiental (ESG)"
-          value={`${(initialKPIs.esg.co2_evitado / 1000).toFixed(1)}t`}
-          subtitle="Redução de emissões CO₂"
-          icon={Globe}
-          color="bg-[#327039]"
+        <HeroCard
+          title="CO₂ Não Emitido"
+          value={`${(initialKPIs.esg.co2_evitado / 1000).toFixed(1)} t`}
+          subtitle="Redução de emissões pelo reaproveitamento"
+          icon={Wind}
+          accent="bg-teal-600"
           trend={12.4}
         />
-        <MainKpiCard 
-          title="Giro de Ativos"
-          value={formatNumber(initialKPIs.operacao.total_processado)}
-          subtitle="Unidades processadas no ciclo"
-          icon={Zap}
-          color="bg-amber-500"
-          trend={-2.1}
+        <HeroCard
+          title="ROI da Operação"
+          value={`${initialKPIs.financeiro.roi_operacao.toFixed(0)}%`}
+          subtitle="Retorno sobre o investimento operacional"
+          icon={TrendingUp}
+          accent="bg-violet-500"
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Section: Analysis against targets */}
-        <div className="lg:col-span-8 bg-white rounded-[2rem] border border-neutral-100 p-10 shadow-sm">
-          <div className="flex justify-between items-center mb-10">
-            <div>
-              <h2 className="text-2xl font-black text-neutral-900 tracking-tight">Performance e Metas</h2>
-              <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mt-1">Comparativo operacional vs objetivos estratégicos</p>
+      {/* ── ROW 2: MAIN PANEL + NATURE SIDEBAR ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        {/* OPERATIONAL METRICS PANEL */}
+        <motion.div {...fadeUp(0.12)} className="lg:col-span-8 bg-white rounded-[2rem] border border-neutral-100 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.05)] overflow-hidden">
+          <div className="px-10 pt-10 pb-6 border-b border-neutral-50">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-black text-neutral-900 tracking-tight">Visão Operacional</h2>
+                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1">Desempenho do ciclo completo de ativos</p>
+              </div>
+              <div className="w-10 h-10 rounded-2xl bg-neutral-50 flex items-center justify-center">
+                <LayoutGrid size={18} className="text-neutral-400" strokeWidth={1.8} />
+              </div>
             </div>
-            <BarChart3 className="text-neutral-200" size={32} />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-            <ProgressBar label="Reaproveitamento de Madeira" value={initialKPIs.eficiencia.taxa_reaproveitamento} target={95} color="bg-blue-500" />
-            <ProgressBar label="ROI Operacional" value={initialKPIs.financeiro.roi_operacao} target={250} color="bg-emerald-500" />
-            <ProgressBar label="Preservação Florestal" value={initialKPIs.esg.arvores_preservadas} target={500} color="bg-[#327039]" />
-            <ProgressBar label="Circularidade de Ativos" value={initialKPIs.esg.circularidade_indice} target={100} color="bg-amber-500" />
+          {/* METRICS GRID */}
+          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y divide-neutral-50">
+            {[
+              { label: "Coletado", value: formatNumber(initialKPIs.operacao.total_coletado), icon: Package2, color: "text-sky-600" },
+              { label: "Em Estoque", value: formatNumber(initialKPIs.operacao.total_estoque), icon: Warehouse, color: "text-indigo-600" },
+              { label: "Entregue", value: formatNumber(initialKPIs.operacao.total_entregue), icon: Layers, color: "text-emerald-600" },
+              { label: "Ciclo Médio", value: initialKPIs.operacao.tempo_medio_ciclo, icon: Timer, color: "text-amber-600" },
+              { label: "Taxa Recuperação", value: `${initialKPIs.eficiencia.taxa_reaproveitamento}%`, icon: ShieldCheck, color: "text-teal-600" },
+              { label: "Taxa Reforma", value: `${initialKPIs.eficiencia.taxa_reforma}%`, icon: RefreshCcw, color: "text-blue-600" },
+              { label: "Taxa Remanufatura", value: `${initialKPIs.eficiencia.taxa_remanufatura}%`, icon: Scale, color: "text-violet-600" },
+              { label: "Perda Operacional", value: `${initialKPIs.eficiencia.perda_operacional}%`, icon: Activity, color: "text-red-400" },
+            ].map(({ label, value, icon: Icon, color }) => (
+              <div key={label} className="px-6 py-6 group hover:bg-neutral-50/70 transition-colors">
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon size={14} className={`${color} opacity-80`} strokeWidth={2} />
+                  <p className="text-[8.5px] font-black text-neutral-400 uppercase tracking-[0.18em]">{label}</p>
+                </div>
+                <p className="text-[1.35rem] font-black text-neutral-900 leading-none">{value}</p>
+              </div>
+            ))}
           </div>
 
-          <div className="mt-12 pt-10 border-t border-neutral-50 grid grid-cols-2 md:grid-cols-4 gap-4">
-            <MiniKpi title="Economia/Pallet" value={formatCurrency(initialKPIs.financeiro.economia_por_pallet)} icon={Wallet} colorClass="bg-emerald-500" />
-            <MiniKpi title="Cargas Processadas" value={initialKPIs.operacao.cargas_processadas} icon={Package} colorClass="bg-blue-500" />
-            <MiniKpi title="Ciclo Médio" value={initialKPIs.operacao.tempo_medio_ciclo} icon={Clock} colorClass="bg-amber-500" />
-            <MiniKpi title="Patrimônio" value={formatCurrency(initialKPIs.financeiro.patrimonio_estoque)} icon={Briefcase} colorClass="bg-neutral-900" />
+          {/* FINANCIAL ROW */}
+          <div className="px-10 py-8 bg-neutral-900 grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: "Economia / Pallet", value: formatCurrency(initialKPIs.financeiro.economia_por_pallet), icon: Banknote },
+              { label: "Custo Evitado", value: formatCurrency(initialKPIs.financeiro.custo_evitar_novo), icon: ShieldCheck },
+              { label: "Valor Recuperado", value: formatCurrency(initialKPIs.financeiro.valor_recuperado), icon: BadgeDollarSign },
+              { label: "Patrimônio Estoque", value: formatCurrency(initialKPIs.financeiro.patrimonio_estoque), icon: Warehouse },
+            ].map(({ label, value, icon: Icon }) => (
+              <div key={label} className="space-y-1">
+                <div className="flex items-center gap-1.5">
+                  <Icon size={11} className="text-white/30" />
+                  <p className="text-[8px] font-black text-white/40 uppercase tracking-[0.18em]">{label}</p>
+                </div>
+                <p className="text-sm font-black text-white leading-none">{value}</p>
+              </div>
+            ))}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Right Section: Nature & Savings Focus */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="bg-[#133020] rounded-[2rem] p-8 text-white relative overflow-hidden">
-            <TreePine className="absolute -bottom-8 -right-8 text-white/5 w-48 h-48" />
+        {/* NATURE SIDEBAR */}
+        <div className="lg:col-span-4 flex flex-col gap-5">
+          <motion.div {...fadeUp(0.16)} className="flex-1 bg-gradient-to-br from-[#133020] to-[#0c1f14] rounded-[2rem] p-8 text-white relative overflow-hidden">
+            {/* decorative circles */}
+            <div className="absolute -bottom-12 -right-12 w-48 h-48 rounded-full bg-emerald-500/10 blur-3xl" />
+            <div className="absolute -top-8 -left-8 w-32 h-32 rounded-full bg-teal-400/5 blur-2xl" />
+
             <div className="relative z-10">
-              <h3 className="text-sm font-black uppercase tracking-[0.2em] text-emerald-400 mb-6">Benefícios da Natureza</h3>
-              <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-                    <TreePine className="text-emerald-400" size={24} />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-black">{Math.round(initialKPIs.esg.arvores_preservadas)}</p>
-                    <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider">Árvores Preservadas</p>
-                  </div>
+              <div className="flex items-center gap-2 mb-8">
+                <div className="w-8 h-8 rounded-xl bg-emerald-400/20 flex items-center justify-center">
+                  <Leaf size={16} className="text-emerald-400" strokeWidth={2} />
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-                    <Droplets className="text-blue-400" size={24} />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-black">{formatNumber(Math.round(initialKPIs.esg.agua_economizada))}L</p>
-                    <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider">Água Economizada</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-                    <Recycle className="text-amber-400" size={24} />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-black">{formatNumber(Math.round(initialKPIs.esg.residuos_evitar))}kg</p>
-                    <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider">Resíduos Desviados</p>
-                  </div>
-                </div>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-400">Benefícios da Natureza</h3>
               </div>
-            </div>
-          </div>
 
-          <div className="bg-emerald-50 rounded-[2rem] p-8 border border-emerald-100">
-            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-emerald-900 mb-4">Vantagem Financeira</h3>
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-emerald-700/60 uppercase tracking-wider">Poupança Total Projetada</p>
-              <p className="text-3xl font-black text-emerald-900">{formatCurrency(initialKPIs.financeiro.poupanca_projetada)}</p>
+              <NatureRow label="Árvores Preservadas" value={`${formatNumber(Math.round(initialKPIs.esg.arvores_preservadas))} árvores`} icon={Sprout} color="text-emerald-400" />
+              <NatureRow label="Água Economizada" value={`${formatNumber(Math.round(initialKPIs.esg.agua_economizada))} litros`} icon={Droplets} color="text-sky-400" />
+              <NatureRow label="Resíduos Desviados" value={`${formatNumber(Math.round(initialKPIs.esg.residuos_evitar))} kg`} icon={RefreshCcw} color="text-amber-400" />
+              <NatureRow label="Madeira Reaproveitada" value={`${initialKPIs.esg.madeira_reutilizada.toFixed(2)} m³`} icon={Leaf} color="text-teal-400" />
             </div>
-            <div className="mt-6 pt-6 border-t border-emerald-200/50">
-              <div className="flex justify-between items-center text-[10px] font-black text-emerald-800 uppercase tracking-widest">
-                <span>Custo Evitado (Novos)</span>
-                <span>{formatCurrency(initialKPIs.financeiro.custo_evitar_novo)}</span>
+          </motion.div>
+
+          {/* SAVINGS CARD */}
+          <motion.div {...fadeUp(0.2)} className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-[2rem] p-8 text-white relative overflow-hidden">
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuMDQiPjxwYXRoIGQ9Ik0wIDBoNDBINDB2NDBIMHoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30" />
+            <div className="relative z-10">
+              <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/70 mb-2">Vantagem Financeira</p>
+              <p className="text-3xl font-black leading-none mb-1">{formatCurrency(initialKPIs.financeiro.poupanca_projetada)}</p>
+              <p className="text-[11px] font-semibold text-white/70">poupança projetada no ciclo</p>
+              <div className="mt-5 pt-5 border-t border-white/20 flex justify-between items-center">
+                <div>
+                  <p className="text-[8.5px] font-black text-white/50 uppercase tracking-wider">Custo Médio / Pallet</p>
+                  <p className="text-base font-black">{formatCurrency(initialKPIs.financeiro.custo_medio_pallet)}</p>
+                </div>
+                <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center">
+                  <BadgeDollarSign size={20} className="text-white" strokeWidth={1.8} />
+                </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
 
-      {/* Grid of Remaining KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <MiniKpi title="Estoque Disponível" value={formatNumber(initialKPIs.operacao.total_estoque)} icon={Package} colorClass="bg-blue-500" />
-        <MiniKpi title="Volume Mensal" value={formatNumber(initialKPIs.operacao.volume_mensal)} icon={Calendar} colorClass="bg-neutral-900" />
-        <MiniKpi title="Perda Operacional" value={`${initialKPIs.eficiencia.perda_operacional}%`} icon={AlertCircle} colorClass="bg-amber-500" />
-        <MiniKpi title="Recuperação" value={`${initialKPIs.eficiencia.eficiencia_recuperacao}%`} icon={CheckCircle2} colorClass="bg-emerald-500" />
-        <MiniKpi title="Madeira (m³)" value={initialKPIs.esg.madeira_reutilizada.toFixed(2)} icon={Recycle} colorClass="bg-[#327039]" />
-        <MiniKpi title="Investimento" value={formatCurrency(initialKPIs.financeiro.custo_medio_pallet)} icon={Coins} colorClass="bg-neutral-900" />
+      {/* ── ROW 3: BOTTOM MINI STATS ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <StatChip title="Volume Mensal" value={formatNumber(initialKPIs.operacao.volume_mensal)} icon={CalendarDays} accent="bg-neutral-800" />
+        <StatChip title="Nº de Coletas" value={formatNumber(initialKPIs.operacao.numero_coletas)} icon={Package2} accent="bg-sky-500" />
+        <StatChip title="Circularidade" value={`${initialKPIs.esg.circularidade_indice}%`} icon={RefreshCcw} accent="bg-teal-600" />
+        <StatChip title="Performance" value={`${initialKPIs.performance.indice_performance.toFixed(1)}`} icon={Activity} accent="bg-violet-500" />
+        <StatChip title="Eficiência" value={`${initialKPIs.eficiencia.eficiencia_recuperacao}%`} icon={ShieldCheck} accent="bg-emerald-500" />
+        <StatChip title="Crescimento" value={`+${initialKPIs.performance.crescimento_mensal.toFixed(1)}%`} icon={TrendingUp} accent="bg-amber-500" />
       </div>
+
     </div>
   );
 }
