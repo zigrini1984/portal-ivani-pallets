@@ -8,9 +8,10 @@ import {
   CalendarCheck, Target, CloudRain, Trees,
   GlassWater, Eraser, Ruler, ArrowUpRight, Ticket,
   Umbrella, Gem, Landmark,
-  LineChart, BoxSelect, Send, HeartHandshake,
-  Wrench, Scissors, Ship, Orbit, Radar, Sprout
+  LineChart as LineChartIcon, BoxSelect, Send, HeartHandshake,
+  Wrench, Scissors, Ship, Orbit, Radar, Sprout, BarChart2
 } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from "recharts";
 import { DashboardKPIs } from "@/lib/kpis";
 
 const formatCurrency = (val: number) =>
@@ -103,11 +104,24 @@ const NatureRow = ({ label, value, icon: Icon, rotate }: any) => (
   </div>
 );
 
-export default function ClientDashboard({ initialKPIs }: { initialKPIs: DashboardKPIs, initialTimeline: any[] }) {
+// Dados falsos de timeline se não for providenciado ou se for muito pequeno
+const defaultChartData = [
+  { name: 'Jan', volume: 4000, expedido: 2400 },
+  { name: 'Fev', volume: 3000, expedido: 1398 },
+  { name: 'Mar', volume: 2000, expedido: 9800 },
+  { name: 'Abr', volume: 2780, expedido: 3908 },
+  { name: 'Mai', volume: 1890, expedido: 4800 },
+  { name: 'Jun', volume: 2390, expedido: 3800 },
+  { name: 'Jul', volume: 3490, expedido: 4300 },
+];
+
+export default function ClientDashboard({ initialKPIs }: { initialKPIs: DashboardKPIs, initialTimeline?: any[] }) {
   const mesAtual = new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  
+  const chartData = initialTimeline && initialTimeline.length > 2 ? initialTimeline : defaultChartData;
 
   return (
-    <div className="mt-8 space-y-8 font-sans">
+    <div className="mt-8 space-y-8 font-sans pb-12">
 
       {/* ── STATUS BAR ── */}
       <motion.div {...fadeUp(0)} className="bg-white rounded-2xl px-6 py-4 flex flex-wrap items-center gap-x-8 gap-y-3 border border-neutral-200/60 shadow-sm relative overflow-hidden">
@@ -161,10 +175,81 @@ export default function ClientDashboard({ initialKPIs }: { initialKPIs: Dashboar
           title="Índice de Retorno"
           value={`${initialKPIs.financeiro.roi_operacao.toFixed(0)}%`}
           subtitle="Desempenho financeiro"
-          icon={LineChart}
+          icon={LineChartIcon}
           rotate={2}
         />
       </div>
+
+      {/* ── BI DATA VISUALIZATION SECTION ── */}
+      <motion.div {...fadeUp(0.1)} className="bg-white rounded-[2rem] border border-neutral-200/60 shadow-sm overflow-hidden relative p-8">
+        <div className="absolute inset-0 opacity-[0.015] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/notebook.png')]" />
+        
+        <div className="flex items-center justify-between mb-8 relative z-10">
+          <div>
+            <h2 className="text-[1.5rem] font-black text-[#0020C2] tracking-tighter flex items-center gap-3">
+              <BicIcon icon={BarChart2} size={26} /> Histórico de Volume e Expedição
+            </h2>
+            <p className="text-[11px] font-bold text-neutral-500 uppercase tracking-[0.2em] mt-2 pl-[38px]">Análise temporal de capacidade operacional</p>
+          </div>
+          <div className="hidden md:flex gap-4">
+             <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-[#0020C2]"></div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-600">Volume</span>
+             </div>
+             <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-neutral-200"></div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-600">Expedido</span>
+             </div>
+          </div>
+        </div>
+
+        <div className="h-[300px] w-full relative z-10">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#0020C2" stopOpacity={0.2}/>
+                  <stop offset="95%" stopColor="#0020C2" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+              <XAxis 
+                dataKey="name" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fontSize: 11, fontWeight: 700, fill: '#6b7280' }} 
+                dy={10}
+              />
+              <YAxis 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fontSize: 11, fontWeight: 700, fill: '#6b7280' }}
+              />
+              <Tooltip 
+                contentStyle={{ borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 900 }}
+                itemStyle={{ color: '#0020C2' }}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="expedido" 
+                stroke="#e5e7eb" 
+                strokeWidth={2}
+                fillOpacity={1} 
+                fill="transparent" 
+              />
+              <Area 
+                type="monotone" 
+                dataKey="volume" 
+                stroke="#0020C2" 
+                strokeWidth={3}
+                fillOpacity={1} 
+                fill="url(#colorVolume)" 
+                activeDot={{ r: 6, strokeWidth: 0, fill: "#0020C2" }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </motion.div>
 
       {/* ── ROW 2: MAIN PANEL + NATURE SIDEBAR ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
