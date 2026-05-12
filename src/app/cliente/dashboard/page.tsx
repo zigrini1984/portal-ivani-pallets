@@ -53,14 +53,29 @@ export default async function ClienteDashboardPCE() {
       kpis = JSON.parse(JSON.stringify(kpisData));
       
       // Timeline recente segura
-      timeline = await safeQuery("timeline", 
+      const rawTimeline = await safeQuery("timeline", 
         supabase
           .from("estoque_movimentacoes")
           .select("id, tipo, quantidade, created_at")
           .eq("cliente_id", clienteId)
           .order("created_at", { ascending: false })
-          .limit(5)
+          .limit(30)
       );
+      
+      // Formata a timeline para o Recharts (agrupa por mês)
+      if (rawTimeline && rawTimeline.length > 0) {
+        const grouped = rawTimeline.reduce((acc: any, curr: any) => {
+          const date = new Date(curr.created_at);
+          const month = date.toLocaleDateString("pt-BR", { month: "short" });
+          if (!acc[month]) acc[month] = { name: month, volume: 0, expedido: 0 };
+          
+          if (curr.tipo === 'entrada') acc[month].volume += curr.quantidade;
+          if (curr.tipo === 'saida') acc[month].expedido += curr.quantidade;
+          return acc;
+        }, {});
+        
+        timeline = Object.values(grouped).reverse();
+      }
     } catch (err) {
       console.error("Dashboard Fetch Error:", err);
       error = "Falha ao processar visão estratégica.";
@@ -68,6 +83,9 @@ export default async function ClienteDashboardPCE() {
   } else {
     error = "Serviço de dados temporariamente indisponível.";
   }
+
+  // Gera a string do mês atual no server para evitar hydration mismatch
+  const mesAtual = new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-neutral-900 pb-20">
@@ -93,7 +111,7 @@ export default async function ClienteDashboardPCE() {
           </div>
         )}
 
-        <ClientDashboard initialKPIs={kpis} initialTimeline={timeline} />
+        <ClientDashboard initialKPIs={kpis} initialTimeline={timeline} mesAtual={mesAtual} />
       </div>
     </div>
   );
