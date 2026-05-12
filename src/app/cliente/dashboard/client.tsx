@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   TrendingUp, TrendingDown, Magnet, Infinity,
@@ -115,9 +115,14 @@ const defaultChartData = [
   { name: 'Jul', volume: 3490, expedido: 4300 },
 ];
 
-export default function ClientDashboard({ initialKPIs }: { initialKPIs: DashboardKPIs, initialTimeline?: any[] }) {
-  const mesAtual = new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-  
+export default function ClientDashboard({ initialKPIs, initialTimeline, mesAtual }: { initialKPIs: DashboardKPIs, initialTimeline?: any[], mesAtual?: string }) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const displayMonth = mesAtual || "Mês Atual";
   const chartData = initialTimeline && initialTimeline.length > 2 ? initialTimeline : defaultChartData;
 
   return (
@@ -137,7 +142,7 @@ export default function ClientDashboard({ initialKPIs }: { initialKPIs: Dashboar
         <div className="h-3 w-px bg-neutral-200 hidden md:block relative z-10" />
         <div className="flex items-center gap-2 relative z-10">
           <CalendarCheck size={14} {...bicProps} className="opacity-50" />
-          <span className="text-[11px] font-bold text-neutral-600 uppercase tracking-widest">{mesAtual}</span>
+          <span className="text-[11px] font-bold text-neutral-600 uppercase tracking-widest">{displayMonth}</span>
         </div>
         <div className="h-3 w-px bg-neutral-200 hidden md:block relative z-10" />
         <div className="flex items-center gap-2 relative z-10">
@@ -204,50 +209,52 @@ export default function ClientDashboard({ initialKPIs }: { initialKPIs: Dashboar
         </div>
 
         <div className="h-[300px] w-full relative z-10">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#0020C2" stopOpacity={0.2}/>
-                  <stop offset="95%" stopColor="#0020C2" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-              <XAxis 
-                dataKey="name" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fontSize: 11, fontWeight: 700, fill: '#6b7280' }} 
-                dy={10}
-              />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fontSize: 11, fontWeight: 700, fill: '#6b7280' }}
-              />
-              <Tooltip 
-                contentStyle={{ borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 900 }}
-                itemStyle={{ color: '#0020C2' }}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="expedido" 
-                stroke="#e5e7eb" 
-                strokeWidth={2}
-                fillOpacity={1} 
-                fill="transparent" 
-              />
-              <Area 
-                type="monotone" 
-                dataKey="volume" 
-                stroke="#0020C2" 
-                strokeWidth={3}
-                fillOpacity={1} 
-                fill="url(#colorVolume)" 
-                activeDot={{ r: 6, strokeWidth: 0, fill: "#0020C2" }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          {isMounted && (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#0020C2" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#0020C2" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                <XAxis 
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 11, fontWeight: 700, fill: '#6b7280' }} 
+                  dy={10}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 11, fontWeight: 700, fill: '#6b7280' }}
+                />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 900 }}
+                  itemStyle={{ color: '#0020C2' }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="expedido" 
+                  stroke="#e5e7eb" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="transparent" 
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="volume" 
+                  stroke="#0020C2" 
+                  strokeWidth={3}
+                  fillOpacity={1} 
+                  fill="url(#colorVolume)" 
+                  activeDot={{ r: 6, strokeWidth: 0, fill: "#0020C2" }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </motion.div>
 
